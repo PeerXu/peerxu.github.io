@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+   <title>采用Flask-Restful插件返回Javascript脚本的两种方法</title>
+   <meta name="author" content="Peer Xu" />
+   <link href="http://peerxu.github.com/" rel="alternate" title="Peer Studio Blog" type="application/atom+xml" />
+
+   <!-- syntax highlighting CSS -->
+   <link rel="stylesheet" href="/css/syntax.css" type="text/css" />
+
+   <!-- Homepage CSS -->
+   <link rel="stylesheet" href="/css/screen.css" type="text/css" media="screen, projection" />
+
+	<!-- Google Analytics -->
+	<script type="text/javascript">
+
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-26349380-3']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+
+	</script>
+	<!-- Google Analytics end -->
+</head>
+<body>
+
+<div class="site">
+  <div class="title">
+    <a href="/">Peer Studio Blog</a>
+    <a class="extra" href="/">home</a>
+  </div>
+  
+  <div id="post">
+<h1>采用Flask-Restful插件返回Javascript脚本的两种方法</h1>
+
+<p><a href="https://github.com/mitsuhiko/flask">Flask</a> 是Python的一个轻量级的Web框架.</p>
+
+<p><a href="https://github.com/twilio/flask-restful">Flask-Restful</a> 是将Flask应用构建为Restful API的一个插件.</p>
+
+<p>一个Flask-Restful插件的demo:</p>
+
+<pre><code>$ cat app.py
+#! /usr/bin/env python2.7
+# filename: app.py
+
+from flask import Flask
+from flask.ext.restful import Api, Resource
+
+app = Flask(__name__)
+api = Api(app)
+
+class User(Resource):
+  def get(self, user_id):
+    return {'user_id': user_id}
+
+api.add_resource(User, '/users/&lt;int:user_id&gt;')
+
+if __name__ == '__main__':
+  app.run(port=8888, debug=True)
+
+$ python app.py
+ * Running on http://127.0.0.1:8888/
+ * Restarting with reloader
+</code></pre>
+
+<p>这里我们可以看见Flask Demo已经成功运行.</p>
+
+<p>我们可以通过<code>curl</code>这个工具来进行简单测试.</p>
+
+<pre><code>$ curl -v http://localhost:8888/users/1
+* Adding handle: conn: 0x22f5a40
+* Adding handle: send: 0
+* Adding handle: recv: 0
+* Curl_addHandleToPipeline: length: 1
+* - Conn 0 (0x22f5a40) send_pipe: 1, recv_pipe: 0
+* About to connect() to localhost port 8888 (#0)
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 8888 (#0)
+&gt; GET /users/1 HTTP/1.1
+&gt; User-Agent: curl/7.32.0
+&gt; Host: localhost:8888
+&gt; Accept: */*
+&gt;
+* HTTP 1.0, assume close after body
+&lt; HTTP/1.0 200 OK
+&lt; Content-Type: application/json
+&lt; Content-Length: 21
+&lt; Server: Werkzeug/0.9.4 Python/2.7.5+
+&lt; Date: Mon, 09 Jun 2014 15:25:42 GMT
+&lt;
+{
+    "user_id": 1
+}
+* Closing connection 0
+</code></pre>
+
+<p>curl的Response部分, 包含了一些信息.</p>
+
+<p>其中Content-Type字段表示的是, 返回的内容是json格式的.</p>
+
+<p>如果我们需要返回的值是javascript脚本的话, 那么我们就需要对demo进行一些改造.</p>
+
+<p>有两种办法:</p>
+
+<h3>1. 通过Flask的make_response函数</h3>
+
+<pre><code>$ cat app.py
+#! /usr/bin/env python2.7
+# filename: app.py
+
+import simplejson as json
+from flask import Flask, make_response
+from flask.ext.restful import Api, Resource
+
+app = Flask(__name__)
+api = Api(app)
+
+class User(Resource):
+  def get(self, user_id):
+    user = {'user_id': user_id}
+    data = json.dumps(user)
+    response = make_response(data)
+    response.headers.extend({
+      'Content-Type': 'application/javascript'
+    })
+    return response
+
+api.add_resource(User, '/users/&lt;int:user_id&gt;')
+
+if __name__ == '__main__':
+  app.run(port=8888, debug=True)
+</code></pre>
+
+<p>添加Content-Type字段到response的headers中, 可以将返回的内容类型设置为javascript.</p>
+
+<h3>2. 通过Request Headers限制Response类型</h3>
+
+<p>HTTP协议中规定, 在Request Header中指定Accept字段, 可以指定客户端接受的Response类型.</p>
+
+<p>例如在curl中指定Accept字段:</p>
+
+<pre><code>$ curl -H 'Accept: application/javascript' http://localhost:8888/users/1
+</code></pre>
+
+<p>但是在Flask-Restful插件中, 貌似是不支持javascript作为返回值类型.</p>
+
+<p>所以我们需要做一些patch.</p>
+
+<pre><code>#! /usr/bin/env python2.7
+# filename: app.py
+
+import simplejson as json
+from flask import Flask, make_response
+from flask.ext.restful import Api, Resource
+
+# monkey patch: application/javascript mimetype
+
+from flask.ext import restful
+def output_javascript(data, code, headers=None):
+  response = make_response(data, code)
+  response.headers.extend(headers or {})
+  return response
+
+restful.DEFAULT_REPRESENTATIONS['application/javascript'] = output_javascript
+
+# end monkey patch
+
+app = Flask(__name__)
+api = Api(app)
+
+class User(Resource):
+  def get(self, user_id):
+    return {'user_id': user_id}
+
+api.add_resource(User, '/users/&lt;int:user_id&gt;')
+</code></pre>
+
+<p>这种方式显得更加优雅.</p>
+
+<p>但是需要在发起Request的时候设置Request Header的<code>Accept</code>字段为<code>application/javascript</code>.</p>
+
+<p>the end.</p>
+
+</div>
+
+<div id="related">
+  <h2>Related Posts</h2>
+  <ul class="posts">
+    
+      <li><span>23 May 2014</span> &raquo; <a href="/2014/05/23/copy-file-from-host-to-docker.html">从主机复制文件到Docker的几种方法</a></li>
+    
+      <li><span>07 Apr 2014</span> &raquo; <a href="/2014/04/07/docker-with-openvswitch.html">pipework -- docker网络增强工具</a></li>
+    
+      <li><span>24 Dec 2013</span> &raquo; <a href="/2013/12/24/docker-on-openvswitch.html">让你的Docker运行在Open vSwitch上</a></li>
+    
+  </ul>
+</div>
+
+  
+  <div class="footer">
+    <div class="contact">
+      <p>
+        Peer Studio<br />
+		Weibo<br />
+		Twitter<br />
+        Cofounder of <a href="http://github.com/">GitHub</a><br />
+		pppeerxu@gmail.com
+      </p>
+    </div>
+    <div class="contact">
+      <p>
+        <a href="http://github.com/peerxu/">github.com/PeerXu</a><br />
+		<a href="http://weibo.com/peerstudio">weibo.com/peerstudio</a><br />
+		<a href="http://twitter.com/peerxu">twitter.com/PeerXu</a><br />
+      </p>
+    </div>
+    <div class="rss">
+      <a href="atom.xml">
+        <img src="/images/rss.png" alt="Subscribe to RSS Feed" />
+      </a>
+    </div>
+  </div>
+</div>
+
+<a href="http://github.com/peerxu"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub" /></a>
+
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+   <title>pipework -- docker网络增强工具</title>
+   <meta name="author" content="Peer Xu" />
+   <link href="http://peerxu.github.com/blog" rel="alternate" title="Peer Studio Blog" type="application/atom+xml" />
+
+   <!-- syntax highlighting CSS -->
+   <link rel="stylesheet" href="/blog/css/syntax.css" type="text/css" />
+
+   <!-- Homepage CSS -->
+   <link rel="stylesheet" href="/blog/css/screen.css" type="text/css" media="screen, projection" />
+
+	<!-- Google Analytics -->
+	<script type="text/javascript">
+
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-26349380-3']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+
+	</script>
+	<!-- Google Analytics end -->
+</head>
+<body>
+
+<div class="site">
+  <div class="title">
+    <a href="/blog">Peer Studio Blog</a>
+    <a class="extra" href="/blog">home</a>
+  </div>
+  
+  <div id="post">
+<h1>pipework -- docker网络增强工具</h1>
+
+<p><a href="https://github.com/jpetazzo/pipework">pipework</a>是<a href="https://www.docker.io/">Docker</a>的一个网络增强功能插件.</p>
+
+<p>Docker创建的时候, 默认是接入docker0(linux bridge)的. 所以只能单主机工作, 不能多台主机联动工作. 这时候, pipework应运而生.</p>
+
+<p>我们先来介绍一下pipework的简单用法, 之后再深入探讨关于pipework与ovs的结合. 最后基于一个案例分析来结束.</p>
+
+<h3>pipework入门</h3>
+
+<pre><code># brctl addbr br0
+# ip link set dev br0 up
+# ip addr add 192.168.2.1/24 dev br0
+# MYSQL=$(docker run -d -p 3306:3306 -e MYSQL_PASS=admin tutum/mysql)
+# pipework br0 $MYSQL 192.168.2.100/24
+</code></pre>
+
+<ol>
+<li>创建一个br0(linux bridge).</li>
+<li>配置IP地址给br0.</li>
+<li>启动一个mysql docker.</li>
+<li>使用<code>pipework</code>为docker添加IP地址.</li>
+</ol>
+
+
+<p>经过这几个步骤后, 创建的docker就有一个设置指定的IP地址了.
+pipework的具体工作原理就不在这里详细分析, 有兴趣的同学可以自己去读源代码.</p>
+
+<h3>pipework进阶</h3>
+
+<p>上面入门介绍中, 我们使用pipework工具, 通过linux bridge的模式指定IP地址给docker容器.
+其实, 除了linux bridge, pipework还支持现在流行的虚拟交换机(Open vSwitch).
+下面简单的示范一下如何将docker与Open vSwitch(下称ovs)连通.</p>
+
+<pre><code># ovs-vsctl add-br ovsbr0
+# ip link set dev ovsbr0 up
+# ip addr add 192.168.3.1/24 dev ovsbr0
+# MYSQL=$(docker run -d -p 3306:3306 -e MYSQL_PASS=admin tutum/mysql)
+# pipework ovsbr0 $MYSQL 192.168.3.100/24
+</code></pre>
+
+<p>对于pipework来说, 底层使用什么虚拟网络设备是透明的.
+pipework会智能地判断使用的是linux bridge还是ovs.
+所以除了创建桥的方式不同, 其他并没有改变.</p>
+
+<h3>pipework案例分析</h3>
+
+<p>前些天, <a href="http://weibo.com/chenlinux?from=feed&amp;loc=nickname">@ARGV</a>同学对docker与SDN的应用场景感到迷惑. 我又因工作的需要, 对这有些接触, 那么我就写了本文与大家探讨一下SDN与docker的结合场景.</p>
+
+<h4>docker容器与VLAN</h4>
+
+<p>docker容器启动时, 默认是接入到docker0网桥上的. 这样就容易给大家造成一个假象, docker容器只能运行在单机的情况下.
+*但是显示并非如此.*
+我们可以通过pipework扩展docker的网络功能.</p>
+
+<p>我们假设现在有2台服务器A和B, 交换机S.
+现在我们同时在A,B上创建虚拟网桥ovsbr0. 并且在服务器A上, 将网桥启用和配置IP地址.
+那么我们现在如果在A,B上,分别启动一个docker.
+同时通过pipework将docker接入到ovsbr0上, 并且配置与A服务器上ovs相同网段的IP地址.
+那么*两个docker互相之间就能够通信*了.
+很神奇有木有!!!</p>
+
+<p>但是万恶的需求是不断进化的(呵呵). 不会都让你们的docker运行在一个网络环境下, 有的应用是需要互相隔离的.
+那么就有可能需要VLAN的划分. 这里多说点, 其实在现今的情况下, 除了划分VLAN还有其他的方式达到二层网络隔离的效果, 如VXLAN, NVGRE等技术.
+但是我们现在还是只谈论VLAN隔离吧.</p>
+
+<p>我们先在服务器A上做一下操作:</p>
+
+<pre><code># D1V10=$(docker run -i -t learn/ping /bin/bash)
+# pipework ovsbr0 -i d1v10 $D1V10 10.1.1.10/24
+# D2V10=$(docker run -i -t learn/ping /bin/bash)
+# pipework ovsbr0 -i d2v10 $D2V10 10.1.1.11/24
+# D3V20=$(docker run -i -t learn/ping /bin/bash)
+# pipework ovsbr0 -i d3v20 $D3V20 10.1.1.20/24
+</code></pre>
+
+<p>这里定义了3个Docker容器, 并且将其添加到ovsbr0这个桥上.
+下面开始将不同的网卡设置vlan id.
+我们将 D1V10 和 D2V10 设置vlan id为10. 将D3V20 设置vlan id为20.</p>
+
+<p>我们可以通过<code>ovs-vsctl list-ports &lt;BRIDGE&gt;</code>找出桥设备下面的所有端口.
+但是刚刚我们一口气连续创建了3个docker, 会看见3个对应的虚拟网卡.</p>
+
+<p>然后我们需要做的是, 找出与Docker容器想对应的虚拟网卡.
+刚刚在pipework执行时, 添加了参数<code>-i</code>, 意思是创建的虚拟网卡结尾对应的字符串.</p>
+
+<p>比如:</p>
+
+<pre><code># pipework ovsbr0 -i d1v10 $D1V10 10.1.1.10/24
+</code></pre>
+
+<p>这命令执行后, ovsbr0设备会添加一个port, port的名字应该是<code>plxxxxd1v10</code>.
+当中的xxxx是docker容器的pid.</p>
+
+<p>这时我们就可以通过<code>ovs-vsctl set port &lt;port&gt; tag=&lt;vlan id&gt;</code>的方式设置vlan id了.</p>
+
+<p>下面是范例:</p>
+
+<pre><code># ovs-vsctl list-ports ovsbr0
+pl23016d1v10
+pl23124d2v10
+pl23654d3v20
+# ovs-vsctl set port pl23016d1v10 tag=10
+# ovs-vsctl set port pl23124d2v10 tag=10
+# ovs-vsctl set port pl23654d3v20 tag=20
+</code></pre>
+
+<p>这样就完成了设置VLAN的步骤了.
+下面我们通过简单的ping命令来验证一下vlan隔离的效果.</p>
+
+<pre><code># docker attach $D1V10
+root@f94dc85c44b1:/# ping 10.1.1.11  # pass
+root@f94dc85c44b1:/# ping 10.1.1.20  # unreachable
+</code></pre>
+
+<h3>总结</h3>
+
+<p>pipework是个强大的docker网络管理工具. 具体的实现也比较简单. 可以配合ovs来实现强大的功能.
+剩下就是发挥想象力的时间了...</p>
+
+</div>
+
+<div id="related">
+  <h2>Related Posts</h2>
+  <ul class="posts">
+    
+      <li><span>24 Dec 2013</span> &raquo; <a href="/blog/2013/12/24/docker-on-openvswitch.html">让你的Docker运行在Open vSwitch上</a></li>
+    
+      <li><span>21 Nov 2013</span> &raquo; <a href="/blog/2013/11/21/patch-with-git-tutorial.html">Git Patch简单教程</a></li>
+    
+      <li><span>05 Oct 2013</span> &raquo; <a href="/blog/2013/10/05/kombu-tutorial_I.html">kombu 入门教程(上)</a></li>
+    
+  </ul>
+</div>
+
+  
+  <div class="footer">
+    <div class="contact">
+      <p>
+        Peer Studio<br />
+		Weibo<br />
+		Twitter<br />
+        Cofounder of <a href="http://github.com/">GitHub</a><br />
+		pppeerxu@gmail.com
+      </p>
+    </div>
+    <div class="contact">
+      <p>
+        <a href="http://github.com/peerxu/">github.com/PeerXu</a><br />
+		<a href="http://weibo.com/peerstudio">weibo.com/peerstudio</a><br />
+		<a href="http://twitter.com/peerxu">twitter.com/PeerXu</a><br />
+      </p>
+    </div>
+    <div class="rss">
+      <a href="atom.xml">
+        <img src="/blog/images/rss.png" alt="Subscribe to RSS Feed" />
+      </a>
+    </div>
+  </div>
+</div>
+
+<a href="http://github.com/peerxu"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub" /></a>
+
+</body>
+</html>

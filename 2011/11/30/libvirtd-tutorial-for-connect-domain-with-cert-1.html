@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+   <title>libvirtd使用证书创建连接简介(上)</title>
+   <meta name="author" content="Peer Xu" />
+   <link href="http://peerxu.github.com/" rel="alternate" title="Peer Studio Blog" type="application/atom+xml" />
+
+   <!-- syntax highlighting CSS -->
+   <link rel="stylesheet" href="/css/syntax.css" type="text/css" />
+
+   <!-- Homepage CSS -->
+   <link rel="stylesheet" href="/css/screen.css" type="text/css" media="screen, projection" />
+
+	<!-- Google Analytics -->
+	<script type="text/javascript">
+
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-26349380-3']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+
+	</script>
+	<!-- Google Analytics end -->
+</head>
+<body>
+
+<div class="site">
+  <div class="title">
+    <a href="/">Peer Studio Blog</a>
+    <a class="extra" href="/">home</a>
+  </div>
+  
+  <div id="post">
+<h2>libvirtd使用证书创建连接简介(上)</h2>
+<p>上集讲的是如何配置证书与证书的存放</p>
+<p>先了解一下证书的存放位置和需要注意的一些地方</p>
+<table>
+	<tr>
+		<td style="text-align:center;"><strong>位置</strong> </td>
+		<td style="text-align:center;"><strong>安装机</strong> </td>
+		<td style="text-align:center;"><strong>描述</strong> </td>
+		<td style="text-align:center;"><strong>匹配域</strong> </td>
+	</tr>
+	<tr>
+		<td style="text-align:center;">/etc/pki/CA/cacert.pem </td>
+		<td style="text-align:center;">服务端 <em>and</em> 客户端 </td>
+		<td style="text-align:center;">CA的证书 </td>
+		<td style="text-align:center;">n/a </td>
+	</tr>
+	<tr>
+		<td style="text-align:center;">/etc/pki/libvirt/private/serverkey.pem </td>
+		<td style="text-align:center;">服务端 </td>
+		<td style="text-align:center;">服务端的私钥 </td>
+		<td style="text-align:center;">n/a </td>
+	</tr>
+	<tr>
+		<td style="text-align:center;">/etc/pki/libvirt/servercert.pem </td>
+		<td style="text-align:center;">服务端 </td>
+		<td style="text-align:center;">由CA颁发的服务端签名证书 </td>
+		<td style="text-align:center;">服务器的hostname必须在客户端可见,并且与CommonName匹配 </td>
+	</tr>
+	<tr>
+		<td style="text-align:center;">/etc/pki/libvirt/private/clientkey.pem </td>
+		<td style="text-align:center;">客户端 </td>
+		<td style="text-align:center;">客户端私钥 </td>
+		<td style="text-align:center;">n/a </td>
+	</tr>
+	<tr>
+		<td style="text-align:center;">/etc/pki/libvirt/clientcert.pem </td>
+		<td style="text-align:center;">客户端 </td>
+		<td style="text-align:center;">由CA颁发的客户端签名证书 </td>
+		<td style="text-align:center;">Distinguished Name(DN)需要在access control list里面(tls_allowed_dn_list) </td>
+	</tr>
+</table>
+<ul>
+	<li>安装 <em>gnults-utils</em></li>
+</ul>
+<pre><code>apt-get install guntls-bin</code></pre>
+<ul>
+	<li>创建CA, <span class="caps">SERVER</span>, CLIENT对应的证书与私钥</li>
+</ul>
+<ol>
+<li>
+<p>先创建三个文件,分别命名为 <em>ca.info</em>, <em>server.info</em>, <em>client.info</em> 分别填上以下的内容</p>
+<pre><code>file: ca.info
+cn = &lt;CA的机构&gt;
+ca
+cert_signing_key</code></pre>
+<pre><code>file: server.info
+organization = &lt;CA的cn&gt;
+cn = &lt;server的hostname&gt;
+tls_www_server
+encryption_key
+signing_key</code></pre>
+<pre><code>file: client.info
+country = &lt;国家&gt;
+state = &lt;省&gt; 
+locality = &lt;市&gt;
+organization = &lt;CA的cn&gt;
+cn = &lt;client的hostname&gt;
+tls_www_client
+encryption_key
+signing_key</code></pre>
+</li>
+<li>
+<p>创建 <em>cakey.pem</em>, <em>serverkey.pem</em>, <em>clientkey.pem</em></p>
+<pre><code>创建 cakey.pem
+certtool --generate-privkey &gt; cakey.pem</code></pre>
+<pre><code>创建 server.pem
+certtool --generate-privkey &gt; serverkey.pem</code></pre>
+<pre><code>创建 client.pem
+certtool --generate-privkey &gt; clientkey.pem</code></pre>
+</li>
+<li>
+<p>创建 <em>cacert.pem</em>, <em>servercert.pem</em>, <em>clientcert.pem</em></p>
+<pre><code>创建 cacert.pem
+certtool --generate-self-signed --load-privkey cakey.pem \
+	 --template ca.info --outfile cacert.pem</code></pre>
+<pre><code>创建 servercert.pem
+certtool --generate-certificate --load-privkey serverkey.pem \
+  --load-ca-certificate cacert.pem --load-ca-privkey cakey.pem \
+  --template server.info --outfile servercert.pem</code></pre>
+<pre><code>创建 client.pem
+certtool --generate-certificate --load-privkey clientkey.pem \
+  --load-ca-certificate cacert.pem --load-ca-privkey cakey.pem \
+  --template client.info --outfile clientcert.pem</code></pre>
+</li>
+</ol>
+<ul>
+	<li>将产生的私钥跟证书放到对应的主机的对应目录下面.</li>
+	<li>重启libvirtd进程<br />
+<code>libvirtd -l -d</code></li>
+</ul>
+<p>配置就这样完成了,如何连接我将在下一节中描述.</p>
+<p>引用 <a href="http://libvirt.org/remote.html">http://libvirt.org/remote.html</a></p>
+</div>
+
+<div id="related">
+  <h2>Related Posts</h2>
+  <ul class="posts">
+    
+      <li><span>09 Jun 2014</span> &raquo; <a href="/2014/06/09/response-javascript-with-flask-restful-api.html">采用Flask-Restful插件返回Javascript脚本的两种方法</a></li>
+    
+      <li><span>23 May 2014</span> &raquo; <a href="/2014/05/23/copy-file-from-host-to-docker.html">从主机复制文件到Docker的几种方法</a></li>
+    
+      <li><span>07 Apr 2014</span> &raquo; <a href="/2014/04/07/docker-with-openvswitch.html">pipework -- docker网络增强工具</a></li>
+    
+  </ul>
+</div>
+
+  
+  <div class="footer">
+    <div class="contact">
+      <p>
+        Peer Studio<br />
+		Weibo<br />
+		Twitter<br />
+        Cofounder of <a href="http://github.com/">GitHub</a><br />
+		pppeerxu@gmail.com
+      </p>
+    </div>
+    <div class="contact">
+      <p>
+        <a href="http://github.com/peerxu/">github.com/PeerXu</a><br />
+		<a href="http://weibo.com/peerstudio">weibo.com/peerstudio</a><br />
+		<a href="http://twitter.com/peerxu">twitter.com/PeerXu</a><br />
+      </p>
+    </div>
+    <div class="rss">
+      <a href="atom.xml">
+        <img src="/images/rss.png" alt="Subscribe to RSS Feed" />
+      </a>
+    </div>
+  </div>
+</div>
+
+<a href="http://github.com/peerxu"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub" /></a>
+
+</body>
+</html>
