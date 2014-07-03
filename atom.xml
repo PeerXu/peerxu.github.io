@@ -4,13 +4,39 @@
  <title>Tom Preston-Werner</title>
  <link href="http://peerxu.github.com/blog/atom.xml" rel="self"/>
  <link href="http://peerxu.github.com/blog/"/>
- <updated>2014-06-12T21:10:22+08:00</updated>
+ <updated>2014-07-03T21:05:31+08:00</updated>
  <id>http://peerxu.github.com/blog/</id>
  <author>
    <name>Peer Xu</name>
    <email>pppeerxu@gmail.com</email>
  </author>
 
+ 
+ <entry>
+   <title>Google IP Explorer使用教程</title>
+   <link href="http://tom.preston-werner.com/2014/07/03/google-ip-explorer-tutorial.html"/>
+   <updated>2014-07-03T00:00:00+08:00</updated>
+   <id>http://peerxu.github.com//2014/07/03/google-ip-explorer-tutorial</id>
+   <content type="html">&lt;h1&gt;Google IP Explorer使用教程&lt;/h1&gt;
+
+&lt;h2&gt;教程&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/PeerXu/google-ip-explorer&quot;&gt;Google IP Explorer&lt;/a&gt;是一个查找Google IP列表的工具. 可以单独使用, 也可以配合Goagent使用.&lt;/p&gt;
+
+&lt;p&gt;如果已经安装了gevent库, 那么可以大大地增加查找速度.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ git clone https://github.com/PeerXu/google-ip-explorer.git
+$ cd google-ip-explorer
+$ python google.py input.txt
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Google IP列表就在output.txt文件中.&lt;/p&gt;
+
+&lt;p&gt;如果你需要直接使用, 那么就挑一个IP直接在浏览器里面就能使用了.&lt;/p&gt;
+
+&lt;p&gt;如果你需要和Goagent配合使用的话, 那么就将&lt;code&gt;proxy.ini&lt;/code&gt; 下的&lt;code&gt;[iplist]&lt;/code&gt; 下的&lt;code&gt;google_cn&lt;/code&gt; 和 &lt;code&gt;google_hk&lt;/code&gt; 替换为output.txt的内容就可以了~&lt;/p&gt;
+</content>
+ </entry>
  
  <entry>
    <title>在浏览器中调用RESTful API Service</title>
@@ -414,14 +440,14 @@ pipework会智能地判断使用的是linux bridge还是ovs.
 &lt;h4&gt;docker容器与VLAN&lt;/h4&gt;
 
 &lt;p&gt;docker容器启动时, 默认是接入到docker0网桥上的. 这样就容易给大家造成一个假象, docker容器只能运行在单机的情况下.
-*但是显示并非如此.*
+&lt;em&gt;但是显示并非如此.&lt;/em&gt;
 我们可以通过pipework扩展docker的网络功能.&lt;/p&gt;
 
 &lt;p&gt;我们假设现在有2台服务器A和B, 交换机S.
 现在我们同时在A,B上创建虚拟网桥ovsbr0. 并且在服务器A上, 将网桥启用和配置IP地址.
 那么我们现在如果在A,B上,分别启动一个docker.
 同时通过pipework将docker接入到ovsbr0上, 并且配置与A服务器上ovs相同网段的IP地址.
-那么*两个docker互相之间就能够通信*了.
+那么&lt;em&gt;两个docker互相之间就能够通信&lt;/em&gt;了.
 很神奇有木有!!!&lt;/p&gt;
 
 &lt;p&gt;但是万恶的需求是不断进化的(呵呵). 不会都让你们的docker运行在一个网络环境下, 有的应用是需要互相隔离的.
@@ -582,7 +608,7 @@ $ ls
 0001-add-feature.patch  hello.py
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;下面来为大家讲解一下上面的_动作_要领.&lt;/p&gt;
+&lt;p&gt;下面来为大家讲解一下上面的&lt;em&gt;动作&lt;/em&gt;要领.&lt;/p&gt;
 
 &lt;p&gt;首先我们很大众的开局, 先创建一个my-feature.&lt;/p&gt;
 
@@ -876,28 +902,36 @@ queue.put('hello, world')
 
 &lt;p&gt;&lt;a href=&quot;http://linux.die.net/man/1/xcscope&quot; title=&quot;xcscope 介绍&quot;&gt;xcscope&lt;/a&gt;是 cscope在 emacs上面的一个插件, 提供构建 cscope数据库到代码跳转一条龙服务.&lt;/p&gt;
 
-&lt;p&gt;安装 cscope&lt;br&gt;
-    $ sudo apt-get install cscope&lt;/p&gt;
+&lt;p&gt;安装 cscope&lt;br&gt;&lt;/p&gt;
 
-&lt;p&gt;修改 xcscope.el, 以提供 python-mode支持(我的xcscope.el在/usr/share/emacs/site-lisp/下)
-    ...
-    (add-hook 'c-mode-hook (function cscope:hook))
-    (add-hook 'c++-mode-hook (function cscope:hook))
-    (add-hook 'dired-mode-hook (function cscope:hook))
-    &lt;em&gt;(add-hook 'python-mode-hook (function cscope:hook))&lt;/em&gt; ; 添加 xcscope的 python-mode 支持
-    (provide 'xcscope)
-    ...&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ sudo apt-get install cscope
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;启用 xcscope
-    $ cat ~/.emacs
-    ...
-    ;;; xcscope plugin
-    (load-file &quot;/usr/share/emacs/site-lisp/xcscope.el&quot;)
-    (require 'xcscope)&lt;/p&gt;
+&lt;p&gt;修改 xcscope.el, 以提供 python-mode支持(我的xcscope.el在/usr/share/emacs/site-lisp/下)&lt;/p&gt;
 
-&lt;p&gt;生成 cscope数据库
-    $ cd ~/opt/openstack/quantum/ # quantum路径
-    $ find . -name &quot;*.py&quot; | cscope -Rbq -i - # 生成 python文件的 cscope数据库&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;...
+(add-hook 'c-mode-hook (function cscope:hook))
+(add-hook 'c++-mode-hook (function cscope:hook))
+(add-hook 'dired-mode-hook (function cscope:hook))
+*(add-hook 'python-mode-hook (function cscope:hook))* ; 添加 xcscope的 python-mode 支持
+(provide 'xcscope)
+...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;启用 xcscope&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ cat ~/.emacs
+...
+;;; xcscope plugin
+(load-file &quot;/usr/share/emacs/site-lisp/xcscope.el&quot;)
+(require 'xcscope)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;生成 cscope数据库&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ cd ~/opt/openstack/quantum/ # quantum路径
+$ find . -name &quot;*.py&quot; | cscope -Rbq -i - # 生成 python文件的 cscope数据库
+&lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;打开 emacs, enjoy it.&lt;/p&gt;
 
@@ -933,10 +967,10 @@ C-c s u         Pop mark.
    <content type="html">&lt;h1&gt;git备忘录&lt;/h1&gt;
 
 &lt;ol&gt;
-&lt;li&gt;*删除远程分支* &lt;/br&gt;
+&lt;li&gt;&lt;em&gt;删除远程分支&lt;/em&gt; &lt;/br&gt;
  &lt;code&gt;git push &amp;lt;remote&amp;gt; :&amp;lt;branch&amp;gt;&lt;/code&gt; &lt;/br&gt;
  example: 删除origin仓库上的backup分支 &lt;code&gt;git push origin :backup&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;*通过指定ssh端口号添加远程仓库* &lt;/br&gt;
+&lt;li&gt;&lt;em&gt;通过指定ssh端口号添加远程仓库&lt;/em&gt; &lt;/br&gt;
  &lt;code&gt;git remote add ssh://&amp;lt;username&amp;gt;@&amp;lt;hostname&amp;gt;:&amp;lt;port&amp;gt;/&amp;lt;project_path&amp;gt;&lt;/code&gt; &lt;/br&gt;
  example: 添加用户名为pi, 端口为15002, 主机名为raspi.me, 项目路径为 /home/pi/project.git &lt;/br&gt;
  &lt;code&gt;git remote add ssh://pi@raspi.me:15002/home/pi/project.git&lt;/code&gt;&lt;/li&gt;

@@ -47,28 +47,36 @@
 
 <p><a href="http://linux.die.net/man/1/xcscope" title="xcscope 介绍">xcscope</a>是 cscope在 emacs上面的一个插件, 提供构建 cscope数据库到代码跳转一条龙服务.</p>
 
-<p>安装 cscope<br>
-    $ sudo apt-get install cscope</p>
+<p>安装 cscope<br></p>
 
-<p>修改 xcscope.el, 以提供 python-mode支持(我的xcscope.el在/usr/share/emacs/site-lisp/下)
-    ...
-    (add-hook 'c-mode-hook (function cscope:hook))
-    (add-hook 'c++-mode-hook (function cscope:hook))
-    (add-hook 'dired-mode-hook (function cscope:hook))
-    <em>(add-hook 'python-mode-hook (function cscope:hook))</em> ; 添加 xcscope的 python-mode 支持
-    (provide 'xcscope)
-    ...</p>
+<pre><code>$ sudo apt-get install cscope
+</code></pre>
 
-<p>启用 xcscope
-    $ cat ~/.emacs
-    ...
-    ;;; xcscope plugin
-    (load-file "/usr/share/emacs/site-lisp/xcscope.el")
-    (require 'xcscope)</p>
+<p>修改 xcscope.el, 以提供 python-mode支持(我的xcscope.el在/usr/share/emacs/site-lisp/下)</p>
 
-<p>生成 cscope数据库
-    $ cd ~/opt/openstack/quantum/ # quantum路径
-    $ find . -name "*.py" | cscope -Rbq -i - # 生成 python文件的 cscope数据库</p>
+<pre><code>...
+(add-hook 'c-mode-hook (function cscope:hook))
+(add-hook 'c++-mode-hook (function cscope:hook))
+(add-hook 'dired-mode-hook (function cscope:hook))
+*(add-hook 'python-mode-hook (function cscope:hook))* ; 添加 xcscope的 python-mode 支持
+(provide 'xcscope)
+...
+</code></pre>
+
+<p>启用 xcscope</p>
+
+<pre><code>$ cat ~/.emacs
+...
+;;; xcscope plugin
+(load-file "/usr/share/emacs/site-lisp/xcscope.el")
+(require 'xcscope)
+</code></pre>
+
+<p>生成 cscope数据库</p>
+
+<pre><code>$ cd ~/opt/openstack/quantum/ # quantum路径
+$ find . -name "*.py" | cscope -Rbq -i - # 生成 python文件的 cscope数据库
+</code></pre>
 
 <p>打开 emacs, enjoy it.</p>
 
@@ -100,11 +108,11 @@ C-c s u         Pop mark.
   <h2>Related Posts</h2>
   <ul class="posts">
     
+      <li><span>03 Jul 2014</span> &raquo; <a href="/2014/07/03/google-ip-explorer-tutorial.html">Google IP Explorer使用教程</a></li>
+    
       <li><span>12 Jun 2014</span> &raquo; <a href="/2014/06/12/send-request-to-restful-api-service-from-browser.html">在浏览器中调用RESTful API Service</a></li>
     
       <li><span>09 Jun 2014</span> &raquo; <a href="/2014/06/09/response-javascript-with-flask-restful-api.html">采用Flask-Restful插件返回Javascript脚本的两种方法</a></li>
-    
-      <li><span>23 May 2014</span> &raquo; <a href="/2014/05/23/copy-file-from-host-to-docker.html">从主机复制文件到Docker的几种方法</a></li>
     
   </ul>
 </div>

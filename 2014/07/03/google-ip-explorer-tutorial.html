@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
 <head>
    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-   <title>在emacs上使用中文输入法fcitx</title>
+   <title>Google IP Explorer使用教程</title>
    <meta name="author" content="Peer Xu" />
    <link href="http://peerxu.github.com/" rel="alternate" title="Peer Studio Blog" type="application/atom+xml" />
 
@@ -37,23 +37,36 @@
   </div>
   
   <div id="post">
-<h2>在emacs上使用中文输入法fcitx</h2>
-<p>在ubuntu 12.04中, 无法在emacs调用fcitx输入法. 所以给出一下解决方案.</p>
-<p>1. 在 ~/.emacs 文件中添加一下代码, 屏蔽C-SPC快捷键, 其替代快捷键为: C-@</p>
-<pre><code>(global-set-key (kbd "C-SPC") nil)</code></pre>
-<p>2. 在 ~/.bashrc 文件中添加一行</p>
-<pre><code>alias emacs="LC_CTYPE='zh_CN.UTF-8' emacs"</code></pre>
+<h1>Google IP Explorer使用教程</h1>
+
+<h2>教程</h2>
+
+<p><a href="https://github.com/PeerXu/google-ip-explorer">Google IP Explorer</a>是一个查找Google IP列表的工具. 可以单独使用, 也可以配合Goagent使用.</p>
+
+<p>如果已经安装了gevent库, 那么可以大大地增加查找速度.</p>
+
+<pre><code>$ git clone https://github.com/PeerXu/google-ip-explorer.git
+$ cd google-ip-explorer
+$ python google.py input.txt
+</code></pre>
+
+<p>Google IP列表就在output.txt文件中.</p>
+
+<p>如果你需要直接使用, 那么就挑一个IP直接在浏览器里面就能使用了.</p>
+
+<p>如果你需要和Goagent配合使用的话, 那么就将<code>proxy.ini</code> 下的<code>[iplist]</code> 下的<code>google_cn</code> 和 <code>google_hk</code> 替换为output.txt的内容就可以了~</p>
+
 </div>
 
 <div id="related">
   <h2>Related Posts</h2>
   <ul class="posts">
     
-      <li><span>03 Jul 2014</span> &raquo; <a href="/2014/07/03/google-ip-explorer-tutorial.html">Google IP Explorer使用教程</a></li>
-    
       <li><span>12 Jun 2014</span> &raquo; <a href="/2014/06/12/send-request-to-restful-api-service-from-browser.html">在浏览器中调用RESTful API Service</a></li>
     
       <li><span>09 Jun 2014</span> &raquo; <a href="/2014/06/09/response-javascript-with-flask-restful-api.html">采用Flask-Restful插件返回Javascript脚本的两种方法</a></li>
+    
+      <li><span>23 May 2014</span> &raquo; <a href="/2014/05/23/copy-file-from-host-to-docker.html">从主机复制文件到Docker的几种方法</a></li>
     
   </ul>
 </div>
