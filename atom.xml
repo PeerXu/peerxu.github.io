@@ -4,7 +4,7 @@
  <title>Tom Preston-Werner</title>
  <link href="http://peerxu.github.com/blog/atom.xml" rel="self"/>
  <link href="http://peerxu.github.com/blog/"/>
- <updated>2014-07-08T12:05:32+08:00</updated>
+ <updated>2014-07-08T12:12:33+08:00</updated>
  <id>http://peerxu.github.com/blog/</id>
  <author>
    <name>Peer Xu</name>
@@ -21,8 +21,9 @@
 
 &lt;p&gt;0x00&lt;/p&gt;
 
-&lt;p&gt;注意: 本文仅仅探讨技术, 读者任何行为与本文无关
-注意: 本文探讨技术已经通过正规渠道报告&lt;/p&gt;
+&lt;p&gt;注意: 本文仅仅探讨技术, 读者任何行为与本文无关&lt;/p&gt;
+
+&lt;p&gt;注意: 本文探讨技术已经通过正规渠道报告&lt;/p&gt;
 
 &lt;p&gt;0x01&lt;/p&gt;
 
@@ -34,7 +35,7 @@
 
 &lt;ol&gt;
 &lt;li&gt;号码必须存在阿里移动后台&lt;/li&gt;
-&lt;li&gt;号码必须没有被被的用户购买&lt;/li&gt;
+&lt;li&gt;号码必须没有被别的用户购买&lt;/li&gt;
 &lt;/ol&gt;
 
 
