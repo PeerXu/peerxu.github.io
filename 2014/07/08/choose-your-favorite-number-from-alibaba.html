@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
 <head>
    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-   <title>机器学习笔记 -- k-临近算法</title>
+   <title>老板, 要挑个号码么?</title>
    <meta name="author" content="Peer Xu" />
    <link href="http://peerxu.github.com/" rel="alternate" title="Peer Studio Blog" type="application/atom+xml" />
 
@@ -37,70 +37,34 @@
   </div>
   
   <div id="post">
-<h1>机器学习笔记 -- k-临近算法</h1>
+<h1>老板, 要挑个号码么?</h1>
 
-<p>k-临近算法是一种分类算法, 计算输入值与各个特征值之间距离来进行分类.</p>
+<p>0x00</p>
 
-<p>简单的概括一下算法的思路就是:</p>
+<p>注意: 本文仅仅探讨技术, 读者任何行为与本文无关
+注意: 本文探讨技术已经通过正规渠道报告</p>
+
+<p>0x01</p>
+
+<p>本文讲的是如何在阿里移动中随意挑选喜好的号码</p>
+
+<p>0x02</p>
+
+<p>挑选的几个条件:</p>
 
 <ol>
-<li>算出输入值与各个特征值之间的距离, 按升序排序.</li>
-<li>获取前k个分类</li>
-<li>选择出现次数最高的分类, 就是输入值所属的分类.</li>
+<li>号码必须存在阿里移动后台</li>
+<li>号码必须没有被被的用户购买</li>
 </ol>
 
 
-<p>k-临近算法优缺点分析</p>
+<p>0x03</p>
 
-<ul>
-<li>优点: 精度高, 对异常值不敏感, 无数据输入假定.</li>
-<li>缺点: 计算复杂度高, 空间复杂度高.</li>
-<li>适用数据范围: <strong>数值型</strong> 和 <strong>标称型</strong></li>
-</ul>
+<p>改dom大法</p>
 
+<p>0x04</p>
 
-<p>以下通过clojure来实现kNN算法:</p>
-
-<pre><code>(defn create-test-data []  ; 生成测试数据
-  '(((0.1 0.1)
-     (0.0 0.0)
-     (0.2 0.2)
-     (1.1 1.1)
-     (1.0 1.0))
-    (:a :a :a :b :b)))
-
-(defn distance [xs ys]  ; 计算两个向量之间的距离
-  (. java.lang.Math sqrt (apply + (map #(* % %) (map #(- %1 %2) xs ys)))))
-
-(defn count-list-element [xs]  ; 计算列表中每个元素的出现次数
-  (reduce
-   (fn [cnts x]
-    (let [n (x cnts)]
-     (if (= n nil)
-      (assoc cnts x 1)
-      (assoc cnts x (+ n 1)))))
-   {}
-   xs))
-
-(defn kNN [inX dataSet labels k]
- (let* [label-groups (map #(concat [%1] %2) labels dataSet)  ; 将分类与特征值合并, 方便后续处理
-        label-groups-sort-by-distance (sort-by  ; 计算输入值与特征值的距离并且排序
-                                       #(distance inX (rest %1)) label-groups)
-        k-labels (take k (map first label-groups-sort-by-distance))  ; 获取前K个分类
-        labels-group-by-count (sort-by first (count-list-element k-labels))]  ; 计算每个分类的出现次数
-       (-&gt; labels-group-by-count  ; 返回出现次数最多的分类
-           reverse
-           first
-           first)))
-
-(defn -main [&amp; args]
-  (let [[groups labels] (create-dataset)]
-    (println (kNN [0.0 0.0] groups labels 3))))
-</code></pre>
-
-<p>附带上我的<a href="https://github.com/PeerXu/machine-learning-clojure">机器学习笔记</a></p>
-
-<p>感谢阅读</p>
+<p>enjoy yourself.</p>
 
 </div>
 
@@ -108,11 +72,11 @@
   <h2>Related Posts</h2>
   <ul class="posts">
     
-      <li><span>08 Jul 2014</span> &raquo; <a href="/2014/07/08/choose-your-favorite-number-from-alibaba.html">老板, 要挑个号码么?</a></li>
-    
       <li><span>03 Jul 2014</span> &raquo; <a href="/2014/07/03/google-ip-explorer-tutorial.html">Google IP Explorer使用教程</a></li>
     
       <li><span>12 Jun 2014</span> &raquo; <a href="/2014/06/12/send-request-to-restful-api-service-from-browser.html">在浏览器中调用RESTful API Service</a></li>
+    
+      <li><span>09 Jun 2014</span> &raquo; <a href="/2014/06/09/response-javascript-with-flask-restful-api.html">采用Flask-Restful插件返回Javascript脚本的两种方法</a></li>
     
   </ul>
 </div>
