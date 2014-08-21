@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
 <head>
    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-   <title>在树莓派的archlinux中安装lxde</title>
+   <title>SQLAlchemy多对多关系使用方法</title>
    <meta name="author" content="Peer Xu" />
    <link href="http://peerxu.github.com/" rel="alternate" title="Peer Studio Blog" type="application/atom+xml" />
 
@@ -37,27 +37,90 @@
   </div>
   
   <div id="post">
-<h2>在树莓派的archlinux中安装lxde</h2>
-<p>archlinux是一个很好的linux发行版, 比raspbian好多了. 况且archlinux的yaourt工具实在是太强大了.</p>
-<p>好了,废话不多说了, 直接上代码:</p>
-<pre><code># pacman -Syu
-# pacman -S xf86-video-fbdev lxde xorg-xinit dbus
-# cat &lt;&lt; EOF &gt; ~/.xinitrc
-exec startlxde
-EOF
-# startx</code></pre>
-<p>经过漫长的等待之后就可以启动这个 <em>丑陋的</em> 桌面了.</p>
+<h1>SQLAlchemy多对多关系使用方法</h1>
+
+<p>SQLAlchemy是一个Python的数据库ORM框架.</p>
+
+<p>多对多数据模型是比较常用的数据关系.</p>
+
+<p>下面采用文章(<code>Page</code>)和标签(<code>Tag</code>)的关系来作为介绍范例.</p>
+
+<ol>
+<li>一篇文章可以通过多个标签来描述概要信息.</li>
+<li>一个标签可以对应多篇文章.</li>
+</ol>
+
+
+<p>首先我们先创建两个Sqlalchemy的模型类:</p>
+
+<pre><code>class Page(Base):
+    __tablename__ = 'page'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+
+class Tag(Base):
+    __tablename__ = 'tag'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+</code></pre>
+
+<p>这里创建了两个模型, 分别是<code>Page</code>和<code>Tag</code>.</p>
+
+<p>添加一个需求: 我们能够在<code>Page</code>对象中直接获取关联的<code>Tag</code>列表</p>
+
+<p>那么我们就需要在<code>Page</code>模型中添加:</p>
+
+<pre><code>class Page(Base):
+...
+    tags = relationship('Tag', secondary=association_table)
+...
+</code></pre>
+
+<p>这里就通过指定<code>relationship</code>来指定<code>tags</code>属性是指向<code>Tag</code>对象的, 关联规则是通过<code>association_table</code>的关联关系.</p>
+
+<p>然后就是需要创建关联规则表<code>association_table</code>.</p>
+
+<pre><code>association_table = Table(
+    'association', Base.metadata,
+    Column('page_id', Integer, ForeignKey('page.id')),
+    Column('tag_id', Integer, ForeignKey('tag.id'))
+)
+</code></pre>
+
+<p>这里就创建一个<code>Page-Tag</code>关联表, 通过将<code>page_id</code>作为<code>Page</code>对象的外键. 同理<code>tag_id</code>作为<code>Tag</code>对象的外键.</p>
+
+<p>至此, 我们已经完成多对多模型的创建.</p>
+
+<p>接下来就是多对多模型的CRUD了.</p>
+
+<pre><code>page = Page(name='Python API Page')
+api_tag = Tag(name='api')
+python_tag = Tag(name='python')
+
+# append tag to page
+page.tags.append(api_tag)
+page.tags.append(python_tag)
+
+# read tag from page
+print [tag.name for tag in page.tags]
+
+# remove tag from page
+page.tags.remove(python_tag)
+</code></pre>
+
+<p>以上就是Sqlalchemy关于多对多模型操作方式~</p>
+
 </div>
 
 <div id="related">
   <h2>Related Posts</h2>
   <ul class="posts">
     
-      <li><span>21 Aug 2014</span> &raquo; <a href="/2014/08/21/sqlalchemy-many-to-many-relationship.html">SQLAlchemy多对多关系使用方法</a></li>
-    
       <li><span>08 Jul 2014</span> &raquo; <a href="/2014/07/08/choose-your-favorite-number-from-alibaba.html">老板, 要挑个号码么?</a></li>
     
       <li><span>03 Jul 2014</span> &raquo; <a href="/2014/07/03/google-ip-explorer-tutorial.html">Google IP Explorer使用教程</a></li>
+    
+      <li><span>12 Jun 2014</span> &raquo; <a href="/2014/06/12/send-request-to-restful-api-service-from-browser.html">在浏览器中调用RESTful API Service</a></li>
     
   </ul>
 </div>
