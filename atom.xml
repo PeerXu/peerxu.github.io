@@ -4,7 +4,7 @@
  <title>Tom Preston-Werner</title>
  <link href="http://peerxu.github.com/blog/atom.xml" rel="self"/>
  <link href="http://peerxu.github.com/blog/"/>
- <updated>2014-08-21T23:48:15+08:00</updated>
+ <updated>2014-08-22T09:06:53+08:00</updated>
  <id>http://peerxu.github.com/blog/</id>
  <author>
    <name>Peer Xu</name>
@@ -89,6 +89,82 @@ page.tags.remove(python_tag)
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;以上就是Sqlalchemy关于多对多模型操作方式~&lt;/p&gt;
+
+&lt;p&gt;下面贴上完整的代码:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;import sqlalchemy as sqla
+import sqlalchemy.orm as sqlorm
+from sqlalchemy.ext.declarative import declarative_base as sqla_declarative_base
+
+Base = sqla_declarative_base()
+engine = sqla.create_engine('sqlite:///test.db', echo=True)
+
+association_table = sqla.Table(
+    'association', Base.metadata,
+    sqla.Column('page_id', sqla.Integer, sqla.ForeignKey('page.id')),
+    sqla.Column('tag_id', sqla.Integer, sqla.ForeignKey('tag.id'))
+)
+
+class Page(Base):
+    __tablename__ = 'page'
+    id = sqla.Column(sqla.Integer, primary_key=True)
+    name = sqla.Column(sqla.String)
+    tags = sqlorm.relationship('Tag', secondary=association_table)
+
+class Tag(Base):
+    __tablename__ = 'tag'
+    id = sqla.Column(sqla.Integer, primary_key=True)
+    name = sqla.Column(sqla.String)
+    pages = sqlorm.relationship('Page', secondary=association_table)
+
+Base.metadata.bind = engine
+Base.metadata.create_all()
+
+Session = sqlorm.scoped_session(sqlorm.sessionmaker(bind=engine))
+
+def save_page():
+    sess = Session()
+    try:
+        page = Page(name='Python API Page')
+        sess.add(page)
+
+        sess.flush()
+        sess.commit()
+    finally:
+        sess.close()
+
+def add_tag():
+   sess = Session()
+   try:
+       python_tag = Tag(name='python')
+       api_tag = Tag(name='api')
+       sess.add(python_tag)
+       sess.add(api_tag)
+       page = sess.query(Page).first()
+       page.tags.append(python_tag)
+       page.tags.append(api_tag)
+
+       sess.flush()
+       sess.commit()
+   finally:
+       sess.close()
+
+def remove_tag():
+    sess = Session()
+    try:
+        page = sess.query(Page).first()
+        api_tag = sess.query(Tag).filter(Tag.name=='api').first()
+        page.tags.remove(api_tag)
+        sess.flush()
+        sess.commit()
+    finally:
+        sess.close()
+
+if __name__ == '__main__':
+    save_page()
+    add_tag()
+    remove_tag()
+&lt;/code&gt;&lt;/pre&gt;
 </content>
  </entry>
  
