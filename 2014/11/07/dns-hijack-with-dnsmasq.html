@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
 <head>
    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-   <title>clojure-py gevent wsgi hello world</title>
+   <title>一次无意识的DNS劫持</title>
    <meta name="author" content="Peer Xu" />
    <link href="http://peerxu.github.com/" rel="alternate" title="Peer Studio Blog" type="application/atom+xml" />
 
@@ -37,35 +37,55 @@
   </div>
   
   <div id="post">
-<h2>clojure-py gevent wsgi hello world</h2>
-<p>clojure-py项目是clojure语言在pure python上的实现. 可以在github上找到该项目或者直接用easy_install安装.</p>
-<p>server.clj</p>
-<pre>
-(require 'gevent.wsgi)
+<h1>一次无意识的DNS劫持</h1>
 
-(defn hello-handler [env res]
-    (res "200 OK" (list '("Content-Type" "text/html")))
-    ["hello, world"])
+<p>0x00 前言</p>
 
-(def httpd (gevent.wsgi/WSGIServer (py/tuple '("localhost" 8080))
-                                   hello-handler))
+<p>发现DNS劫持的缘由在于部署Dnsmasq的过程中, 同网段内的Windows主机的DNS地址被改变成Dnsmasq服务所在的主机IP地址. 所有就有了这篇分析报告.</p>
 
-(println "listen on localhost:8080")
-(.serve_forever httpd)
-</pre>
-<p>保存好之后, 执行: <code>clojurepy server.clj</code></p>
-<p>enjoy it.</p>
+<p>0x01 现象</p>
+
+<p>在某个子网下部署dnsmasq服务, 过了一会儿, 其他用Windows的同事就大喊: XXX, 为什么我不能上网!</p>
+
+<p>经过一轮排查, 发现是使用DHCP获取IP地址的Windows用户, DNS地址被改成了部署Dnsmasq服务的服务器IP地址.</p>
+
+<p>以为是Dnsmasq的BUG(其实还真算Dnsmasq的BUG). 那么就添加了<code>--port=0</code>的启动参数, 表示不提供DNS服务, 然后再添加<code>--dhcp-option=6,114.114.114.114</code>指定DNS服务器IP地址(离真相已经很近了).</p>
+
+<p>但是因为公司默认的DHCP并非<code>114.114.114.114</code>, 而是某个不知名的DNS服务器地址. 所以又有人大喊为什么我的DNS变成了<code>114.114.114.114</code>.</p>
+
+<p>到现在我才意识到, 问题的严重性.</p>
+
+<p>我成功地将DNS劫持了.</p>
+
+<p>别问我劫持了DNS能够做什么.</p>
+
+<p>0x02 分析</p>
+
+<p>发生劫持事件后, 我添加Dnsmasq启动参数<code>--no-daemon</code>, 表示调试模式.</p>
+
+<p>然后启动通过<code>tcpdump -n -i eth0 -vvv port 68</code>来捕捉DHCP请求.</p>
+
+<p>经过观察, 发现Windows DHCP 客户端会定时广播<code>DHCPINFORM</code>, 而Dnsmasq会响应并非在<code>dhcp-hostsfile</code>列表里面的主机. 响应的结果就是发送<code>DHCPACK</code>. 而<code>DHCPACK</code>上又带上了<code>Domain Name Server Option</code>字段.</p>
+
+<p>所以, Windows DHCP Client会将Dnsmasq返回的DHCPACK包中带上的DNS地址设置为自己的DNS地址.</p>
+
+<p>0x03 结论</p>
+
+<p>你还敢用Windows的DHCP吗?</p>
+
+<p>当你无法保证所在网络绝对安全的情况下, 请手动设置DNS地址.</p>
+
 </div>
 
 <div id="related">
   <h2>Related Posts</h2>
   <ul class="posts">
     
-      <li><span>07 Nov 2014</span> &raquo; <a href="/2014/11/07/dns-hijack-with-dnsmasq.html">一次无意识的DNS劫持</a></li>
-    
       <li><span>21 Aug 2014</span> &raquo; <a href="/2014/08/21/sqlalchemy-many-to-many-relationship.html">SQLAlchemy多对多关系使用方法</a></li>
     
       <li><span>08 Jul 2014</span> &raquo; <a href="/2014/07/08/choose-your-favorite-number-from-alibaba.html">老板, 要挑个号码么?</a></li>
+    
+      <li><span>03 Jul 2014</span> &raquo; <a href="/2014/07/03/google-ip-explorer-tutorial.html">Google IP Explorer使用教程</a></li>
     
   </ul>
 </div>

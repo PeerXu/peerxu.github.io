@@ -4,13 +4,58 @@
  <title>Tom Preston-Werner</title>
  <link href="http://peerxu.github.com/blog/atom.xml" rel="self"/>
  <link href="http://peerxu.github.com/blog/"/>
- <updated>2014-08-22T09:06:53+08:00</updated>
+ <updated>2014-11-07T23:34:42+08:00</updated>
  <id>http://peerxu.github.com/blog/</id>
  <author>
    <name>Peer Xu</name>
    <email>pppeerxu@gmail.com</email>
  </author>
 
+ 
+ <entry>
+   <title>一次无意识的DNS劫持</title>
+   <link href="http://tom.preston-werner.com/2014/11/07/dns-hijack-with-dnsmasq.html"/>
+   <updated>2014-11-07T00:00:00+08:00</updated>
+   <id>http://peerxu.github.com//2014/11/07/dns-hijack-with-dnsmasq</id>
+   <content type="html">&lt;h1&gt;一次无意识的DNS劫持&lt;/h1&gt;
+
+&lt;p&gt;0x00 前言&lt;/p&gt;
+
+&lt;p&gt;发现DNS劫持的缘由在于部署Dnsmasq的过程中, 同网段内的Windows主机的DNS地址被改变成Dnsmasq服务所在的主机IP地址. 所有就有了这篇分析报告.&lt;/p&gt;
+
+&lt;p&gt;0x01 现象&lt;/p&gt;
+
+&lt;p&gt;在某个子网下部署dnsmasq服务, 过了一会儿, 其他用Windows的同事就大喊: XXX, 为什么我不能上网!&lt;/p&gt;
+
+&lt;p&gt;经过一轮排查, 发现是使用DHCP获取IP地址的Windows用户, DNS地址被改成了部署Dnsmasq服务的服务器IP地址.&lt;/p&gt;
+
+&lt;p&gt;以为是Dnsmasq的BUG(其实还真算Dnsmasq的BUG). 那么就添加了&lt;code&gt;--port=0&lt;/code&gt;的启动参数, 表示不提供DNS服务, 然后再添加&lt;code&gt;--dhcp-option=6,114.114.114.114&lt;/code&gt;指定DNS服务器IP地址(离真相已经很近了).&lt;/p&gt;
+
+&lt;p&gt;但是因为公司默认的DHCP并非&lt;code&gt;114.114.114.114&lt;/code&gt;, 而是某个不知名的DNS服务器地址. 所以又有人大喊为什么我的DNS变成了&lt;code&gt;114.114.114.114&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;到现在我才意识到, 问题的严重性.&lt;/p&gt;
+
+&lt;p&gt;我成功地将DNS劫持了.&lt;/p&gt;
+
+&lt;p&gt;别问我劫持了DNS能够做什么.&lt;/p&gt;
+
+&lt;p&gt;0x02 分析&lt;/p&gt;
+
+&lt;p&gt;发生劫持事件后, 我添加Dnsmasq启动参数&lt;code&gt;--no-daemon&lt;/code&gt;, 表示调试模式.&lt;/p&gt;
+
+&lt;p&gt;然后启动通过&lt;code&gt;tcpdump -n -i eth0 -vvv port 68&lt;/code&gt;来捕捉DHCP请求.&lt;/p&gt;
+
+&lt;p&gt;经过观察, 发现Windows DHCP 客户端会定时广播&lt;code&gt;DHCPINFORM&lt;/code&gt;, 而Dnsmasq会响应并非在&lt;code&gt;dhcp-hostsfile&lt;/code&gt;列表里面的主机. 响应的结果就是发送&lt;code&gt;DHCPACK&lt;/code&gt;. 而&lt;code&gt;DHCPACK&lt;/code&gt;上又带上了&lt;code&gt;Domain Name Server Option&lt;/code&gt;字段.&lt;/p&gt;
+
+&lt;p&gt;所以, Windows DHCP Client会将Dnsmasq返回的DHCPACK包中带上的DNS地址设置为自己的DNS地址.&lt;/p&gt;
+
+&lt;p&gt;0x03 结论&lt;/p&gt;
+
+&lt;p&gt;你还敢用Windows的DHCP吗?&lt;/p&gt;
+
+&lt;p&gt;当你无法保证所在网络绝对安全的情况下, 请手动设置DNS地址.&lt;/p&gt;
+</content>
+ </entry>
  
  <entry>
    <title>SQLAlchemy多对多关系使用方法</title>
