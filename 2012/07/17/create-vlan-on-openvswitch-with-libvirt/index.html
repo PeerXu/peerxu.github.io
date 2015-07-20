@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>通过openvswitch划分vlan &#8211; PeerStudio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="我的世界">
+    <meta name="author" content="Peer Xu">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://blog.e3rp4y.me/2012/07/17/create-vlan-on-openvswitch-with-libvirt/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css?201507200942" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="通过openvswitch划分vlan">
+    <meta property="og:description" content="我的世界">
+    <meta property="og:url" content="http://blog.e3rp4y.me/2012/07/17/create-vlan-on-openvswitch-with-libvirt/">
+    <meta property="og:site_name" content="PeerStudio">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    
+    <meta name="twitter:title" content="通过openvswitch划分vlan" />
+    <meta name="twitter:description" content="我的世界" />
+    <meta name="twitter:url" content="http://blog.e3rp4y.me/2012/07/17/create-vlan-on-openvswitch-with-libvirt/" />
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+        
+    
+</head>
+
+<body class="site">
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://blog.e3rp4y.me" class="site-title">PeerStudio</a>
+      <nav class="site-nav">
+        <a href="/about/">About</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>通过openvswitch划分vlan</h1>
+  <span class="post-meta">Jul 17, 2012</span><br>
+    
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
+</div>
+
+<article class="post-content">
+  <p>目的: 在ubuntu12.04上通过openvswitch为vm划分vlan. 其中vm的管理是通过libvirt实现.</p>
+<p>首先说明一下为什么要选择libvirt的版本是0.9.13, 因为ubuntu 12.04的源中, 支持的libvirt版本是0.9.8, 但是支持openvswitch的libvirt版本是从0.9.11开始. 所以最后我选择的libvirt版本是目前最新的libvirt 0.9.13.</p>
+<p>教程会分为一下几步:</p>
+<ol>
+	<li>编译, 安装libvirt 0.9.13</li>
+	<li>编译, 安装openvswitch 1.6.1</li>
+	<li>启动openvswitch</li>
+	<li>创建openvswitch网桥, 划分子网</li>
+	<li>启动vm到指定网桥</li>
+</ol>
+<h3>1. 编译, 安装libvirt 0.9.13</h3>
+<pre><code>$ ./autogen.sh --system
+$ make
+$ sudo make install</code></pre>
+<p><strong>注意1</strong>: 在执行 <code>autogen.sh</code> 脚本是时候, 添加上的 <code>--system</code> , 是为了让编译时候指定到对应的系统文件夹.<br />
+可以发现其实是执行了一下的命令 <code>./configure with --prefix=/usr --sysconfdir=/etc --localstatedir=/var --libdir=/usr/lib</code> , 上面的参数是有用的. 各位请记下来.</p>
+<p><strong>注意2</strong>: 在执行autogen.sh的时候, 会提示缺少什么包, 有些名字是比较诡异的. google + apt-get.</p>
+<p><strong>注意3</strong>: 由于libvirt是编译安装的, 所以在系统启动的时候不会自启动. 请手动启动libvirtd进程(root权限).</p>
+<h3>2. 编译,安装openvswitch 1.6.1</h3>
+<pre><code>$ sudo apt-get install linux-headers-`uname -r`
+$ ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --libdir=/usr/lib --with-linux=/lib/modules/`unam -r`/build
+$ make
+$ sudo make install</code></pre>
+<p><strong>注意1</strong>: 在linux kernel 3.3或以上, 在执行configure时, 不需要加入 &#8212;with-linux 参数.</p>
+<h3>3. 启动openvswitch</h3>
+<p>在linux kernel 3.3版本以前, 需要先将bridge模块卸载, 再载入刚刚编译的openvswitch模块.</p>
+<pre><code>lsmod | grep bridge &gt; /dev/null &amp;&amp; sudo rmmod bridge
+insmod datapath/linux/openvswitch_mod.ko
+insmod datapath/linux/brcompat_mod.ko</code></pre>
+<p>在初次启动openvswitch需要初始化一下数据库:</p>
+<pre><code>$ sudo mkdir -p /usr/local/etc/openvswitch
+$ ovsdb-tool create /usr/local/etc/openvswitch/conf.db vswitchd/vswitch.ovsschema</code></pre>
+<p>之后就是启动openvswitch的服务进程</p>
+<pre><code>$ sudo ovsdb-server --remote=punix:/usr/local/var/run/openvswitch/db.sock --remote=db:Open_vSwitch,manager_options --pidfile --detach
+$ sudo ovs-vsctl --no-wait init
+$ sudo ovs-vswitchd --pidfile --detach
+$ sudo ovs-brcompated --pidfile --detach</code></pre>
+<p>到此, 服务应该启动完毕. 我们可以用 <code>ovs-vsctl show</code> 来验证一下是否启动成功了.</p>
+<h3>4. 创建openvswitch网桥,划分子网</h3>
+<p>先划分好网络: 存在PC1, PC2. 在PC1上启动VMa, VMb, 在PC2上启动 VMc, VMd.<br />
+VMa, VMc 划分到VLAN 1. VMb, VMd划分到VLAN 2.</p>
+<p>在PC1上</p>
+<pre><code>$ sudo brctl addbr br0
+$ sudo brctl addif br0 eth0
+$ sudo ifconfig eth0 0.0.0.0
+$ sudo ifconfig br0 192.168.1.100/24 up</code></pre>
+<p>在PC2上</p>
+<pre><code>$ sudo brctl addbr br0
+$ sudo brctl addif br0 eth0
+$ sudo ifconfig eth0 0.0.0.0
+$ sudo ifconfig br0 192.168.1.101/24 up</code></pre>
+<h3>5. 启动vm到指定网桥</h3>
+<p>将启动VM的xml文件中的网络配置改为使用bridge, 指向br0.<br />
+之后启动虚拟机, 将VMa, VMb, VMc, VMd的ip对应改为192.168.1.2/24, 192.168.1.3/24, 192.168.1.4/24, 192.168.1.5/24.<br />
+用简单的ping命令就可以测试VLAN了.<br />
+VMa与VMc之间能够互通.<br />
+VMb与VMd之间能够互通.<br />
+但是VMa与VMb之间不能互通.<br />
+这样就实现了简单的VLAN..</p>
+</article>
+
+
+
+
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Weibo: <a href="http://weibo.com/peerstudio">@eerpay</a>.<br>
+      Twitter: <a href="https://twitter.com/PeerXu">@PeerXu</a>.<br>
+    </small>
+    <small>
+      Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+</footer>
+
+</body>
+</html>

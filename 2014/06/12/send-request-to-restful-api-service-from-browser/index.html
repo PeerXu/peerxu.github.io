@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>在浏览器中调用RESTful API Service &#8211; PeerStudio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="我的世界">
+    <meta name="author" content="Peer Xu">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://blog.e3rp4y.me/2014/06/12/send-request-to-restful-api-service-from-browser/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css?201507200942" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="在浏览器中调用RESTful API Service">
+    <meta property="og:description" content="我的世界">
+    <meta property="og:url" content="http://blog.e3rp4y.me/2014/06/12/send-request-to-restful-api-service-from-browser/">
+    <meta property="og:site_name" content="PeerStudio">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    
+    <meta name="twitter:title" content="在浏览器中调用RESTful API Service" />
+    <meta name="twitter:description" content="我的世界" />
+    <meta name="twitter:url" content="http://blog.e3rp4y.me/2014/06/12/send-request-to-restful-api-service-from-browser/" />
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+        
+    
+</head>
+
+<body class="site">
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://blog.e3rp4y.me" class="site-title">PeerStudio</a>
+      <nav class="site-nav">
+        <a href="/about/">About</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>在浏览器中调用RESTful API Service</h1>
+  <span class="post-meta">Jun 12, 2014</span><br>
+    
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
+</div>
+
+<article class="post-content">
+  <p><strong>以下内容请自备梯子</strong></p>
+
+<p><a href="http://zh.wikipedia.org/wiki/REST">RESTful</a> API Service是以REST风格提供的API Service.</p>
+
+<p>通常情况下会采用到HTTP的GET, POST, DELETE, PUT等方法.</p>
+
+<p>因为浏览器的正常访问手段(直接通过连接访问或Form提交), 无法向Service发起DELETE, PUT等方法的请求.</p>
+
+<p>所以只能通过<a href="https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest"><code>XMLHttpRequest</code></a>对象来提供完整交互操作.</p>
+
+<p>那么最后的问题就回归到, 如果使用<code>XMLHttpRequest</code>对象上了.</p>
+
+<p>参考上面给出的<a href="https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest"><code>XMLHttpRequest</code></a>的链接, 我们学习到使用方法.</p>
+
+<pre><code>// javascript
+var xhr = new XMLHttpRequest();
+xhr.open("DELETE", "http://localhost:8888/messages/1");
+xhr.send();
+</code></pre>
+
+<p>上面就是<code>XMLHttpRequest</code>的简单使用方法. 当然, 这里只是发送了, 并完成后续的处理. 我们现在只关心发送.</p>
+
+<p>那么在这里也奉上Server端的源代码.</p>
+
+<pre><code>#! /usr/bin/env python2.7
+# filename: app.py
+
+from flask import Flask, make_response
+
+app = Flask(__name__)
+
+@app.route('/messages/&lt;int:msg_id&gt;', methods=['DELETE'])
+def delete_message(msg_id):
+  return 'delete message #%s' % msg_id
+
+app.run(debug=True, port=8888)
+</code></pre>
+
+<p>上面就是服务端的代码.</p>
+
+<p>但是通过浏览器console发起请求的时候, 我们可以观察到一下错误提示:</p>
+
+<pre><code>OPTIONS http://localhost:8888/messages/1 No 'Access-Control-Allow-Origin' header is present on the requested resource. Origin 'https://developer.mozilla.org' is therefore not allowed access.
+XMLHttpRequest cannot load http://localhost:8888/messages/1. No 'Access-Control-Allow-Origin' header is present on the requested resource. Origin 'https://developer.mozilla.org' is therefore not allowed access.
+</code></pre>
+
+<p>这两行错误提示表明, 我们需要在服务端上, 在返回<code>Response</code>对象时候, 在<code>Response Header</code>上提供<code>Access-Control-Allow-Origin</code>字段.</p>
+
+<p>并且通过Chrome Developer Tools的Network中观察到, <code>XMLHttpRequest</code>会发送HTTP的<code>OPTIONS</code> Request到服务端上. 通过这次Request的Response的<code>Access-Control-Allow-Origin</code>和<code>Access-Control-Allow-Methods</code>这两个字段来决定, xhr是否有对该域发起请求的权限.</p>
+
+<p>其中, <code>Access-Control-Allow-Origin</code>字段代表的是, 是否允许本域向API Service发起请求. <code>*</code>代表所有域都能发起请求.</p>
+
+<p>而<code>Access-Control-Allow-Methods</code>则代表的允许请求的方法有那些.</p>
+
+<p>那么这时我们就<strong>将就地</strong>添加<code>Access-Control-Allow-Origin</code>字段为<code>*</code> **(注意: 请在生产环境中谨慎添加允许跨域的主机), 添加<code>Access-Control-Allow-Methods</code>字段为<code>POST,DELETE,PUT,GET</code>.</p>
+
+<p>再次修改服务端代码:</p>
+
+<pre><code>#! /usr/bin/env python2.7
+# filename: app.py
+
+from flask import Flask, make_response
+
+app = Flask(__name__)
+
+@app.route('/messages/&lt;int:msg_id&gt;', methods=['OPTIONS'])
+def options_message(msg_id):
+  resp = make_response('')
+  resp.headers.extend({
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST,DELETE,PUT,GET'
+  })
+  return resp
+
+@app.route('/messages/&lt;int:msg_id&gt;', methods=['DELETE'])
+def delete_message(msg_id):
+  resp = make_response('delete message #%s' % msg_id)
+  resp.headers['Access-Control-Allow-Origin'] = '*'
+  return resp
+
+app.run(debug=True, port=8888)
+</code></pre>
+
+<p>在<code>OPTIONS</code>处理函数中, 添加Response Header的<code>Access-Control-Allow-Origin</code>和<code>Access-Control-Allow-Methods</code>字段. 来声明权限和允许的方法.</p>
+
+<p>在<code>DELETE</code>处理函数中, 添加<code>Access-Control-Allow-Origin</code>字段来声明权限.</p>
+
+<p>that’s all.</p>
+
+</article>
+
+
+
+
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Weibo: <a href="http://weibo.com/peerstudio">@eerpay</a>.<br>
+      Twitter: <a href="https://twitter.com/PeerXu">@PeerXu</a>.<br>
+    </small>
+    <small>
+      Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+</footer>
+
+</body>
+</html>

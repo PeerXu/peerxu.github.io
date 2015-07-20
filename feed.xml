@@ -1,0 +1,832 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>PeerStudio</title>
+    <description>我的世界</description>
+    <link>http://blog.e3rp4y.me/</link>
+    <atom:link href="http://blog.e3rp4y.me/feed.xml" rel="self" type="application/rss+xml" />
+    
+      <item>
+        <title>在Emacs上预览graphviz图</title>
+        <description>&lt;p&gt;&lt;a href=&quot;http://www.graphviz.org/&quot;&gt;graphviz&lt;/a&gt;是AT&amp;amp;T发明的一个结构化图片描述语言.&lt;/p&gt;
+
+&lt;p&gt;接下来就是介绍如何在Emacs上编辑Graphviz文件并且预览.&lt;/p&gt;
+
+&lt;h3 id=&quot;graphviz&quot;&gt;安装Graphviz&lt;/h3&gt;
+
+&lt;p&gt;安装Graphviz, 这里安装的是带GUI的, 不用Emacs预览的使用也能用Graphviz.app 预览.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;brew install Caskroom/cask/graphviz
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;graphviz-dot-modeel&quot;&gt;下载graphviz-dot-mode.el&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://raw.githubusercontent.com/ppareit/graphviz-dot-mode/master/graphviz-dot-mode.el&quot;&gt;graphviz-dot-mode.el&lt;/a&gt;是Emacs的graphviz插件, 能够编译和预览graphviz图片.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ cd ~/.emacs.d/  // 放置在Emacs配置目录下, 你可以放在别的地方, 下面的地址跟着修改就可以了.
+$ wget https://raw.githubusercontent.com/ppareit/graphviz-dot-mode/master/graphviz-dot-mode.el
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;initel&quot;&gt;在init.el中载入插件&lt;/h3&gt;
+
+&lt;p&gt;打开&lt;code&gt;init.el&lt;/code&gt;, 在最后载入&lt;code&gt;graphviz-dot-mode.el&lt;/code&gt;插件.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ cat ~/.emacs.d/init.el
+
+...
+;; Graphviz Mode
+;; 如果之前保存插件地址更改了, 这里也需要作出相应的修改.
+(load-file &quot;~/.emacs.d/graphviz-dot-mode.el&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;添加后, 每次启动Emacs都会自动载入&lt;code&gt;graphviz-dot-mode.el&lt;/code&gt;这个插件了.&lt;/p&gt;
+
+&lt;p&gt;如果不想重启Emacs的话, 可以在句末按下, &lt;code&gt;&amp;lt;C-x&amp;gt; &amp;lt;C-e&amp;gt;&lt;/code&gt; 这样就会动态载入&lt;code&gt;graphviz-dot-mode.el&lt;/code&gt;插件了.&lt;/p&gt;
+
+&lt;h3 id=&quot;section&quot;&gt;品尝成功的果实&lt;/h3&gt;
+
+&lt;p&gt;好了, 现在万事俱备, 只欠&lt;code&gt;graphviz&lt;/code&gt;了.&lt;/p&gt;
+
+&lt;p&gt;我们随便编辑个&lt;code&gt;graphviz&lt;/code&gt;文件.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ cat /tmp/test.dot
+
+digraph structs {
+    node [shape=record];
+    struct1 [label=&quot;&amp;lt;f0&amp;gt; left|&amp;lt;f1&amp;gt; middle|&amp;lt;f2&amp;gt; right&quot;];
+    struct2 [label=&quot;&amp;lt;f0&amp;gt; one|&amp;lt;f2&amp;gt; two&quot;];
+    struct3 [label=&quot;hello\nworld |{ b |{ c|&amp;lt;here&amp;gt; d|e}| f}| g | h&quot;];
+    struct1: f1 -&amp;gt; struct2:f0;
+    struct1: f2 -&amp;gt; struct3:here;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;用Emacs打开, 然后按下 &lt;code&gt;&amp;lt;C-c c&amp;gt;&lt;/code&gt;, 这样就成功编译&lt;code&gt;test.dot&lt;/code&gt;文件.&lt;/p&gt;
+
+&lt;p&gt;之后只需要按下 &lt;code&gt;&amp;lt;C-c p&amp;gt;&lt;/code&gt;, 就能够预览&lt;code&gt;test.dot&lt;/code&gt;编译成png的文件.&lt;/p&gt;
+
+&lt;p&gt;enjoy it~&lt;/p&gt;
+
+</description>
+        <pubDate>Sun, 19 Jul 2015 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2015/07/19/preview-graphviz-on-emacs/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2015/07/19/preview-graphviz-on-emacs/</guid>
+      </item>
+    
+      <item>
+        <title>一次无意识的DNS劫持</title>
+        <description>&lt;p&gt;0x00 前言&lt;/p&gt;
+
+&lt;p&gt;发现DNS劫持的缘由在于部署Dnsmasq的过程中, 同网段内的Windows主机的DNS地址被改变成Dnsmasq服务所在的主机IP地址. 所有就有了这篇分析报告.&lt;/p&gt;
+
+&lt;p&gt;0x01 现象&lt;/p&gt;
+
+&lt;p&gt;在某个子网下部署dnsmasq服务, 过了一会儿, 其他用Windows的同事就大喊: XXX, 为什么我不能上网!&lt;/p&gt;
+
+&lt;p&gt;经过一轮排查, 发现是使用DHCP获取IP地址的Windows用户, DNS地址被改成了部署Dnsmasq服务的服务器IP地址.&lt;/p&gt;
+
+&lt;p&gt;以为是Dnsmasq的BUG(其实还真算Dnsmasq的BUG). 那么就添加了&lt;code&gt;--port=0&lt;/code&gt;的启动参数, 表示不提供DNS服务, 然后再添加&lt;code&gt;--dhcp-option=6,114.114.114.114&lt;/code&gt;指定DNS服务器IP地址(离真相已经很近了).&lt;/p&gt;
+
+&lt;p&gt;但是因为公司默认的DHCP并非&lt;code&gt;114.114.114.114&lt;/code&gt;, 而是某个不知名的DNS服务器地址. 所以又有人大喊为什么我的DNS变成了&lt;code&gt;114.114.114.114&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;到现在我才意识到, 问题的严重性.&lt;/p&gt;
+
+&lt;p&gt;我成功地将DNS劫持了.&lt;/p&gt;
+
+&lt;p&gt;别问我劫持了DNS能够做什么.&lt;/p&gt;
+
+&lt;p&gt;0x02 分析&lt;/p&gt;
+
+&lt;p&gt;发生劫持事件后, 我添加Dnsmasq启动参数&lt;code&gt;--no-daemon&lt;/code&gt;, 表示调试模式.&lt;/p&gt;
+
+&lt;p&gt;然后启动通过&lt;code&gt;tcpdump -n -i eth0 -vvv port 68&lt;/code&gt;来捕捉DHCP请求.&lt;/p&gt;
+
+&lt;p&gt;经过观察, 发现Windows DHCP 客户端会定时广播&lt;code&gt;DHCPINFORM&lt;/code&gt;, 而Dnsmasq会响应并非在&lt;code&gt;dhcp-hostsfile&lt;/code&gt;列表里面的主机. 响应的结果就是发送&lt;code&gt;DHCPACK&lt;/code&gt;. 而&lt;code&gt;DHCPACK&lt;/code&gt;上又带上了&lt;code&gt;Domain Name Server Option&lt;/code&gt;字段.&lt;/p&gt;
+
+&lt;p&gt;所以, Windows DHCP Client会将Dnsmasq返回的DHCPACK包中带上的DNS地址设置为自己的DNS地址.&lt;/p&gt;
+
+&lt;p&gt;0x03 结论&lt;/p&gt;
+
+&lt;p&gt;你还敢用Windows的DHCP吗?&lt;/p&gt;
+
+&lt;p&gt;当你无法保证所在网络绝对安全的情况下, 请手动设置DNS地址.&lt;/p&gt;
+</description>
+        <pubDate>Fri, 07 Nov 2014 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2014/11/07/dns-hijack-with-dnsmasq/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/11/07/dns-hijack-with-dnsmasq/</guid>
+      </item>
+    
+      <item>
+        <title>SQLAlchemy多对多关系使用方法</title>
+        <description>&lt;p&gt;SQLAlchemy是一个Python的数据库ORM框架.&lt;/p&gt;
+
+&lt;p&gt;多对多数据模型是比较常用的数据关系.&lt;/p&gt;
+
+&lt;p&gt;下面采用文章(&lt;code&gt;Page&lt;/code&gt;)和标签(&lt;code&gt;Tag&lt;/code&gt;)的关系来作为介绍范例.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;一篇文章可以通过多个标签来描述概要信息.&lt;/li&gt;
+  &lt;li&gt;一个标签可以对应多篇文章.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;首先我们先创建两个Sqlalchemy的模型类:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;class Page(Base):
+    __tablename__ = &#39;page&#39;
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    
+class Tag(Base):
+    __tablename__ = &#39;tag&#39;
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这里创建了两个模型, 分别是&lt;code&gt;Page&lt;/code&gt;和&lt;code&gt;Tag&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;添加一个需求: 我们能够在&lt;code&gt;Page&lt;/code&gt;对象中直接获取关联的&lt;code&gt;Tag&lt;/code&gt;列表&lt;/p&gt;
+
+&lt;p&gt;那么我们就需要在&lt;code&gt;Page&lt;/code&gt;模型中添加:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;class Page(Base):
+...
+    tags = relationship(&#39;Tag&#39;, secondary=association_table)
+...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这里就通过指定&lt;code&gt;relationship&lt;/code&gt;来指定&lt;code&gt;tags&lt;/code&gt;属性是指向&lt;code&gt;Tag&lt;/code&gt;对象的, 关联规则是通过&lt;code&gt;association_table&lt;/code&gt;的关联关系.&lt;/p&gt;
+
+&lt;p&gt;然后就是需要创建关联规则表&lt;code&gt;association_table&lt;/code&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;association_table = Table(
+    &#39;association&#39;, Base.metadata,
+    Column(&#39;page_id&#39;, Integer, ForeignKey(&#39;page.id&#39;)),
+    Column(&#39;tag_id&#39;, Integer, ForeignKey(&#39;tag.id&#39;))
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这里就创建一个&lt;code&gt;Page-Tag&lt;/code&gt;关联表, 通过将&lt;code&gt;page_id&lt;/code&gt;作为&lt;code&gt;Page&lt;/code&gt;对象的外键. 同理&lt;code&gt;tag_id&lt;/code&gt;作为&lt;code&gt;Tag&lt;/code&gt;对象的外键.&lt;/p&gt;
+
+&lt;p&gt;至此, 我们已经完成多对多模型的创建.&lt;/p&gt;
+
+&lt;p&gt;接下来就是多对多模型的CRUD了.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;page = Page(name=&#39;Python API Page&#39;)
+api_tag = Tag(name=&#39;api&#39;)
+python_tag = Tag(name=&#39;python&#39;)
+
+# append tag to page
+page.tags.append(api_tag)
+page.tags.append(python_tag)
+
+# read tag from page
+print [tag.name for tag in page.tags]
+
+# remove tag from page
+page.tags.remove(python_tag)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;以上就是Sqlalchemy关于多对多模型操作方式~&lt;/p&gt;
+
+&lt;p&gt;下面贴上完整的代码:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;import sqlalchemy as sqla
+import sqlalchemy.orm as sqlorm
+from sqlalchemy.ext.declarative import declarative_base as sqla_declarative_base
+
+Base = sqla_declarative_base()
+engine = sqla.create_engine(&#39;sqlite:///test.db&#39;, echo=True)
+
+association_table = sqla.Table(
+    &#39;association&#39;, Base.metadata,
+    sqla.Column(&#39;page_id&#39;, sqla.Integer, sqla.ForeignKey(&#39;page.id&#39;)),
+    sqla.Column(&#39;tag_id&#39;, sqla.Integer, sqla.ForeignKey(&#39;tag.id&#39;))
+)
+
+class Page(Base):
+    __tablename__ = &#39;page&#39;
+    id = sqla.Column(sqla.Integer, primary_key=True)
+    name = sqla.Column(sqla.String)
+    tags = sqlorm.relationship(&#39;Tag&#39;, secondary=association_table)
+
+class Tag(Base):
+    __tablename__ = &#39;tag&#39;
+    id = sqla.Column(sqla.Integer, primary_key=True)
+    name = sqla.Column(sqla.String)
+    pages = sqlorm.relationship(&#39;Page&#39;, secondary=association_table)
+
+Base.metadata.bind = engine
+Base.metadata.create_all()
+
+Session = sqlorm.scoped_session(sqlorm.sessionmaker(bind=engine))
+
+def save_page():
+    sess = Session()
+    try:
+        page = Page(name=&#39;Python API Page&#39;)
+        sess.add(page)
+
+        sess.flush()
+        sess.commit()
+    finally:
+        sess.close()
+
+def add_tag():
+   sess = Session()
+   try:
+       python_tag = Tag(name=&#39;python&#39;)
+       api_tag = Tag(name=&#39;api&#39;)
+       sess.add(python_tag)
+       sess.add(api_tag)
+       page = sess.query(Page).first()
+       page.tags.append(python_tag)
+       page.tags.append(api_tag)
+
+       sess.flush()
+       sess.commit()
+   finally:
+       sess.close()
+
+def remove_tag():
+    sess = Session()
+    try:
+        page = sess.query(Page).first()
+        api_tag = sess.query(Tag).filter(Tag.name==&#39;api&#39;).first()
+        page.tags.remove(api_tag)
+        sess.flush()
+        sess.commit()
+    finally:
+        sess.close()
+
+if __name__ == &#39;__main__&#39;:
+    save_page()
+    add_tag()
+    remove_tag()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+        <pubDate>Thu, 21 Aug 2014 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2014/08/21/sqlalchemy-many-to-many-relationship/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/08/21/sqlalchemy-many-to-many-relationship/</guid>
+      </item>
+    
+      <item>
+        <title>老板, 要挑个号码么?</title>
+        <description>&lt;p&gt;0x00&lt;/p&gt;
+
+&lt;p&gt;注意: 本文仅仅探讨技术, 读者任何行为与本文无关&lt;/p&gt;
+
+&lt;p&gt;注意: 本文探讨技术已经通过正规渠道报告&lt;/p&gt;
+
+&lt;p&gt;0x01&lt;/p&gt;
+
+&lt;p&gt;本文讲的是如何在阿里移动中随意挑选喜好的号码&lt;/p&gt;
+
+&lt;p&gt;0x02&lt;/p&gt;
+
+&lt;p&gt;挑选的几个条件:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;号码必须存在阿里移动后台&lt;/li&gt;
+  &lt;li&gt;号码必须没有被别的用户购买&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;0x03&lt;/p&gt;
+
+&lt;p&gt;改dom大法&lt;/p&gt;
+
+&lt;p&gt;0x04&lt;/p&gt;
+
+&lt;p&gt;enjoy yourself.&lt;/p&gt;
+</description>
+        <pubDate>Tue, 08 Jul 2014 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2014/07/08/choose-your-favorite-number-from-alibaba/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/07/08/choose-your-favorite-number-from-alibaba/</guid>
+      </item>
+    
+      <item>
+        <title>Google IP Explorer使用教程</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;教程&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/PeerXu/google-ip-explorer&quot;&gt;Google IP Explorer&lt;/a&gt;是一个查找Google IP列表的工具. 可以单独使用, 也可以配合Goagent使用.&lt;/p&gt;
+
+&lt;p&gt;如果已经安装了gevent库, 那么可以大大地增加查找速度.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ git clone https://github.com/PeerXu/google-ip-explorer.git
+$ cd google-ip-explorer
+$ python google.py input.txt
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Google IP列表就在output.txt文件中.&lt;/p&gt;
+
+&lt;p&gt;如果你需要直接使用, 那么就挑一个IP直接在浏览器里面就能使用了.&lt;/p&gt;
+
+&lt;p&gt;如果你需要和Goagent配合使用的话, 那么就将&lt;code&gt;proxy.ini&lt;/code&gt; 下的&lt;code&gt;[iplist]&lt;/code&gt; 下的&lt;code&gt;google_cn&lt;/code&gt; 和 &lt;code&gt;google_hk&lt;/code&gt; 替换为output.txt的内容就可以了~&lt;/p&gt;
+</description>
+        <pubDate>Thu, 03 Jul 2014 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2014/07/03/google-ip-explorer-tutorial/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/07/03/google-ip-explorer-tutorial/</guid>
+      </item>
+    
+      <item>
+        <title>在浏览器中调用RESTful API Service</title>
+        <description>&lt;p&gt;&lt;strong&gt;以下内容请自备梯子&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://zh.wikipedia.org/wiki/REST&quot;&gt;RESTful&lt;/a&gt; API Service是以REST风格提供的API Service.&lt;/p&gt;
+
+&lt;p&gt;通常情况下会采用到HTTP的GET, POST, DELETE, PUT等方法.&lt;/p&gt;
+
+&lt;p&gt;因为浏览器的正常访问手段(直接通过连接访问或Form提交), 无法向Service发起DELETE, PUT等方法的请求.&lt;/p&gt;
+
+&lt;p&gt;所以只能通过&lt;a href=&quot;https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest&quot;&gt;&lt;code&gt;XMLHttpRequest&lt;/code&gt;&lt;/a&gt;对象来提供完整交互操作.&lt;/p&gt;
+
+&lt;p&gt;那么最后的问题就回归到, 如果使用&lt;code&gt;XMLHttpRequest&lt;/code&gt;对象上了.&lt;/p&gt;
+
+&lt;p&gt;参考上面给出的&lt;a href=&quot;https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest&quot;&gt;&lt;code&gt;XMLHttpRequest&lt;/code&gt;&lt;/a&gt;的链接, 我们学习到使用方法.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// javascript
+var xhr = new XMLHttpRequest();
+xhr.open(&quot;DELETE&quot;, &quot;http://localhost:8888/messages/1&quot;);
+xhr.send();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;上面就是&lt;code&gt;XMLHttpRequest&lt;/code&gt;的简单使用方法. 当然, 这里只是发送了, 并完成后续的处理. 我们现在只关心发送.&lt;/p&gt;
+
+&lt;p&gt;那么在这里也奉上Server端的源代码.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#! /usr/bin/env python2.7
+# filename: app.py
+
+from flask import Flask, make_response
+
+app = Flask(__name__)
+
+@app.route(&#39;/messages/&amp;lt;int:msg_id&amp;gt;&#39;, methods=[&#39;DELETE&#39;])
+def delete_message(msg_id):
+  return &#39;delete message #%s&#39; % msg_id
+
+app.run(debug=True, port=8888)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;上面就是服务端的代码.&lt;/p&gt;
+
+&lt;p&gt;但是通过浏览器console发起请求的时候, 我们可以观察到一下错误提示:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;OPTIONS http://localhost:8888/messages/1 No &#39;Access-Control-Allow-Origin&#39; header is present on the requested resource. Origin &#39;https://developer.mozilla.org&#39; is therefore not allowed access.
+XMLHttpRequest cannot load http://localhost:8888/messages/1. No &#39;Access-Control-Allow-Origin&#39; header is present on the requested resource. Origin &#39;https://developer.mozilla.org&#39; is therefore not allowed access.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这两行错误提示表明, 我们需要在服务端上, 在返回&lt;code&gt;Response&lt;/code&gt;对象时候, 在&lt;code&gt;Response Header&lt;/code&gt;上提供&lt;code&gt;Access-Control-Allow-Origin&lt;/code&gt;字段.&lt;/p&gt;
+
+&lt;p&gt;并且通过Chrome Developer Tools的Network中观察到, &lt;code&gt;XMLHttpRequest&lt;/code&gt;会发送HTTP的&lt;code&gt;OPTIONS&lt;/code&gt; Request到服务端上. 通过这次Request的Response的&lt;code&gt;Access-Control-Allow-Origin&lt;/code&gt;和&lt;code&gt;Access-Control-Allow-Methods&lt;/code&gt;这两个字段来决定, xhr是否有对该域发起请求的权限.&lt;/p&gt;
+
+&lt;p&gt;其中, &lt;code&gt;Access-Control-Allow-Origin&lt;/code&gt;字段代表的是, 是否允许本域向API Service发起请求. &lt;code&gt;*&lt;/code&gt;代表所有域都能发起请求.&lt;/p&gt;
+
+&lt;p&gt;而&lt;code&gt;Access-Control-Allow-Methods&lt;/code&gt;则代表的允许请求的方法有那些.&lt;/p&gt;
+
+&lt;p&gt;那么这时我们就&lt;strong&gt;将就地&lt;/strong&gt;添加&lt;code&gt;Access-Control-Allow-Origin&lt;/code&gt;字段为&lt;code&gt;*&lt;/code&gt; **(注意: 请在生产环境中谨慎添加允许跨域的主机), 添加&lt;code&gt;Access-Control-Allow-Methods&lt;/code&gt;字段为&lt;code&gt;POST,DELETE,PUT,GET&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;再次修改服务端代码:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#! /usr/bin/env python2.7
+# filename: app.py
+
+from flask import Flask, make_response
+
+app = Flask(__name__)
+
+@app.route(&#39;/messages/&amp;lt;int:msg_id&amp;gt;&#39;, methods=[&#39;OPTIONS&#39;])
+def options_message(msg_id):
+  resp = make_response(&#39;&#39;)
+  resp.headers.extend({
+      &#39;Access-Control-Allow-Origin&#39;: &#39;*&#39;,
+      &#39;Access-Control-Allow-Methods&#39;: &#39;POST,DELETE,PUT,GET&#39;
+  })
+  return resp
+
+@app.route(&#39;/messages/&amp;lt;int:msg_id&amp;gt;&#39;, methods=[&#39;DELETE&#39;])
+def delete_message(msg_id):
+  resp = make_response(&#39;delete message #%s&#39; % msg_id)
+  resp.headers[&#39;Access-Control-Allow-Origin&#39;] = &#39;*&#39;
+  return resp
+
+app.run(debug=True, port=8888)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在&lt;code&gt;OPTIONS&lt;/code&gt;处理函数中, 添加Response Header的&lt;code&gt;Access-Control-Allow-Origin&lt;/code&gt;和&lt;code&gt;Access-Control-Allow-Methods&lt;/code&gt;字段. 来声明权限和允许的方法.&lt;/p&gt;
+
+&lt;p&gt;在&lt;code&gt;DELETE&lt;/code&gt;处理函数中, 添加&lt;code&gt;Access-Control-Allow-Origin&lt;/code&gt;字段来声明权限.&lt;/p&gt;
+
+&lt;p&gt;that’s all.&lt;/p&gt;
+</description>
+        <pubDate>Thu, 12 Jun 2014 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2014/06/12/send-request-to-restful-api-service-from-browser/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/06/12/send-request-to-restful-api-service-from-browser/</guid>
+      </item>
+    
+      <item>
+        <title>采用Flask-Restful插件返回Javascript脚本的两种方法</title>
+        <description>&lt;p&gt;&lt;a href=&quot;https://github.com/mitsuhiko/flask&quot;&gt;Flask&lt;/a&gt; 是Python的一个轻量级的Web框架.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/twilio/flask-restful&quot;&gt;Flask-Restful&lt;/a&gt; 是将Flask应用构建为Restful API的一个插件.&lt;/p&gt;
+
+&lt;p&gt;一个Flask-Restful插件的demo:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ cat app.py
+#! /usr/bin/env python2.7
+# filename: app.py
+
+from flask import Flask
+from flask.ext.restful import Api, Resource
+
+app = Flask(__name__)
+api = Api(app)
+
+class User(Resource):
+  def get(self, user_id):
+    return {&#39;user_id&#39;: user_id}
+
+api.add_resource(User, &#39;/users/&amp;lt;int:user_id&amp;gt;&#39;)
+
+if __name__ == &#39;__main__&#39;:
+  app.run(port=8888, debug=True)
+
+$ python app.py
+ * Running on http://127.0.0.1:8888/
+ * Restarting with reloader
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这里我们可以看见Flask Demo已经成功运行.&lt;/p&gt;
+
+&lt;p&gt;我们可以通过&lt;code&gt;curl&lt;/code&gt;这个工具来进行简单测试.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ curl -v http://localhost:8888/users/1
+* Adding handle: conn: 0x22f5a40
+* Adding handle: send: 0
+* Adding handle: recv: 0
+* Curl_addHandleToPipeline: length: 1
+* - Conn 0 (0x22f5a40) send_pipe: 1, recv_pipe: 0
+* About to connect() to localhost port 8888 (#0)
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 8888 (#0)
+&amp;gt; GET /users/1 HTTP/1.1
+&amp;gt; User-Agent: curl/7.32.0
+&amp;gt; Host: localhost:8888
+&amp;gt; Accept: */*
+&amp;gt;
+* HTTP 1.0, assume close after body
+&amp;lt; HTTP/1.0 200 OK
+&amp;lt; Content-Type: application/json
+&amp;lt; Content-Length: 21
+&amp;lt; Server: Werkzeug/0.9.4 Python/2.7.5+
+&amp;lt; Date: Mon, 09 Jun 2014 15:25:42 GMT
+&amp;lt;
+{
+    &quot;user_id&quot;: 1
+}
+* Closing connection 0
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;curl的Response部分, 包含了一些信息.&lt;/p&gt;
+
+&lt;p&gt;其中Content-Type字段表示的是, 返回的内容是json格式的.&lt;/p&gt;
+
+&lt;p&gt;如果我们需要返回的值是javascript脚本的话, 那么我们就需要对demo进行一些改造.&lt;/p&gt;
+
+&lt;p&gt;有两种办法:&lt;/p&gt;
+
+&lt;h3 id=&quot;flaskmakeresponse&quot;&gt;1. 通过Flask的make_response函数&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;$ cat app.py
+#! /usr/bin/env python2.7
+# filename: app.py
+
+import simplejson as json
+from flask import Flask, make_response
+from flask.ext.restful import Api, Resource
+
+app = Flask(__name__)
+api = Api(app)
+
+class User(Resource):
+  def get(self, user_id):
+    user = {&#39;user_id&#39;: user_id}
+    data = json.dumps(user)
+    response = make_response(data)
+    response.headers.extend({
+      &#39;Content-Type&#39;: &#39;application/javascript&#39;
+    })
+    return response
+
+api.add_resource(User, &#39;/users/&amp;lt;int:user_id&amp;gt;&#39;)
+
+if __name__ == &#39;__main__&#39;:
+  app.run(port=8888, debug=True)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;添加Content-Type字段到response的headers中, 可以将返回的内容类型设置为javascript.&lt;/p&gt;
+
+&lt;h3 id=&quot;request-headersresponse&quot;&gt;2. 通过Request Headers限制Response类型&lt;/h3&gt;
+
+&lt;p&gt;HTTP协议中规定, 在Request Header中指定Accept字段, 可以指定客户端接受的Response类型.&lt;/p&gt;
+
+&lt;p&gt;例如在curl中指定Accept字段:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ curl -H &#39;Accept: application/javascript&#39; http://localhost:8888/users/1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;但是在Flask-Restful插件中, 貌似是不支持javascript作为返回值类型.&lt;/p&gt;
+
+&lt;p&gt;所以我们需要做一些patch.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#! /usr/bin/env python2.7
+# filename: app.py
+
+import simplejson as json
+from flask import Flask, make_response
+from flask.ext.restful import Api, Resource
+
+# monkey patch: application/javascript mimetype
+
+from flask.ext import restful
+def output_javascript(data, code, headers=None):
+  response = make_response(data, code)
+  response.headers.extend(headers or {})
+  return response
+
+restful.DEFAULT_REPRESENTATIONS[&#39;application/javascript&#39;] = output_javascript
+
+# end monkey patch
+
+app = Flask(__name__)
+api = Api(app)
+
+class User(Resource):
+  def get(self, user_id):
+    return {&#39;user_id&#39;: user_id}
+
+api.add_resource(User, &#39;/users/&amp;lt;int:user_id&amp;gt;&#39;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这种方式显得更加优雅.&lt;/p&gt;
+
+&lt;p&gt;但是需要在发起Request的时候设置Request Header的&lt;code&gt;Accept&lt;/code&gt;字段为&lt;code&gt;application/javascript&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;the end.&lt;/p&gt;
+</description>
+        <pubDate>Mon, 09 Jun 2014 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/</guid>
+      </item>
+    
+      <item>
+        <title>从主机复制文件到Docker的几种方法</title>
+        <description>&lt;p&gt;&lt;a href=&quot;https://www.docker.io&quot;&gt;Docker&lt;/a&gt;是个Linux Container管理软件.&lt;/p&gt;
+
+&lt;p&gt;今天我们来讲解一下从主机复制文件到Docker的几种方法.&lt;/p&gt;
+
+&lt;p&gt;在分享之前, 我们看看Docker社区对这个&lt;a href=&quot;https://github.com/dotcloud/docker/issues/905&quot;&gt;问题&lt;/a&gt;的需求是有多么强(ju)烈(jin).&lt;/p&gt;
+
+&lt;p&gt;下面开始今天高(tu)大(yuan)上(fei)的分享.&lt;/p&gt;
+
+&lt;h3 id=&quot;build-docker-image&quot;&gt;1. 通过Build Docker Image添加文件&lt;/h3&gt;
+
+&lt;p&gt;Docker Image是通过Dockerfile来创建的. 具体的创建过程可以参考&lt;a href=&quot;https://www.docker.io/learn/dockerfile/&quot;&gt;这里&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;我们可以在编写Dockerfile的时候, 将需要的文件通过 &lt;code&gt;ADD&lt;/code&gt; 关键字添加文件到Docker Image里面.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;FROM 3scale/openresty
+
+## add your supervisor openresty config
+ADD openresty.conf /etc/supervisor/conf.d/
+
+# Add your app
+ADD . /var/www
+
+CMD [&quot;supervisor&quot;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;引用自 &lt;a href=&quot;https://index.docker.io/u/3scale/openresty/&quot;&gt;3scale/openresty&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;这个Dockerfile中的&lt;code&gt;ADD&lt;/code&gt; 关键字是将本机添加到Docker Image中的&lt;code&gt;/var/www&lt;/code&gt; 文件夹中.&lt;/p&gt;
+
+&lt;h3 id=&quot;docker-run-v--volume&quot;&gt;2. 通过docker run命令的-v/–volume参数&lt;/h3&gt;
+
+&lt;p&gt;假设我们需要将本机的/data 目录分享到Docker的/mnt 目录下, 我们可以通过这样的命令:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ touch /data/bilibala
+$ docker run -v /data:/mnt -i -t ubuntu bash
+root@c039a83c35d0:/# ls /mnt
+bilibala
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这个命令可以在启动container中绑定文件夹.&lt;/p&gt;
+
+&lt;h3 id=&quot;api&quot;&gt;3. 通过API绑定目录&lt;/h3&gt;
+
+&lt;p&gt;其实这个方法本质上跟2是一样的, 但是唯一不同的就是, API将&lt;code&gt;docker run&lt;/code&gt; 这个命令分成两步了, 分别是: &lt;code&gt;create_container&lt;/code&gt; 和 &lt;code&gt;start&lt;/code&gt;
+在&lt;code&gt;create_container&lt;/code&gt; 中, 通过&lt;code&gt;volumes&lt;/code&gt; 参数定义需要挂载的目录.
+在&lt;code&gt;start&lt;/code&gt; 中, &lt;code&gt;binds&lt;/code&gt; 参数绑定.&lt;/p&gt;
+
+&lt;p&gt;下面是一个简单的example:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#!/usr/bin/env python2.7
+import docker
+c = docker.Client()
+
+container = c.create_container(&#39;ubunt&#39;,
+                               command=&#39;bash&#39;, volumes=[&#39;/mnt&#39;],
+                               tty=True, stdin_open=True)
+
+c.start(container[&#39;Id&#39;], binds={&#39;/data&#39;:&#39;/mnt&#39;})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这里就创建了一个挂载了&lt;code&gt;/data&lt;/code&gt;目录的container.&lt;/p&gt;
+
+&lt;h3 id=&quot;section&quot;&gt;4. 通过环境变量传递文件&lt;/h3&gt;
+
+&lt;p&gt;这个是我自己发明的小技巧, 因为在利用&lt;code&gt;volumes&lt;/code&gt; 参数的时候, 发现docker有些不稳定. 经常无法删除. 所以就通过创建的时候通过环境变量传输文件.&lt;/p&gt;
+
+&lt;p&gt;先将文件通过&lt;code&gt;base64&lt;/code&gt;编码, 然后通过&lt;code&gt;create_container&lt;/code&gt; 方法的 &lt;code&gt;environment&lt;/code&gt;参数传递变量到container中, 在container中再解码放入到合适的路径下即可.&lt;/p&gt;
+
+&lt;h3 id=&quot;section-1&quot;&gt;5. 总结&lt;/h3&gt;
+
+&lt;p&gt;总的来说, 有三种不同的方式, 将host中的文件传递到container.&lt;/p&gt;
+
+&lt;p&gt;分别是:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;创建Image时, 添加文件到Image&lt;/li&gt;
+  &lt;li&gt;创建Container时, 通过volumes参数传递文件&lt;/li&gt;
+  &lt;li&gt;创建Container时, 通过environment参数传递文件&lt;/li&gt;
+&lt;/ol&gt;
+</description>
+        <pubDate>Fri, 23 May 2014 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2014/05/23/copy-file-from-host-to-docker/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/05/23/copy-file-from-host-to-docker/</guid>
+      </item>
+    
+      <item>
+        <title>pipework -- docker网络增强工具</title>
+        <description>&lt;p&gt;&lt;a href=&quot;https://github.com/jpetazzo/pipework&quot;&gt;pipework&lt;/a&gt;是&lt;a href=&quot;https://www.docker.io/&quot;&gt;Docker&lt;/a&gt;的一个网络增强功能插件.&lt;/p&gt;
+
+&lt;p&gt;Docker创建的时候, 默认是接入docker0(linux bridge)的. 所以只能单主机工作, 不能多台主机联动工作. 这时候, pipework应运而生.&lt;/p&gt;
+
+&lt;p&gt;我们先来介绍一下pipework的简单用法, 之后再深入探讨关于pipework与ovs的结合. 最后基于一个案例分析来结束.&lt;/p&gt;
+
+&lt;h3 id=&quot;pipework&quot;&gt;pipework入门&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;# brctl addbr br0
+# ip link set dev br0 up
+# ip addr add 192.168.2.1/24 dev br0
+# MYSQL=$(docker run -d -p 3306:3306 -e MYSQL_PASS=admin tutum/mysql)
+# pipework br0 $MYSQL 192.168.2.100/24
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;创建一个br0(linux bridge).&lt;/li&gt;
+  &lt;li&gt;配置IP地址给br0.&lt;/li&gt;
+  &lt;li&gt;启动一个mysql docker.&lt;/li&gt;
+  &lt;li&gt;使用&lt;code&gt;pipework&lt;/code&gt;为docker添加IP地址.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;经过这几个步骤后, 创建的docker就有一个设置指定的IP地址了.
+pipework的具体工作原理就不在这里详细分析, 有兴趣的同学可以自己去读源代码.&lt;/p&gt;
+
+&lt;h3 id=&quot;pipework-1&quot;&gt;pipework进阶&lt;/h3&gt;
+
+&lt;p&gt;上面入门介绍中, 我们使用pipework工具, 通过linux bridge的模式指定IP地址给docker容器.
+其实, 除了linux bridge, pipework还支持现在流行的虚拟交换机(Open vSwitch).
+下面简单的示范一下如何将docker与Open vSwitch(下称ovs)连通.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# ovs-vsctl add-br ovsbr0
+# ip link set dev ovsbr0 up
+# ip addr add 192.168.3.1/24 dev ovsbr0
+# MYSQL=$(docker run -d -p 3306:3306 -e MYSQL_PASS=admin tutum/mysql)
+# pipework ovsbr0 $MYSQL 192.168.3.100/24
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;对于pipework来说, 底层使用什么虚拟网络设备是透明的.
+pipework会智能地判断使用的是linux bridge还是ovs.
+所以除了创建桥的方式不同, 其他并没有改变.&lt;/p&gt;
+
+&lt;h3 id=&quot;pipework-2&quot;&gt;pipework案例分析&lt;/h3&gt;
+
+&lt;p&gt;下面就具体分析一个pipework的应用场景.&lt;/p&gt;
+
+&lt;h4 id=&quot;dockervlan&quot;&gt;docker容器与VLAN&lt;/h4&gt;
+
+&lt;p&gt;docker容器启动时, 默认是接入到docker0网桥上的. 这样就容易给大家造成一个假象, docker容器只能运行在单机的情况下.
+&lt;em&gt;但是显示并非如此.&lt;/em&gt;
+我们可以通过pipework扩展docker的网络功能.&lt;/p&gt;
+
+&lt;p&gt;我们假设现在有2台服务器A和B, 交换机S.
+现在我们同时在A,B上创建虚拟网桥ovsbr0. 并且在服务器A上, 将网桥启用和配置IP地址.
+那么我们现在如果在A,B上,分别启动一个docker.
+同时通过pipework将docker接入到ovsbr0上, 并且配置与A服务器上ovs相同网段的IP地址.
+那么&lt;em&gt;两个docker互相之间就能够通信&lt;/em&gt;了.
+很神奇有木有!!!&lt;/p&gt;
+
+&lt;p&gt;但是万恶的需求是不断进化的(呵呵). 不会都让你们的docker运行在一个网络环境下, 有的应用是需要互相隔离的.
+那么就有可能需要VLAN的划分. 这里多说点, 其实在现今的情况下, 除了划分VLAN还有其他的方式达到二层网络隔离的效果, 如VXLAN, NVGRE等技术.
+但是我们现在还是只谈论VLAN隔离吧.&lt;/p&gt;
+
+&lt;p&gt;我们先在服务器A上做一下操作:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# D1V10=$(docker run -i -t learn/ping /bin/bash)
+# pipework ovsbr0 -i d1v10 $D1V10 10.1.1.10/24
+# D2V10=$(docker run -i -t learn/ping /bin/bash)
+# pipework ovsbr0 -i d2v10 $D2V10 10.1.1.11/24
+# D3V20=$(docker run -i -t learn/ping /bin/bash)
+# pipework ovsbr0 -i d3v20 $D3V20 10.1.1.20/24
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这里定义了3个Docker容器, 并且将其添加到ovsbr0这个桥上.
+下面开始将不同的网卡设置vlan id.
+我们将 D1V10 和 D2V10 设置vlan id为10. 将D3V20 设置vlan id为20.&lt;/p&gt;
+
+&lt;p&gt;我们可以通过&lt;code&gt;ovs-vsctl list-ports &amp;lt;BRIDGE&amp;gt;&lt;/code&gt;找出桥设备下面的所有端口.
+但是刚刚我们一口气连续创建了3个docker, 会看见3个对应的虚拟网卡.&lt;/p&gt;
+
+&lt;p&gt;然后我们需要做的是, 找出与Docker容器想对应的虚拟网卡.
+刚刚在pipework执行时, 添加了参数&lt;code&gt;-i&lt;/code&gt;, 意思是创建的虚拟网卡结尾对应的字符串.&lt;/p&gt;
+
+&lt;p&gt;比如:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# pipework ovsbr0 -i d1v10 $D1V10 10.1.1.10/24
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这命令执行后, ovsbr0设备会添加一个port, port的名字应该是&lt;code&gt;plxxxxd1v10&lt;/code&gt;.
+当中的xxxx是docker容器的pid.&lt;/p&gt;
+
+&lt;p&gt;这时我们就可以通过&lt;code&gt;ovs-vsctl set port &amp;lt;port&amp;gt; tag=&amp;lt;vlan id&amp;gt;&lt;/code&gt;的方式设置vlan id了.&lt;/p&gt;
+
+&lt;p&gt;下面是范例:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# ovs-vsctl list-ports ovsbr0
+pl23016d1v10
+pl23124d2v10
+pl23654d3v20
+# ovs-vsctl set port pl23016d1v10 tag=10
+# ovs-vsctl set port pl23124d2v10 tag=10
+# ovs-vsctl set port pl23654d3v20 tag=20
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这样就完成了设置VLAN的步骤了.
+下面我们通过简单的ping命令来验证一下vlan隔离的效果.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# docker attach $D1V10
+root@f94dc85c44b1:/# ping 10.1.1.11  # reachable
+root@f94dc85c44b1:/# ping 10.1.1.20  # unreachable
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;vlan&quot;&gt;多服务器的vlan划分&lt;/h4&gt;
+
+&lt;p&gt;可能有同学以为, docker只能在单机上工作(docker与docker之间通信只能在本机进行).
+但是使用pipework增强插件后, 我们可以通过Linux Bridge或Open vSwitch来进行数据交换.
+这样就可以不仅仅局限于Docker默认的隔离桥(原谅我的破翻译, 我真不知道怎么形容这货 –&amp;gt; docker0)&lt;/p&gt;
+
+&lt;h3 id=&quot;section&quot;&gt;总结&lt;/h3&gt;
+
+&lt;p&gt;pipework是个强大的docker网络管理工具. 具体的实现也比较简单. 可以配合ovs来实现强大的功能.
+剩下就是发挥想象力的时间了…&lt;/p&gt;
+</description>
+        <pubDate>Mon, 07 Apr 2014 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2014/04/07/docker-with-openvswitch/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/04/07/docker-with-openvswitch/</guid>
+      </item>
+    
+      <item>
+        <title>让你的Docker运行在Open vSwitch上</title>
+        <description>&lt;p&gt;docker创建的container只能运行在docker创建的docker0上(linux bridge).
+所以就有了&lt;a href=&quot;https://github.com/PeerXu/pipework&quot;&gt;pipework&lt;/a&gt;这个项目.&lt;/p&gt;
+
+&lt;h2 id=&quot;pipework&quot;&gt;pipework范例&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;# ovs-vsctl add-br br0
+# ip link set br0 up
+# ip addr add 10.0.0.1/24 dev br0
+# pipework br0 $(docker run -d mysql /usr/sbin/mysqld_safe) 10.0.0.200/24
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;以上几行脚本的意思是:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;创建一个Open vSwitch的桥br0&lt;/li&gt;
+  &lt;li&gt;设置br0的ip地址为10.0.0.1&lt;/li&gt;
+  &lt;li&gt;在br0上创建一个docker并绑定IP地址&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;pipework-1&quot;&gt;pipework工作原理&lt;/h2&gt;
+
+&lt;p&gt;创建一对&lt;a href=&quot;http://wangcong.org/blog/archives/1704&quot;&gt;veth&lt;/a&gt;, 将一头绑定到docker内, 另外一头绑定到Open vSwitch.
+然后通过_iproute_ 绑定IP地址等等操作.&lt;/p&gt;
+
+&lt;p&gt;然后, 就没有然后了.&lt;/p&gt;
+</description>
+        <pubDate>Tue, 24 Dec 2013 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2013/12/24/docker-on-openvswitch/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2013/12/24/docker-on-openvswitch/</guid>
+      </item>
+    
+  </channel>
+</rss>

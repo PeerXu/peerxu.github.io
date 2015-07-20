@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>采用Flask-Restful插件返回Javascript脚本的两种方法 &#8211; PeerStudio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="我的世界">
+    <meta name="author" content="Peer Xu">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css?201507200942" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="采用Flask-Restful插件返回Javascript脚本的两种方法">
+    <meta property="og:description" content="我的世界">
+    <meta property="og:url" content="http://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/">
+    <meta property="og:site_name" content="PeerStudio">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    
+    <meta name="twitter:title" content="采用Flask-Restful插件返回Javascript脚本的两种方法" />
+    <meta name="twitter:description" content="我的世界" />
+    <meta name="twitter:url" content="http://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/" />
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+        
+    
+</head>
+
+<body class="site">
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://blog.e3rp4y.me" class="site-title">PeerStudio</a>
+      <nav class="site-nav">
+        <a href="/about/">About</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>采用Flask-Restful插件返回Javascript脚本的两种方法</h1>
+  <span class="post-meta">Jun 9, 2014</span><br>
+    
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
+</div>
+
+<article class="post-content">
+  <p><a href="https://github.com/mitsuhiko/flask">Flask</a> 是Python的一个轻量级的Web框架.</p>
+
+<p><a href="https://github.com/twilio/flask-restful">Flask-Restful</a> 是将Flask应用构建为Restful API的一个插件.</p>
+
+<p>一个Flask-Restful插件的demo:</p>
+
+<pre><code>$ cat app.py
+#! /usr/bin/env python2.7
+# filename: app.py
+
+from flask import Flask
+from flask.ext.restful import Api, Resource
+
+app = Flask(__name__)
+api = Api(app)
+
+class User(Resource):
+  def get(self, user_id):
+    return {'user_id': user_id}
+
+api.add_resource(User, '/users/&lt;int:user_id&gt;')
+
+if __name__ == '__main__':
+  app.run(port=8888, debug=True)
+
+$ python app.py
+ * Running on http://127.0.0.1:8888/
+ * Restarting with reloader
+</code></pre>
+
+<p>这里我们可以看见Flask Demo已经成功运行.</p>
+
+<p>我们可以通过<code>curl</code>这个工具来进行简单测试.</p>
+
+<pre><code>$ curl -v http://localhost:8888/users/1
+* Adding handle: conn: 0x22f5a40
+* Adding handle: send: 0
+* Adding handle: recv: 0
+* Curl_addHandleToPipeline: length: 1
+* - Conn 0 (0x22f5a40) send_pipe: 1, recv_pipe: 0
+* About to connect() to localhost port 8888 (#0)
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 8888 (#0)
+&gt; GET /users/1 HTTP/1.1
+&gt; User-Agent: curl/7.32.0
+&gt; Host: localhost:8888
+&gt; Accept: */*
+&gt;
+* HTTP 1.0, assume close after body
+&lt; HTTP/1.0 200 OK
+&lt; Content-Type: application/json
+&lt; Content-Length: 21
+&lt; Server: Werkzeug/0.9.4 Python/2.7.5+
+&lt; Date: Mon, 09 Jun 2014 15:25:42 GMT
+&lt;
+{
+    "user_id": 1
+}
+* Closing connection 0
+</code></pre>
+
+<p>curl的Response部分, 包含了一些信息.</p>
+
+<p>其中Content-Type字段表示的是, 返回的内容是json格式的.</p>
+
+<p>如果我们需要返回的值是javascript脚本的话, 那么我们就需要对demo进行一些改造.</p>
+
+<p>有两种办法:</p>
+
+<h3 id="flaskmakeresponse">1. 通过Flask的make_response函数</h3>
+
+<pre><code>$ cat app.py
+#! /usr/bin/env python2.7
+# filename: app.py
+
+import simplejson as json
+from flask import Flask, make_response
+from flask.ext.restful import Api, Resource
+
+app = Flask(__name__)
+api = Api(app)
+
+class User(Resource):
+  def get(self, user_id):
+    user = {'user_id': user_id}
+    data = json.dumps(user)
+    response = make_response(data)
+    response.headers.extend({
+      'Content-Type': 'application/javascript'
+    })
+    return response
+
+api.add_resource(User, '/users/&lt;int:user_id&gt;')
+
+if __name__ == '__main__':
+  app.run(port=8888, debug=True)
+</code></pre>
+
+<p>添加Content-Type字段到response的headers中, 可以将返回的内容类型设置为javascript.</p>
+
+<h3 id="request-headersresponse">2. 通过Request Headers限制Response类型</h3>
+
+<p>HTTP协议中规定, 在Request Header中指定Accept字段, 可以指定客户端接受的Response类型.</p>
+
+<p>例如在curl中指定Accept字段:</p>
+
+<pre><code>$ curl -H 'Accept: application/javascript' http://localhost:8888/users/1
+</code></pre>
+
+<p>但是在Flask-Restful插件中, 貌似是不支持javascript作为返回值类型.</p>
+
+<p>所以我们需要做一些patch.</p>
+
+<pre><code>#! /usr/bin/env python2.7
+# filename: app.py
+
+import simplejson as json
+from flask import Flask, make_response
+from flask.ext.restful import Api, Resource
+
+# monkey patch: application/javascript mimetype
+
+from flask.ext import restful
+def output_javascript(data, code, headers=None):
+  response = make_response(data, code)
+  response.headers.extend(headers or {})
+  return response
+
+restful.DEFAULT_REPRESENTATIONS['application/javascript'] = output_javascript
+
+# end monkey patch
+
+app = Flask(__name__)
+api = Api(app)
+
+class User(Resource):
+  def get(self, user_id):
+    return {'user_id': user_id}
+
+api.add_resource(User, '/users/&lt;int:user_id&gt;')
+</code></pre>
+
+<p>这种方式显得更加优雅.</p>
+
+<p>但是需要在发起Request的时候设置Request Header的<code>Accept</code>字段为<code>application/javascript</code>.</p>
+
+<p>the end.</p>
+
+</article>
+
+
+
+
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Weibo: <a href="http://weibo.com/peerstudio">@eerpay</a>.<br>
+      Twitter: <a href="https://twitter.com/PeerXu">@PeerXu</a>.<br>
+    </small>
+    <small>
+      Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+</footer>
+
+</body>
+</html>

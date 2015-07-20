@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>linux, out of memory &#8211; PeerStudio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="我的世界">
+    <meta name="author" content="Peer Xu">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://blog.e3rp4y.me/2011/12/11/linux-out-of-memory/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css?201507200942" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="linux, out of memory">
+    <meta property="og:description" content="我的世界">
+    <meta property="og:url" content="http://blog.e3rp4y.me/2011/12/11/linux-out-of-memory/">
+    <meta property="og:site_name" content="PeerStudio">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    
+    <meta name="twitter:title" content="linux, out of memory" />
+    <meta name="twitter:description" content="我的世界" />
+    <meta name="twitter:url" content="http://blog.e3rp4y.me/2011/12/11/linux-out-of-memory/" />
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+        
+    
+</head>
+
+<body class="site">
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://blog.e3rp4y.me" class="site-title">PeerStudio</a>
+      <nav class="site-nav">
+        <a href="/about/">About</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+
+
+<div class="post-header mb2">
+  <h1>linux, out of memory</h1>
+  <span class="post-meta">Dec 11, 2011</span><br>
+    
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
+</div>
+
+<article class="post-content">
+  <p>加班归来, 由于纠结了一天, 所以必须把这个给记录下来.</p>
+<p>问题是这样的, libvirt启动domain, 大概启动了20台左右, 就会发现domain们会自杀. 我就无比郁闷了, domain你们到底肿么了.</p>
+<p>经过多番查看各种log, 没有发现问题. 最后一同事发现了, 在 <em>/var/log/syslog</em> 里面有一条关于 <em>kvm: out of memory</em> 的log.</p>
+<p>经过各种搜索后发现, 发现在大内存的工作环境下(&gt;4G), 32位的linux会产生这个错误. 但是我们觉得, 我们平常的机器都是安装64位的OS, 就没有管这个问题了. 但是问题偏偏就出现在这个OS的32位上. 所以阿, 买来的服务器还是要自己安装一次OS才行阿&#8230;</p>
+<p>最后bs一下卖服务器的厂商&#8230;肿么能这么装系统呢, 32位最大才索引4G内存, 一台服务器都40多G内存了.还装32位, 这不坑爹嘛!</p>
+</article>
+
+
+
+
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Weibo: <a href="http://weibo.com/peerstudio">@eerpay</a>.<br>
+      Twitter: <a href="https://twitter.com/PeerXu">@PeerXu</a>.<br>
+    </small>
+    <small>
+      Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+</footer>
+
+</body>
+</html>

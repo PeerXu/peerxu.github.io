@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>一次无意识的DNS劫持 &#8211; PeerStudio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="我的世界">
+    <meta name="author" content="Peer Xu">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://blog.e3rp4y.me/2014/11/07/dns-hijack-with-dnsmasq/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css?201507200942" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="一次无意识的DNS劫持">
+    <meta property="og:description" content="我的世界">
+    <meta property="og:url" content="http://blog.e3rp4y.me/2014/11/07/dns-hijack-with-dnsmasq/">
+    <meta property="og:site_name" content="PeerStudio">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    
+    <meta name="twitter:title" content="一次无意识的DNS劫持" />
+    <meta name="twitter:description" content="我的世界" />
+    <meta name="twitter:url" content="http://blog.e3rp4y.me/2014/11/07/dns-hijack-with-dnsmasq/" />
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+        
+    
+</head>
+
+<body class="site">
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://blog.e3rp4y.me" class="site-title">PeerStudio</a>
+      <nav class="site-nav">
+        <a href="/about/">About</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+
+
+<div class="post-header mb2">
+  <h1>一次无意识的DNS劫持</h1>
+  <span class="post-meta">Nov 7, 2014</span><br>
+    
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
+</div>
+
+<article class="post-content">
+  <p>0x00 前言</p>
+
+<p>发现DNS劫持的缘由在于部署Dnsmasq的过程中, 同网段内的Windows主机的DNS地址被改变成Dnsmasq服务所在的主机IP地址. 所有就有了这篇分析报告.</p>
+
+<p>0x01 现象</p>
+
+<p>在某个子网下部署dnsmasq服务, 过了一会儿, 其他用Windows的同事就大喊: XXX, 为什么我不能上网!</p>
+
+<p>经过一轮排查, 发现是使用DHCP获取IP地址的Windows用户, DNS地址被改成了部署Dnsmasq服务的服务器IP地址.</p>
+
+<p>以为是Dnsmasq的BUG(其实还真算Dnsmasq的BUG). 那么就添加了<code>--port=0</code>的启动参数, 表示不提供DNS服务, 然后再添加<code>--dhcp-option=6,114.114.114.114</code>指定DNS服务器IP地址(离真相已经很近了).</p>
+
+<p>但是因为公司默认的DHCP并非<code>114.114.114.114</code>, 而是某个不知名的DNS服务器地址. 所以又有人大喊为什么我的DNS变成了<code>114.114.114.114</code>.</p>
+
+<p>到现在我才意识到, 问题的严重性.</p>
+
+<p>我成功地将DNS劫持了.</p>
+
+<p>别问我劫持了DNS能够做什么.</p>
+
+<p>0x02 分析</p>
+
+<p>发生劫持事件后, 我添加Dnsmasq启动参数<code>--no-daemon</code>, 表示调试模式.</p>
+
+<p>然后启动通过<code>tcpdump -n -i eth0 -vvv port 68</code>来捕捉DHCP请求.</p>
+
+<p>经过观察, 发现Windows DHCP 客户端会定时广播<code>DHCPINFORM</code>, 而Dnsmasq会响应并非在<code>dhcp-hostsfile</code>列表里面的主机. 响应的结果就是发送<code>DHCPACK</code>. 而<code>DHCPACK</code>上又带上了<code>Domain Name Server Option</code>字段.</p>
+
+<p>所以, Windows DHCP Client会将Dnsmasq返回的DHCPACK包中带上的DNS地址设置为自己的DNS地址.</p>
+
+<p>0x03 结论</p>
+
+<p>你还敢用Windows的DHCP吗?</p>
+
+<p>当你无法保证所在网络绝对安全的情况下, 请手动设置DNS地址.</p>
+
+</article>
+
+
+
+
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Weibo: <a href="http://weibo.com/peerstudio">@eerpay</a>.<br>
+      Twitter: <a href="https://twitter.com/PeerXu">@PeerXu</a>.<br>
+    </small>
+    <small>
+      Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+</footer>
+
+</body>
+</html>
