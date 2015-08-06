@@ -12,7 +12,7 @@
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/pixyll.css?201507241018" type="text/css">
+    <link rel="stylesheet" href="/css/pixyll.css?201508070047" type="text/css">
 
     <!-- Fonts -->
     <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
@@ -79,6 +79,26 @@
   <div class="posts">
     
       <div class="post py3">
+        <p class="post-meta">Jan 28, 2013</p>
+        <a href="/2013/01/28/git-notes/" class="post-link"><h3 class="h1 post-title">git备忘录</h3></a>
+        <p class="post-summary">
+          
+            <ol>
+  <li><em>删除远程分支</em> &lt;/br&gt;
+ <code>git push &lt;remote&gt; :&lt;branch&gt;</code> &lt;/br&gt;
+ example: 删除origin仓库上的backup分支 <code>git push origin :backup</code></li>
+  <li><em>通过指定ssh端口号添加远程仓库</em> &lt;/br&gt;
+ <code>git remote add ssh://&lt;username&gt;@&lt;hostname&gt;:&lt;port&gt;/&lt;project_path&gt;</code> &lt;/br&gt;
+ example: 添加用户名为pi, 端口为15002, 主机名为raspi.me, 项目路径为 /home/pi/project.git &lt;/br&gt;
+ <code>git remote add ssh://pi@raspi.me:15002/home/pi/project.git</code></li>
+</ol>
+
+
+          
+        </p>
+      </div>
+    
+      <div class="post py3">
         <p class="post-meta">Jan 15, 2013</p>
         <a href="/2013/01/15/open-vswitch-gre-tunnel-configuration/" class="post-link"><h3 class="h1 post-title">OpenvSwitch gre隧道配置</h3></a>
         <p class="post-summary">
@@ -116,19 +136,6 @@
         <p class="post-summary">
           
             <p>archlinux是一个很好的linux发行版, 比raspbian好多了. 况且archlinux的yaourt工具实在是太强大了.</p>
-          
-        </p>
-      </div>
-    
-      <div class="post py3">
-        <p class="post-meta">Nov 27, 2012</p>
-        <a href="/2012/11/27/remote-server-host-for-ssh/" class="post-link"><h3 class="h1 post-title">SSH反向链接配置</h3></a>
-        <p class="post-summary">
-          
-            <p>应用场景:<br />
-A为公网上的一个SSH服务器, 端口为9944, ip为9.9.9.9, 用户名为a, 本地开放端口为10000,<br />
-B为内网里的一个SSH服务器, 端口为22, 用户为b.<br />
-如今A向B发起SSH请求,实行远程操控.</p>
           
         </p>
       </div>

@@ -7,6 +7,121 @@
     <atom:link href="http://blog.e3rp4y.me/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
+        <title>在C中调用Python程序(I)</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;废话&lt;/h2&gt;
+
+&lt;p&gt;通常, 我们会在终端上启动Python程序.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ python -c &#39;print &quot;Hello, World&quot;&#39;
+Hello, World
+$ python hello.py
+Hello, World
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;但是我们今天来介绍一下, 怎么在C语言中调用Python程序.&lt;/p&gt;
+
+&lt;p&gt;&lt;del&gt;我们当然不是在C中调用&lt;code&gt;system&lt;/code&gt;这么low的方法啦&lt;/del&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;文档导读&lt;/h2&gt;
+
+&lt;p&gt;首先, 先把我们的&lt;a href=&quot;https://docs.python.org/2/c-api/index.html&quot;&gt;官方文档&lt;/a&gt;祭出来. 让大家膜拜一下.&lt;/p&gt;
+
+&lt;p&gt;我们先来个文档导读.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://docs.python.org/2/c-api/intro.html&quot;&gt;Introduction&lt;/a&gt;是介绍Python的C语言API接口的. 大概有什么接口啦, 要怎么调用啦, 需要define什么头文件啦, etc.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://docs.python.org/2/c-api/veryhigh.html&quot;&gt;he Very High Level Layer&lt;/a&gt;是我们今天的重头戏, 介绍Python的执行表达式API.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://docs.python.org/2/c-api/concrete.html&quot;&gt;Concrete Objects Layer&lt;/a&gt;是介绍每种Python原生对象C API接口, 基本上就是怎么创建对象, 修改对象, 读取对象, etc.&lt;/p&gt;
+
+&lt;p&gt;其他文档重要吗? 当然重要啊, 回去读10遍回来比看我这篇破文章靠谱多了.&lt;/p&gt;
+
+&lt;h2 id=&quot;section-2&quot;&gt;当然我们是从最简单的开始&lt;/h2&gt;
+
+&lt;p&gt;我们先来看看这个介绍&lt;a href=&quot;https://docs.python.org/2/c-api/intro.html#embedding-python&quot;&gt;Embedding Python&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;里面详细介绍了Python初始化环境的流程, 我们先看一个最简单的环境.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// file: py.c
+
+// 导入Python的头文件, 这里我采用的是Python2.7版本
+#include &amp;lt;python2.7/Python.h&amp;gt;
+
+int main() {
+  // 初始化Python环境
+  Py_Initialize();
+  // 完了
+  return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;写完上面惊为天人的代码以后, 我们就来编译它.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ gcc -o py -lpython2.7 py.c
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;-lpython2.7&lt;/code&gt;意思是告诉gcc编译器采用&lt;code&gt;python2.7&lt;/code&gt;的代码库.&lt;/p&gt;
+
+&lt;p&gt;注意: 在编译之前请安装相应平台的python开发库.&lt;/p&gt;
+
+&lt;p&gt;例如: ubuntu就安装&lt;code&gt;python-dev&lt;/code&gt;, centos就安装&lt;code&gt;python-devel&lt;/code&gt;, osx貌似直接&lt;code&gt;brew install python&lt;/code&gt;就可以了.&lt;/p&gt;
+
+&lt;p&gt;编译完成后, 会生成一个&lt;code&gt;py&lt;/code&gt;的可执行文件.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt; $ ./py  // 当然什么都没有显示啊笨蛋!
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;bb-&quot;&gt;别bb了, 快入正题&lt;/h2&gt;
+
+&lt;p&gt;我们上面的程序写了那么长, 然而并没有什么卵用.&lt;/p&gt;
+
+&lt;p&gt;我们下面来点实际点的, 调用python的print来输出点什么东西.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// file: py.c
+
+// 导入Python的头文件, 这里我采用的是Python2.7版本
+#include &amp;lt;python2.7/Python.h&amp;gt;
+
+int main() {
+  // 初始化Python环境
+  Py_Initialize();
+  
+  // 执行Python代码, 调用Python的print
+  PyRun_SimpleString(&quot;print \&quot;Hello, C! -- from Python\&quot;&quot;);
+  
+  // 清理Python环境
+  Py_Finalize();
+  return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;再编译后执行试试?&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ gcc -o py -lpython2.7 py.c
+$ ./py
+Hello, C! -- from Python
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;bb&quot;&gt;bb完要总结点东西吧&lt;/h2&gt;
+
+&lt;p&gt;现在我们已经能够在C里面通过Python API来创建Python运行环境和执行Python代码了.&lt;/p&gt;
+
+&lt;p&gt;是不是如此的激动人心?&lt;/p&gt;
+
+&lt;p&gt;但是还有一些问题我们是需要解决的, 例如, 我怎么获取Python的变量和返回值, 我怎么调用Python的函数, etc.&lt;/p&gt;
+
+&lt;p&gt;那句话怎么说来着的?&lt;/p&gt;
+
+&lt;p&gt;欲知后事如何, 请听下回分解!&lt;/p&gt;
+
+&lt;p&gt;enjoy it~&lt;/p&gt;
+</description>
+        <pubDate>Fri, 07 Aug 2015 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/</guid>
+      </item>
+    
+      <item>
         <title>在Emacs上预览graphviz图</title>
         <description>&lt;p&gt;&lt;a href=&quot;http://www.graphviz.org/&quot;&gt;graphviz&lt;/a&gt;是AT&amp;amp;T发明的一个结构化图片描述语言.&lt;/p&gt;
 
@@ -793,39 +908,6 @@ root@f94dc85c44b1:/# ping 10.1.1.20  # unreachable
         <pubDate>Mon, 07 Apr 2014 00:00:00 +0800</pubDate>
         <link>http://blog.e3rp4y.me/2014/04/07/docker-with-openvswitch/</link>
         <guid isPermaLink="true">http://blog.e3rp4y.me/2014/04/07/docker-with-openvswitch/</guid>
-      </item>
-    
-      <item>
-        <title>让你的Docker运行在Open vSwitch上</title>
-        <description>&lt;p&gt;docker创建的container只能运行在docker创建的docker0上(linux bridge).
-所以就有了&lt;a href=&quot;https://github.com/PeerXu/pipework&quot;&gt;pipework&lt;/a&gt;这个项目.&lt;/p&gt;
-
-&lt;h2 id=&quot;pipework&quot;&gt;pipework范例&lt;/h2&gt;
-
-&lt;pre&gt;&lt;code&gt;# ovs-vsctl add-br br0
-# ip link set br0 up
-# ip addr add 10.0.0.1/24 dev br0
-# pipework br0 $(docker run -d mysql /usr/sbin/mysqld_safe) 10.0.0.200/24
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;以上几行脚本的意思是:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;创建一个Open vSwitch的桥br0&lt;/li&gt;
-  &lt;li&gt;设置br0的ip地址为10.0.0.1&lt;/li&gt;
-  &lt;li&gt;在br0上创建一个docker并绑定IP地址&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h2 id=&quot;pipework-1&quot;&gt;pipework工作原理&lt;/h2&gt;
-
-&lt;p&gt;创建一对&lt;a href=&quot;http://wangcong.org/blog/archives/1704&quot;&gt;veth&lt;/a&gt;, 将一头绑定到docker内, 另外一头绑定到Open vSwitch.
-然后通过_iproute_ 绑定IP地址等等操作.&lt;/p&gt;
-
-&lt;p&gt;然后, 就没有然后了.&lt;/p&gt;
-</description>
-        <pubDate>Tue, 24 Dec 2013 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2013/12/24/docker-on-openvswitch/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2013/12/24/docker-on-openvswitch/</guid>
       </item>
     
   </channel>
