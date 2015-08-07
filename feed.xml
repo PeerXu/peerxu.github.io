@@ -7,6 +7,127 @@
     <atom:link href="http://blog.e3rp4y.me/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
+        <title>在C中调用Python程序(II)</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;承上启下的段落&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/&quot;&gt;上一节&lt;/a&gt;我们已经介绍了, 怎么在C语言中, 采用Python API调用Python程序.&lt;/p&gt;
+
+&lt;p&gt;上一节采用的是&lt;code&gt;PyRun_SimpleString&lt;/code&gt;这个API函数.&lt;/p&gt;
+
+&lt;p&gt;这个函数的优点就是方便, 不用初始化环境变量就能够正常运行了.&lt;/p&gt;
+
+&lt;p&gt;缺点也是相当明显, 便利带来的就是灵活性不够高. 最简单的C-Python交互都无法正常完成.&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;摊开你的双手, 来迎接新挑战吧!&lt;/h2&gt;
+
+&lt;p&gt;首先, 我们还是得先看看文档.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://docs.python.org/2/c-api/veryhigh.html&quot;&gt;The Very High Level Layer&lt;/a&gt;告诉我们, 除了&lt;code&gt;PyRun_SimpleString&lt;/code&gt;之外, 还有&lt;code&gt;PyRun_String&lt;/code&gt;, &lt;code&gt;PyRun_File&lt;/code&gt;, etc.&lt;/p&gt;
+
+&lt;p&gt;我们今天就来介绍一下&lt;code&gt;PyRun_String&lt;/code&gt;的用法.&lt;/p&gt;
+
+&lt;p&gt;这个是&lt;code&gt;PyRun_String&lt;/code&gt;的函数签名:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;PyObject*             // PyRun_String的返回值类型
+PyRun_String(         // 函数名
+  const char *str,    // 执行的Python代码
+  int start,          // 载入类型, 分别有: Py_eval_input, Py_file_input, Py_single_input
+  PyObject *globals,  // 全局对象
+  PyObject *locals    // 局部对象
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;上面我们可以知道, &lt;code&gt;PyRun_String&lt;/code&gt;和&lt;code&gt;PyRun_SimpleString&lt;/code&gt;是相似的功能, 都是运行一段Python代码.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;start&lt;/code&gt;参数是指执行的这段代码, 到底是怎么导入的, 这里分了三种模式:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_eval_input&quot;&gt;Py_eval_input&lt;/a&gt;, 是执行隔离的表达式用的.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_file_input&quot;&gt;Py_file_input&lt;/a&gt;, 是最常用的模式, 表示表达式&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_single_input&quot;&gt;Py_single_input&lt;/a&gt;, 这种模式, 是表示输入的代码是从交互接口输入的.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code&gt;globals&lt;/code&gt;参数是表示Python的&lt;code&gt;globals&lt;/code&gt;对象&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;locals&lt;/code&gt;参数是表示Python的&lt;code&gt;locals&lt;/code&gt;对象&lt;/p&gt;
+
+&lt;p&gt;好了, 了解了&lt;code&gt;PyRun_String&lt;/code&gt;函数的各个变量含义后, 我们就来写点代码吧.&lt;/p&gt;
+
+&lt;h2 id=&quot;section-2&quot;&gt;代码解析&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;// file: py.c
+
+#include &amp;lt;python2.7/Python.h&amp;gt;
+
+int main() {
+  // 这里声明了三个环境变量和一个返回值.
+  PyObject *pMainModule,   // __main__模块的指针对象, 等下会初始化为__main__模块.
+      *pGlobalDict,        // globals对象指针
+      *pLocalDict,         // locals对象指针
+      *pResult;            // 用来获取返回值
+
+  // 这是一段Python代码          
+  char *cmd = &quot;&quot;
+    &quot;import math\n&quot;
+    &quot;x = 3\n&quot;
+    &quot;y = 2\n&quot;
+    &quot;result = math.pow(x, y)&quot;;
+
+  // 用来接受返回值
+  double result;
+
+  Py_Initialize();
+
+  // 初始化__main__模块
+  pMainModule = PyImport_AddModule(&quot;__main__&quot;);
+  // 在__main__模块中获取globals对象
+  pGlobalDict = PyModule_GetDict(pMainModule);
+  // 初始化一个空的locals对象
+  pLocalDict = PyDict_New();
+
+  // !! 这里是整个程序的核心, 就在这里执行了cmd的Python程序
+  PyRun_String(cmd, Py_file_input, pGlobalDict, pLocalDict);
+
+  // 获取locals对象上面的result变量
+  pResult = PyDict_GetItemString(pLocalDict, &quot;result&quot;);
+  // 讲PyFloat类型转换成C语言的double类型
+  result = PyFloat_AsDouble(pResult);
+
+  // 释放引用计数
+  Py_DECREF(pResult);
+  Py_DECREF(pLocalDict);
+  Py_DECREF(pGlobalDict);
+
+  // 打印计算得出来的值
+  printf(&quot;result=%lf\n&quot;, result);
+
+  Py_Finalize();
+
+  return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;编译一下看看结果?&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ gcc -lpython2.7 -o py py.c
+$ ./py
+result=9.000000
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;section-3&quot;&gt;总结点什么吧&lt;/h2&gt;
+
+&lt;p&gt;好吧, 上面的注释应该写得够清楚了, 还有什么不明白的话, 就是我表达能力有问题了…&lt;/p&gt;
+
+&lt;p&gt;实在不行就回去多看看文档吧.&lt;/p&gt;
+
+&lt;p&gt;enjoy it~&lt;/p&gt;
+</description>
+        <pubDate>Fri, 07 Aug 2015 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/</guid>
+      </item>
+    
+      <item>
         <title>在C中调用Python程序(I)</title>
         <description>&lt;h2 id=&quot;section&quot;&gt;废话&lt;/h2&gt;
 
@@ -57,7 +178,7 @@ int main() {
 
 &lt;p&gt;写完上面惊为天人的代码以后, 我们就来编译它.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;$ gcc -o py -lpython2.7 py.c
+&lt;pre&gt;&lt;code&gt;$ gcc -lpython2.7 -o py py.c
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;&lt;code&gt;-lpython2.7&lt;/code&gt;意思是告诉gcc编译器采用&lt;code&gt;python2.7&lt;/code&gt;的代码库.&lt;/p&gt;
@@ -97,7 +218,7 @@ int main() {
 
 &lt;p&gt;再编译后执行试试?&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;$ gcc -o py -lpython2.7 py.c
+&lt;pre&gt;&lt;code&gt;$ gcc -lpython2.7 -o py py.c
 $ ./py
 Hello, C! -- from Python
 &lt;/code&gt;&lt;/pre&gt;
@@ -778,136 +899,6 @@ c.start(container[&#39;Id&#39;], binds={&#39;/data&#39;:&#39;/mnt&#39;})
         <pubDate>Fri, 23 May 2014 00:00:00 +0800</pubDate>
         <link>http://blog.e3rp4y.me/2014/05/23/copy-file-from-host-to-docker/</link>
         <guid isPermaLink="true">http://blog.e3rp4y.me/2014/05/23/copy-file-from-host-to-docker/</guid>
-      </item>
-    
-      <item>
-        <title>pipework -- docker网络增强工具</title>
-        <description>&lt;p&gt;&lt;a href=&quot;https://github.com/jpetazzo/pipework&quot;&gt;pipework&lt;/a&gt;是&lt;a href=&quot;https://www.docker.io/&quot;&gt;Docker&lt;/a&gt;的一个网络增强功能插件.&lt;/p&gt;
-
-&lt;p&gt;Docker创建的时候, 默认是接入docker0(linux bridge)的. 所以只能单主机工作, 不能多台主机联动工作. 这时候, pipework应运而生.&lt;/p&gt;
-
-&lt;p&gt;我们先来介绍一下pipework的简单用法, 之后再深入探讨关于pipework与ovs的结合. 最后基于一个案例分析来结束.&lt;/p&gt;
-
-&lt;h3 id=&quot;pipework&quot;&gt;pipework入门&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code&gt;# brctl addbr br0
-# ip link set dev br0 up
-# ip addr add 192.168.2.1/24 dev br0
-# MYSQL=$(docker run -d -p 3306:3306 -e MYSQL_PASS=admin tutum/mysql)
-# pipework br0 $MYSQL 192.168.2.100/24
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;创建一个br0(linux bridge).&lt;/li&gt;
-  &lt;li&gt;配置IP地址给br0.&lt;/li&gt;
-  &lt;li&gt;启动一个mysql docker.&lt;/li&gt;
-  &lt;li&gt;使用&lt;code&gt;pipework&lt;/code&gt;为docker添加IP地址.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;经过这几个步骤后, 创建的docker就有一个设置指定的IP地址了.
-pipework的具体工作原理就不在这里详细分析, 有兴趣的同学可以自己去读源代码.&lt;/p&gt;
-
-&lt;h3 id=&quot;pipework-1&quot;&gt;pipework进阶&lt;/h3&gt;
-
-&lt;p&gt;上面入门介绍中, 我们使用pipework工具, 通过linux bridge的模式指定IP地址给docker容器.
-其实, 除了linux bridge, pipework还支持现在流行的虚拟交换机(Open vSwitch).
-下面简单的示范一下如何将docker与Open vSwitch(下称ovs)连通.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;# ovs-vsctl add-br ovsbr0
-# ip link set dev ovsbr0 up
-# ip addr add 192.168.3.1/24 dev ovsbr0
-# MYSQL=$(docker run -d -p 3306:3306 -e MYSQL_PASS=admin tutum/mysql)
-# pipework ovsbr0 $MYSQL 192.168.3.100/24
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;对于pipework来说, 底层使用什么虚拟网络设备是透明的.
-pipework会智能地判断使用的是linux bridge还是ovs.
-所以除了创建桥的方式不同, 其他并没有改变.&lt;/p&gt;
-
-&lt;h3 id=&quot;pipework-2&quot;&gt;pipework案例分析&lt;/h3&gt;
-
-&lt;p&gt;下面就具体分析一个pipework的应用场景.&lt;/p&gt;
-
-&lt;h4 id=&quot;dockervlan&quot;&gt;docker容器与VLAN&lt;/h4&gt;
-
-&lt;p&gt;docker容器启动时, 默认是接入到docker0网桥上的. 这样就容易给大家造成一个假象, docker容器只能运行在单机的情况下.
-&lt;em&gt;但是显示并非如此.&lt;/em&gt;
-我们可以通过pipework扩展docker的网络功能.&lt;/p&gt;
-
-&lt;p&gt;我们假设现在有2台服务器A和B, 交换机S.
-现在我们同时在A,B上创建虚拟网桥ovsbr0. 并且在服务器A上, 将网桥启用和配置IP地址.
-那么我们现在如果在A,B上,分别启动一个docker.
-同时通过pipework将docker接入到ovsbr0上, 并且配置与A服务器上ovs相同网段的IP地址.
-那么&lt;em&gt;两个docker互相之间就能够通信&lt;/em&gt;了.
-很神奇有木有!!!&lt;/p&gt;
-
-&lt;p&gt;但是万恶的需求是不断进化的(呵呵). 不会都让你们的docker运行在一个网络环境下, 有的应用是需要互相隔离的.
-那么就有可能需要VLAN的划分. 这里多说点, 其实在现今的情况下, 除了划分VLAN还有其他的方式达到二层网络隔离的效果, 如VXLAN, NVGRE等技术.
-但是我们现在还是只谈论VLAN隔离吧.&lt;/p&gt;
-
-&lt;p&gt;我们先在服务器A上做一下操作:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;# D1V10=$(docker run -i -t learn/ping /bin/bash)
-# pipework ovsbr0 -i d1v10 $D1V10 10.1.1.10/24
-# D2V10=$(docker run -i -t learn/ping /bin/bash)
-# pipework ovsbr0 -i d2v10 $D2V10 10.1.1.11/24
-# D3V20=$(docker run -i -t learn/ping /bin/bash)
-# pipework ovsbr0 -i d3v20 $D3V20 10.1.1.20/24
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;这里定义了3个Docker容器, 并且将其添加到ovsbr0这个桥上.
-下面开始将不同的网卡设置vlan id.
-我们将 D1V10 和 D2V10 设置vlan id为10. 将D3V20 设置vlan id为20.&lt;/p&gt;
-
-&lt;p&gt;我们可以通过&lt;code&gt;ovs-vsctl list-ports &amp;lt;BRIDGE&amp;gt;&lt;/code&gt;找出桥设备下面的所有端口.
-但是刚刚我们一口气连续创建了3个docker, 会看见3个对应的虚拟网卡.&lt;/p&gt;
-
-&lt;p&gt;然后我们需要做的是, 找出与Docker容器想对应的虚拟网卡.
-刚刚在pipework执行时, 添加了参数&lt;code&gt;-i&lt;/code&gt;, 意思是创建的虚拟网卡结尾对应的字符串.&lt;/p&gt;
-
-&lt;p&gt;比如:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;# pipework ovsbr0 -i d1v10 $D1V10 10.1.1.10/24
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;这命令执行后, ovsbr0设备会添加一个port, port的名字应该是&lt;code&gt;plxxxxd1v10&lt;/code&gt;.
-当中的xxxx是docker容器的pid.&lt;/p&gt;
-
-&lt;p&gt;这时我们就可以通过&lt;code&gt;ovs-vsctl set port &amp;lt;port&amp;gt; tag=&amp;lt;vlan id&amp;gt;&lt;/code&gt;的方式设置vlan id了.&lt;/p&gt;
-
-&lt;p&gt;下面是范例:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;# ovs-vsctl list-ports ovsbr0
-pl23016d1v10
-pl23124d2v10
-pl23654d3v20
-# ovs-vsctl set port pl23016d1v10 tag=10
-# ovs-vsctl set port pl23124d2v10 tag=10
-# ovs-vsctl set port pl23654d3v20 tag=20
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;这样就完成了设置VLAN的步骤了.
-下面我们通过简单的ping命令来验证一下vlan隔离的效果.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;# docker attach $D1V10
-root@f94dc85c44b1:/# ping 10.1.1.11  # reachable
-root@f94dc85c44b1:/# ping 10.1.1.20  # unreachable
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h4 id=&quot;vlan&quot;&gt;多服务器的vlan划分&lt;/h4&gt;
-
-&lt;p&gt;可能有同学以为, docker只能在单机上工作(docker与docker之间通信只能在本机进行).
-但是使用pipework增强插件后, 我们可以通过Linux Bridge或Open vSwitch来进行数据交换.
-这样就可以不仅仅局限于Docker默认的隔离桥(原谅我的破翻译, 我真不知道怎么形容这货 –&amp;gt; docker0)&lt;/p&gt;
-
-&lt;h3 id=&quot;section&quot;&gt;总结&lt;/h3&gt;
-
-&lt;p&gt;pipework是个强大的docker网络管理工具. 具体的实现也比较简单. 可以配合ovs来实现强大的功能.
-剩下就是发挥想象力的时间了…&lt;/p&gt;
-</description>
-        <pubDate>Mon, 07 Apr 2014 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2014/04/07/docker-with-openvswitch/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/04/07/docker-with-openvswitch/</guid>
       </item>
     
   </channel>

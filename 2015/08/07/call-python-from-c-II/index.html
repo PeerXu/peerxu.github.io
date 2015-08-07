@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>kombu 入门教程(上) &#8211; PeerStudio</title>
+    <title>在C中调用Python程序(II) &#8211; PeerStudio</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="我的世界">
     <meta name="author" content="Peer Xu">
     <meta name="keywords" content="">
-    <link rel="canonical" href="http://blog.e3rp4y.me/2013/10/05/kombu-tutorial_I/">
+    <link rel="canonical" href="http://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
@@ -24,17 +24,17 @@
     <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
-    <meta property="og:title" content="kombu 入门教程(上)">
+    <meta property="og:title" content="在C中调用Python程序(II)">
     <meta property="og:description" content="我的世界">
-    <meta property="og:url" content="http://blog.e3rp4y.me/2013/10/05/kombu-tutorial_I/">
+    <meta property="og:url" content="http://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/">
     <meta property="og:site_name" content="PeerStudio">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary" />
     
-    <meta name="twitter:title" content="kombu 入门教程(上)" />
+    <meta name="twitter:title" content="在C中调用Python程序(II)" />
     <meta name="twitter:description" content="我的世界" />
-    <meta name="twitter:url" content="http://blog.e3rp4y.me/2013/10/05/kombu-tutorial_I/" />
+    <meta name="twitter:url" content="http://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/" />
 
     <!-- Icons -->
     <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
@@ -77,11 +77,9 @@
         
 
 
-
-
 <div class="post-header mb2">
-  <h1>kombu 入门教程(上)</h1>
-  <span class="post-meta">Oct 5, 2013</span><br>
+  <h1>在C中调用Python程序(II)</h1>
+  <span class="post-meta">Aug 7, 2015</span><br>
     
   <span class="post-meta small">
   
@@ -91,99 +89,119 @@
 </div>
 
 <article class="post-content">
-  <h2 id="section">前言</h2>
+  <h2 id="section">承上启下的段落</h2>
 
-<p>本文是<a href="https://github.com/celery/kombu">kombu框架</a>(一个基于python的消息队列框架)的入门教程. 文章会简单介绍消息队列中的基本概念和kombu框架的简单使用方法.</p>
+<p><a href="http://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/">上一节</a>我们已经介绍了, 怎么在C语言中, 采用Python API调用Python程序.</p>
 
-<h2 id="hello-world">Hello World</h2>
+<p>上一节采用的是<code>PyRun_SimpleString</code>这个API函数.</p>
 
-<p>我们来了解一下, 一个简单的消息队列里面, 应该包含以下的对象.</p>
+<p>这个函数的优点就是方便, 不用初始化环境变量就能够正常运行了.</p>
 
-<ol>
-  <li><strong>Producer</strong> – 负责消息的发送</li>
-  <li><strong>Consumer</strong> – 负责消息的接收</li>
-  <li><strong>Queue</strong> – 负责消息的传输</li>
-  <li><strong>Exchange</strong> – 负责消息的分发</li>
-</ol>
+<p>缺点也是相当明显, 便利带来的就是灵活性不够高. 最简单的C-Python交互都无法正常完成.</p>
 
-<p>在我们的<strong>Hello World</strong>中, 我们只看到了创建<strong>Queue</strong>的过程, 其实一个完整消息队列应用程序是会包含上面所说的所有实体的.</p>
+<h2 id="section-1">摊开你的双手, 来迎接新挑战吧!</h2>
 
-<p>但是kombu很贴心的为我们封装了一个便于使用的<strong>SimpleQueue</strong>类, 让我们能够快速地开发.</p>
+<p>首先, 我们还是得先看看文档.</p>
 
-<p>下面我们就围绕着这个<strong>SimpleQueue</strong>类来进行简单的试验:</p>
+<p><a href="https://docs.python.org/2/c-api/veryhigh.html">The Very High Level Layer</a>告诉我们, 除了<code>PyRun_SimpleString</code>之外, 还有<code>PyRun_String</code>, <code>PyRun_File</code>, etc.</p>
 
-<pre><code>import kombu
-conn = kombu.Connection('redis://localhost')
+<p>我们今天就来介绍一下<code>PyRun_String</code>的用法.</p>
+
+<p>这个是<code>PyRun_String</code>的函数签名:</p>
+
+<pre><code>PyObject*             // PyRun_String的返回值类型
+PyRun_String(         // 函数名
+  const char *str,    // 执行的Python代码
+  int start,          // 载入类型, 分别有: Py_eval_input, Py_file_input, Py_single_input
+  PyObject *globals,  // 全局对象
+  PyObject *locals    // 局部对象
+)
 </code></pre>
 
-<p>导入kombu模块, 并且创建一个连接, 连接到本地的Redis服务上(本文的介绍都是基于Redis作为消息队列后端)</p>
+<p>上面我们可以知道, <code>PyRun_String</code>和<code>PyRun_SimpleString</code>是相似的功能, 都是运行一段Python代码.</p>
 
-<pre><code>def message_process(body, message):
-    print "[x] %s" body
-    message.ack()
-queue = conn.SimpleQueue('demo')
-queue.consumer.callbacks = [message_process]
+<p><code>start</code>参数是指执行的这段代码, 到底是怎么导入的, 这里分了三种模式:</p>
+
+<ul>
+  <li><a href="https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_eval_input">Py_eval_input</a>, 是执行隔离的表达式用的.</li>
+  <li><a href="https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_file_input">Py_file_input</a>, 是最常用的模式, 表示表达式</li>
+  <li><a href="https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_single_input">Py_single_input</a>, 这种模式, 是表示输入的代码是从交互接口输入的.</li>
+</ul>
+
+<p><code>globals</code>参数是表示Python的<code>globals</code>对象</p>
+
+<p><code>locals</code>参数是表示Python的<code>locals</code>对象</p>
+
+<p>好了, 了解了<code>PyRun_String</code>函数的各个变量含义后, 我们就来写点代码吧.</p>
+
+<h2 id="section-2">代码解析</h2>
+
+<pre><code>// file: py.c
+
+#include &lt;python2.7/Python.h&gt;
+
+int main() {
+  // 这里声明了三个环境变量和一个返回值.
+  PyObject *pMainModule,   // __main__模块的指针对象, 等下会初始化为__main__模块.
+      *pGlobalDict,        // globals对象指针
+      *pLocalDict,         // locals对象指针
+      *pResult;            // 用来获取返回值
+
+  // 这是一段Python代码          
+  char *cmd = ""
+    "import math\n"
+    "x = 3\n"
+    "y = 2\n"
+    "result = math.pow(x, y)";
+
+  // 用来接受返回值
+  double result;
+
+  Py_Initialize();
+
+  // 初始化__main__模块
+  pMainModule = PyImport_AddModule("__main__");
+  // 在__main__模块中获取globals对象
+  pGlobalDict = PyModule_GetDict(pMainModule);
+  // 初始化一个空的locals对象
+  pLocalDict = PyDict_New();
+
+  // !! 这里是整个程序的核心, 就在这里执行了cmd的Python程序
+  PyRun_String(cmd, Py_file_input, pGlobalDict, pLocalDict);
+
+  // 获取locals对象上面的result变量
+  pResult = PyDict_GetItemString(pLocalDict, "result");
+  // 讲PyFloat类型转换成C语言的double类型
+  result = PyFloat_AsDouble(pResult);
+
+  // 释放引用计数
+  Py_DECREF(pResult);
+  Py_DECREF(pLocalDict);
+  Py_DECREF(pGlobalDict);
+
+  // 打印计算得出来的值
+  printf("result=%lf\n", result);
+
+  Py_Finalize();
+
+  return 0;
+}
 </code></pre>
 
-<p>这里定义了一个<strong>message_process</strong>函数, 用于处理消息.
-需要注意的是, 当消息处理完之后, 要发送调用message对象的ack方法来确保消息已经被正确处理.
-如果没有确认的话, 那么消息依然放置在队列当中, 当作没有被处理.</p>
+<p>编译一下看看结果?</p>
 
-<p>之后创建了一个消息队列, 命名为<strong>demo</strong>. 并且给队列的consumer绑定了一个消息处理函数.</p>
-
-<p>以上就是关于消息接收的一些过程, 下面继续介绍一下消息发送的过程.</p>
-
-<pre><code>queue.put('hello,world')
+<pre><code>$ gcc -lpython2.7 -o py py.c
+$ ./py
+result=9.000000
 </code></pre>
 
-<p>创建消息队列的过程与消息接收的相同, 要注意的就是不需要为消息队列指定consumer的处理函数.
-直接调用queue的put方法就可以发送消息了.</p>
+<h2 id="section-3">总结点什么吧</h2>
 
-<p>完整的代码如下:</p>
+<p>好吧, 上面的注释应该写得够清楚了, 还有什么不明白的话, 就是我表达能力有问题了…</p>
 
-<p><em>receiver.py</em></p>
+<p>实在不行就回去多看看文档吧.</p>
 
-<pre><code>import kombu
-
-def message_process(body, message):
-    print "[x] %s" % body
-    message.ack()
-
-conn = kombu.Connection('redis://localhost')
-queue = conn.SimpleQueue('demo')
-queue.consumer.callbacks = [message_process]
-
-queue.get()
-</code></pre>
-
-<p><em>sender.py</em></p>
-
-<pre><code>import kombu
-
-conn = kombu.Connection('redis://localhost')
-queue = conn.SimpleQueue('demo')
-queue.put('hello, world')
-</code></pre>
-
-<p>启动receiver:</p>
-
-<pre><code>$ python receiver.py
-</code></pre>
-
-<p>发送消息:</p>
-
-<pre><code>$ python sender.py
-</code></pre>
-
-<p>之后会在receiver的终端上看见:</p>
-
-<pre><code>$ python receiver.py
-[x] hello world
-</code></pre>
-
-<p>简单的消息队列应用就这样.</p>
-
-<p>感谢阅读~</p>
+<p>enjoy it~</p>
 
 </article>
 
@@ -195,7 +213,7 @@ queue.put('hello, world')
   <div id="disqus_thread"></div>
   <script type="text/javascript">
     var disqus_shortname  = 'peerstudioblog';
-    var disqus_identifier = '/2013/10/05/kombu-tutorial_I';
+    var disqus_identifier = '/2015/08/07/call-python-from-c-II';
     var disqus_title      = '';
 
     (function() {
