@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>SQLAlchemy多对多关系使用方法 &#8211; PeerStudio</title>
+    <title>利用Docker跨平台编译Windows平台的qemu-ga.exe &#8211; PeerStudio</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="我的世界">
     <meta name="author" content="Peer Xu">
     <meta name="keywords" content="">
-    <link rel="canonical" href="http://blog.e3rp4y.me/2014/08/21/sqlalchemy-many-to-many-relationship/">
+    <link rel="canonical" href="http://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
@@ -26,17 +26,17 @@
     <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
-    <meta property="og:title" content="SQLAlchemy多对多关系使用方法">
+    <meta property="og:title" content="利用Docker跨平台编译Windows平台的qemu-ga.exe">
     <meta property="og:description" content="我的世界">
-    <meta property="og:url" content="http://blog.e3rp4y.me/2014/08/21/sqlalchemy-many-to-many-relationship/">
+    <meta property="og:url" content="http://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/">
     <meta property="og:site_name" content="PeerStudio">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary" />
     
-    <meta name="twitter:title" content="SQLAlchemy多对多关系使用方法" />
+    <meta name="twitter:title" content="利用Docker跨平台编译Windows平台的qemu-ga.exe" />
     <meta name="twitter:description" content="我的世界" />
-    <meta name="twitter:url" content="http://blog.e3rp4y.me/2014/08/21/sqlalchemy-many-to-many-relationship/" />
+    <meta name="twitter:url" content="http://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/" />
 
     <!-- Icons -->
     <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
@@ -116,8 +116,8 @@
 
 
 <div class="post-header mb2">
-  <h1>SQLAlchemy多对多关系使用方法</h1>
-  <span class="post-meta">Aug 21, 2014</span><br>
+  <h1>利用Docker跨平台编译Windows平台的qemu-ga.exe</h1>
+  <span class="post-meta">Aug 12, 2015</span><br>
     
   <span class="post-meta small">
   
@@ -127,151 +127,113 @@
 </div>
 
 <article class="post-content">
-  <p>SQLAlchemy是一个Python的数据库ORM框架.</p>
+  <h2 id="section">介绍</h2>
 
-<p>多对多数据模型是比较常用的数据关系.</p>
+<p>今天, 我们介绍一下怎么在Linux环境下编译Windows的可执行文件.</p>
 
-<p>下面采用文章(<code>Page</code>)和标签(<code>Tag</code>)的关系来作为介绍范例.</p>
+<p>首先, 我们要先熟悉一下<a href="https://zh.wikipedia.org/wiki/MinGW">mingw</a>. <del>基本上就是一个能够编译出windows可执行文件的gcc吧.</del></p>
 
-<ol>
-  <li>一篇文章可以通过多个标签来描述概要信息.</li>
-  <li>一个标签可以对应多篇文章.</li>
-</ol>
+<p>其次, 我们用一个已经搭好mingw环境的docker容器来做今天的展示.</p>
 
-<p>首先我们先创建两个Sqlalchemy的模型类:</p>
+<p><a href="https://hub.docker.com/r/e3rp4y/centos-mingw-base/">centos-mingw-base</a>是在<a href="https://hub.docker.com/_/centos/">Centos</a>上构建的mingw编译环境.</p>
 
-<pre><code>class Page(Base):
-    __tablename__ = 'page'
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    
-class Tag(Base):
-    __tablename__ = 'tag'
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
+<p><a href="https://hub.docker.com/r/e3rp4y/centos-mingw-base/~/dockerfile/">Dockerfile</a> (<a href="https://github.com/PeerXu/centos-mingw-base">github</a>) 可以自己添加组件.</p>
+
+<h2 id="glance">Glance</h2>
+
+<p>我们先运行一下<code>centos-mingw-base</code>容器看看.</p>
+
+<pre><code>$ docker run --rm -t -i e3rp4y/centos-mingw-base /bin/bash
+
+[root@4ad795647521 /]# rpm -qa|grep mingw
+mingw-binutils-generic-2.25-1.el7.x86_64
+mingw64-filesystem-100-1.el7.noarch
+mingw32-crt-4.0.2-1.el7.noarch
+mingw64-crt-4.0.2-1.el7.noarch
+mingw64-headers-4.0.2-1.el7.noarch
+mingw32-cpp-4.9.1-3.el7.x86_64
+mingw32-gcc-4.9.1-3.el7.x86_64
+mingw64-binutils-2.25-1.el7.x86_64
+mingw32-pkg-config-0.28-2.el7.x86_64
+mingw32-zlib-1.2.8-2.el7.noarch
+mingw64-zlib-static-1.2.8-2.el7.noarch
+mingw32-win-iconv-0.0.6-1.el7.noarch
+mingw32-gcc-c++-4.9.1-3.el7.x86_64
+mingw64-gcc-c++-4.9.1-3.el7.x86_64
+mingw64-gettext-0.18.3.2-1.el7.noarch
+mingw64-glib2-2.40.0-3.el7.noarch
+mingw32-termcap-1.3.1-15.el7.noarch
+mingw32-glib2-2.40.0-3.el7.noarch
+mingw32-glib2-static-2.40.0-3.el7.noarch
+mingw-filesystem-base-100-1.el7.noarch
+mingw32-filesystem-100-1.el7.noarch
+mingw32-winpthreads-4.0.2-1.el7.noarch
+mingw64-winpthreads-4.0.2-1.el7.noarch
+mingw32-headers-4.0.2-1.el7.noarch
+mingw32-binutils-2.25-1.el7.x86_64
+mingw64-cpp-4.9.1-3.el7.x86_64
+mingw64-gcc-4.9.1-3.el7.x86_64
+mingw64-pkg-config-0.28-2.el7.x86_64
+mingw64-zlib-1.2.8-2.el7.noarch
+mingw32-zlib-static-1.2.8-2.el7.noarch
+mingw64-termcap-1.3.1-15.el7.noarch
+mingw64-libffi-3.0.13-4.el7.noarch
+mingw64-win-iconv-0.0.6-1.el7.noarch
+mingw64-gettext-static-0.18.3.2-1.el7.noarch
+mingw32-libffi-3.0.13-4.el7.noarch
+mingw32-gettext-0.18.3.2-1.el7.noarch
+mingw32-gettext-static-0.18.3.2-1.el7.noarch
+mingw64-glib2-static-2.40.0-3.el7.noarch
+[root@4ad795647521 /]#
 </code></pre>
 
-<p>这里创建了两个模型, 分别是<code>Page</code>和<code>Tag</code>.</p>
+<p>我们能够直观的看见, 安装了mingw环境的相关组件.</p>
 
-<p>添加一个需求: 我们能够在<code>Page</code>对象中直接获取关联的<code>Tag</code>列表</p>
+<p>下面我们先来简单的编译一个Windows平台的”Hello World”.</p>
 
-<p>那么我们就需要在<code>Page</code>模型中添加:</p>
-
-<pre><code>class Page(Base):
-...
-    tags = relationship('Tag', secondary=association_table)
-...
+<pre><code>[root@4ad795647521 /]# cd /tmp
+[root@4ad795647521 tmp]# cat hello.c
+#include &lt;stdio.h&gt;
+int main(void) {
+    printf("hello world\n");
+    return 0;
+}
+[root@4ad795647521 tmp]# i686-w64-mingw32-gcc -o hello.exe hello.c
+[root@4ad795647521 tmp]# ls -lh hello.exe
+-rwxr-xr-x 1 root root 54K Aug 12 10:53 hello.exe
+[root@4ad795647521 tmp]# file hello.exe
+hello.exe: PE32 executable (console) Intel 80386, for MS Windows
 </code></pre>
 
-<p>这里就通过指定<code>relationship</code>来指定<code>tags</code>属性是指向<code>Tag</code>对象的, 关联规则是通过<code>association_table</code>的关联关系.</p>
+<p>这样我们就成功地编译出一个windows平台 32位系统的<code>hello.exe</code>.</p>
 
-<p>然后就是需要创建关联规则表<code>association_table</code>.</p>
+<p>备注: 如果想要编译64位的话, 将编译器换成<code>x86_64-w64-mingw32-gcc</code>即可.</p>
 
-<pre><code>association_table = Table(
-    'association', Base.metadata,
-    Column('page_id', Integer, ForeignKey('page.id')),
-    Column('tag_id', Integer, ForeignKey('tag.id'))
-)
+<h2 id="qemu-gaexe">编译qemu-ga.exe</h2>
+
+<p>下面, 我们来编译一下qemu-ga.exe</p>
+
+<p>首先, 我们需要将源代码放置到容器里面.</p>
+
+<p>我们可以采用docker的<code>--volume</code>参数.</p>
+
+<pre><code>docker run --rm --volume=/Users/peer/tmp/qemu-2.3.0/:/tmp/qemu -t -i e3rp4y/centos-mingw-base
 </code></pre>
 
-<p>这里就创建一个<code>Page-Tag</code>关联表, 通过将<code>page_id</code>作为<code>Page</code>对象的外键. 同理<code>tag_id</code>作为<code>Tag</code>对象的外键.</p>
+<p>这里, 我们用<code>--volume</code>参数, 将本机的<code>/Users/peer/tmp/qemu-2.3.0/</code>目录映射到容器的<code>/tmp/qemu/</code>目录上.</p>
 
-<p>至此, 我们已经完成多对多模型的创建.</p>
+<p>然后我们可以开始编译了.</p>
 
-<p>接下来就是多对多模型的CRUD了.</p>
-
-<pre><code>page = Page(name='Python API Page')
-api_tag = Tag(name='api')
-python_tag = Tag(name='python')
-
-# append tag to page
-page.tags.append(api_tag)
-page.tags.append(python_tag)
-
-# read tag from page
-print [tag.name for tag in page.tags]
-
-# remove tag from page
-page.tags.remove(python_tag)
+<pre><code>[root@035df45036cc /]# cd /tmp/qemu
+[root@035df45036cc qemu]# mkdir build
+[root@035df45036cc qemu]# cd build
+[root@035df45036cc build]# ../confug --target-list=x86_64-softmmu --cross-prefix=i686-w64-mingw32-
+[root@035df45036cc build]# make V=1 VL_LDFLAGS=-Wl,--build-id qemu-ga.exe
 </code></pre>
 
-<p>以上就是Sqlalchemy关于多对多模型操作方式~</p>
+<p>拷贝走你的<code>qemu-ga.exe</code> happy去吧.</p>
 
-<p>下面贴上完整的代码:</p>
-
-<pre><code>import sqlalchemy as sqla
-import sqlalchemy.orm as sqlorm
-from sqlalchemy.ext.declarative import declarative_base as sqla_declarative_base
-
-Base = sqla_declarative_base()
-engine = sqla.create_engine('sqlite:///test.db', echo=True)
-
-association_table = sqla.Table(
-    'association', Base.metadata,
-    sqla.Column('page_id', sqla.Integer, sqla.ForeignKey('page.id')),
-    sqla.Column('tag_id', sqla.Integer, sqla.ForeignKey('tag.id'))
-)
-
-class Page(Base):
-    __tablename__ = 'page'
-    id = sqla.Column(sqla.Integer, primary_key=True)
-    name = sqla.Column(sqla.String)
-    tags = sqlorm.relationship('Tag', secondary=association_table)
-
-class Tag(Base):
-    __tablename__ = 'tag'
-    id = sqla.Column(sqla.Integer, primary_key=True)
-    name = sqla.Column(sqla.String)
-    pages = sqlorm.relationship('Page', secondary=association_table)
-
-Base.metadata.bind = engine
-Base.metadata.create_all()
-
-Session = sqlorm.scoped_session(sqlorm.sessionmaker(bind=engine))
-
-def save_page():
-    sess = Session()
-    try:
-        page = Page(name='Python API Page')
-        sess.add(page)
-
-        sess.flush()
-        sess.commit()
-    finally:
-        sess.close()
-
-def add_tag():
-   sess = Session()
-   try:
-       python_tag = Tag(name='python')
-       api_tag = Tag(name='api')
-       sess.add(python_tag)
-       sess.add(api_tag)
-       page = sess.query(Page).first()
-       page.tags.append(python_tag)
-       page.tags.append(api_tag)
-
-       sess.flush()
-       sess.commit()
-   finally:
-       sess.close()
-
-def remove_tag():
-    sess = Session()
-    try:
-        page = sess.query(Page).first()
-        api_tag = sess.query(Tag).filter(Tag.name=='api').first()
-        page.tags.remove(api_tag)
-        sess.flush()
-        sess.commit()
-    finally:
-        sess.close()
-
-if __name__ == '__main__':
-    save_page()
-    add_tag()
-    remove_tag()
-</code></pre>
+<p>enjoy it.</p>
 
 </article>
 
@@ -283,7 +245,7 @@ if __name__ == '__main__':
   <div id="disqus_thread"></div>
   <script type="text/javascript">
     var disqus_shortname  = 'peerstudioblog';
-    var disqus_identifier = '/2014/08/21/sqlalchemy-many-to-many-relationship';
+    var disqus_identifier = '/2015/08/12/cross-platform-compile-qemu-ga-with-docker';
     var disqus_title      = '';
 
     (function() {

@@ -7,6 +7,121 @@
     <atom:link href="http://blog.e3rp4y.me/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
+        <title>利用Docker跨平台编译Windows平台的qemu-ga.exe</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;介绍&lt;/h2&gt;
+
+&lt;p&gt;今天, 我们介绍一下怎么在Linux环境下编译Windows的可执行文件.&lt;/p&gt;
+
+&lt;p&gt;首先, 我们要先熟悉一下&lt;a href=&quot;https://zh.wikipedia.org/wiki/MinGW&quot;&gt;mingw&lt;/a&gt;. &lt;del&gt;基本上就是一个能够编译出windows可执行文件的gcc吧.&lt;/del&gt;&lt;/p&gt;
+
+&lt;p&gt;其次, 我们用一个已经搭好mingw环境的docker容器来做今天的展示.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://hub.docker.com/r/e3rp4y/centos-mingw-base/&quot;&gt;centos-mingw-base&lt;/a&gt;是在&lt;a href=&quot;https://hub.docker.com/_/centos/&quot;&gt;Centos&lt;/a&gt;上构建的mingw编译环境.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://hub.docker.com/r/e3rp4y/centos-mingw-base/~/dockerfile/&quot;&gt;Dockerfile&lt;/a&gt; (&lt;a href=&quot;https://github.com/PeerXu/centos-mingw-base&quot;&gt;github&lt;/a&gt;) 可以自己添加组件.&lt;/p&gt;
+
+&lt;h2 id=&quot;glance&quot;&gt;Glance&lt;/h2&gt;
+
+&lt;p&gt;我们先运行一下&lt;code&gt;centos-mingw-base&lt;/code&gt;容器看看.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ docker run --rm -t -i e3rp4y/centos-mingw-base /bin/bash
+
+[root@4ad795647521 /]# rpm -qa|grep mingw
+mingw-binutils-generic-2.25-1.el7.x86_64
+mingw64-filesystem-100-1.el7.noarch
+mingw32-crt-4.0.2-1.el7.noarch
+mingw64-crt-4.0.2-1.el7.noarch
+mingw64-headers-4.0.2-1.el7.noarch
+mingw32-cpp-4.9.1-3.el7.x86_64
+mingw32-gcc-4.9.1-3.el7.x86_64
+mingw64-binutils-2.25-1.el7.x86_64
+mingw32-pkg-config-0.28-2.el7.x86_64
+mingw32-zlib-1.2.8-2.el7.noarch
+mingw64-zlib-static-1.2.8-2.el7.noarch
+mingw32-win-iconv-0.0.6-1.el7.noarch
+mingw32-gcc-c++-4.9.1-3.el7.x86_64
+mingw64-gcc-c++-4.9.1-3.el7.x86_64
+mingw64-gettext-0.18.3.2-1.el7.noarch
+mingw64-glib2-2.40.0-3.el7.noarch
+mingw32-termcap-1.3.1-15.el7.noarch
+mingw32-glib2-2.40.0-3.el7.noarch
+mingw32-glib2-static-2.40.0-3.el7.noarch
+mingw-filesystem-base-100-1.el7.noarch
+mingw32-filesystem-100-1.el7.noarch
+mingw32-winpthreads-4.0.2-1.el7.noarch
+mingw64-winpthreads-4.0.2-1.el7.noarch
+mingw32-headers-4.0.2-1.el7.noarch
+mingw32-binutils-2.25-1.el7.x86_64
+mingw64-cpp-4.9.1-3.el7.x86_64
+mingw64-gcc-4.9.1-3.el7.x86_64
+mingw64-pkg-config-0.28-2.el7.x86_64
+mingw64-zlib-1.2.8-2.el7.noarch
+mingw32-zlib-static-1.2.8-2.el7.noarch
+mingw64-termcap-1.3.1-15.el7.noarch
+mingw64-libffi-3.0.13-4.el7.noarch
+mingw64-win-iconv-0.0.6-1.el7.noarch
+mingw64-gettext-static-0.18.3.2-1.el7.noarch
+mingw32-libffi-3.0.13-4.el7.noarch
+mingw32-gettext-0.18.3.2-1.el7.noarch
+mingw32-gettext-static-0.18.3.2-1.el7.noarch
+mingw64-glib2-static-2.40.0-3.el7.noarch
+[root@4ad795647521 /]#
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;我们能够直观的看见, 安装了mingw环境的相关组件.&lt;/p&gt;
+
+&lt;p&gt;下面我们先来简单的编译一个Windows平台的”Hello World”.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;[root@4ad795647521 /]# cd /tmp
+[root@4ad795647521 tmp]# cat hello.c
+#include &amp;lt;stdio.h&amp;gt;
+int main(void) {
+    printf(&quot;hello world\n&quot;);
+    return 0;
+}
+[root@4ad795647521 tmp]# i686-w64-mingw32-gcc -o hello.exe hello.c
+[root@4ad795647521 tmp]# ls -lh hello.exe
+-rwxr-xr-x 1 root root 54K Aug 12 10:53 hello.exe
+[root@4ad795647521 tmp]# file hello.exe
+hello.exe: PE32 executable (console) Intel 80386, for MS Windows
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这样我们就成功地编译出一个windows平台 32位系统的&lt;code&gt;hello.exe&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;备注: 如果想要编译64位的话, 将编译器换成&lt;code&gt;x86_64-w64-mingw32-gcc&lt;/code&gt;即可.&lt;/p&gt;
+
+&lt;h2 id=&quot;qemu-gaexe&quot;&gt;编译qemu-ga.exe&lt;/h2&gt;
+
+&lt;p&gt;下面, 我们来编译一下qemu-ga.exe&lt;/p&gt;
+
+&lt;p&gt;首先, 我们需要将源代码放置到容器里面.&lt;/p&gt;
+
+&lt;p&gt;我们可以采用docker的&lt;code&gt;--volume&lt;/code&gt;参数.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker run --rm --volume=/Users/peer/tmp/qemu-2.3.0/:/tmp/qemu -t -i e3rp4y/centos-mingw-base
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这里, 我们用&lt;code&gt;--volume&lt;/code&gt;参数, 将本机的&lt;code&gt;/Users/peer/tmp/qemu-2.3.0/&lt;/code&gt;目录映射到容器的&lt;code&gt;/tmp/qemu/&lt;/code&gt;目录上.&lt;/p&gt;
+
+&lt;p&gt;然后我们可以开始编译了.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;[root@035df45036cc /]# cd /tmp/qemu
+[root@035df45036cc qemu]# mkdir build
+[root@035df45036cc qemu]# cd build
+[root@035df45036cc build]# ../confug --target-list=x86_64-softmmu --cross-prefix=i686-w64-mingw32-
+[root@035df45036cc build]# make V=1 VL_LDFLAGS=-Wl,--build-id qemu-ga.exe
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;拷贝走你的&lt;code&gt;qemu-ga.exe&lt;/code&gt; happy去吧.&lt;/p&gt;
+
+&lt;p&gt;enjoy it.&lt;/p&gt;
+</description>
+        <pubDate>Wed, 12 Aug 2015 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</guid>
+      </item>
+    
+      <item>
         <title>在C中调用Python程序(II)</title>
         <description>&lt;h2 id=&quot;section&quot;&gt;承上启下的段落&lt;/h2&gt;
 
@@ -812,93 +927,6 @@ api.add_resource(User, &#39;/users/&amp;lt;int:user_id&amp;gt;&#39;)
         <pubDate>Mon, 09 Jun 2014 00:00:00 +0800</pubDate>
         <link>http://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/</link>
         <guid isPermaLink="true">http://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/</guid>
-      </item>
-    
-      <item>
-        <title>从主机复制文件到Docker的几种方法</title>
-        <description>&lt;p&gt;&lt;a href=&quot;https://www.docker.io&quot;&gt;Docker&lt;/a&gt;是个Linux Container管理软件.&lt;/p&gt;
-
-&lt;p&gt;今天我们来讲解一下从主机复制文件到Docker的几种方法.&lt;/p&gt;
-
-&lt;p&gt;在分享之前, 我们看看Docker社区对这个&lt;a href=&quot;https://github.com/dotcloud/docker/issues/905&quot;&gt;问题&lt;/a&gt;的需求是有多么强(ju)烈(jin).&lt;/p&gt;
-
-&lt;p&gt;下面开始今天高(tu)大(yuan)上(fei)的分享.&lt;/p&gt;
-
-&lt;h3 id=&quot;build-docker-image&quot;&gt;1. 通过Build Docker Image添加文件&lt;/h3&gt;
-
-&lt;p&gt;Docker Image是通过Dockerfile来创建的. 具体的创建过程可以参考&lt;a href=&quot;https://www.docker.io/learn/dockerfile/&quot;&gt;这里&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;我们可以在编写Dockerfile的时候, 将需要的文件通过 &lt;code&gt;ADD&lt;/code&gt; 关键字添加文件到Docker Image里面.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;FROM 3scale/openresty
-
-## add your supervisor openresty config
-ADD openresty.conf /etc/supervisor/conf.d/
-
-# Add your app
-ADD . /var/www
-
-CMD [&quot;supervisor&quot;]
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;引用自 &lt;a href=&quot;https://index.docker.io/u/3scale/openresty/&quot;&gt;3scale/openresty&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;这个Dockerfile中的&lt;code&gt;ADD&lt;/code&gt; 关键字是将本机添加到Docker Image中的&lt;code&gt;/var/www&lt;/code&gt; 文件夹中.&lt;/p&gt;
-
-&lt;h3 id=&quot;docker-run-v--volume&quot;&gt;2. 通过docker run命令的-v/–volume参数&lt;/h3&gt;
-
-&lt;p&gt;假设我们需要将本机的/data 目录分享到Docker的/mnt 目录下, 我们可以通过这样的命令:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ touch /data/bilibala
-$ docker run -v /data:/mnt -i -t ubuntu bash
-root@c039a83c35d0:/# ls /mnt
-bilibala
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;这个命令可以在启动container中绑定文件夹.&lt;/p&gt;
-
-&lt;h3 id=&quot;api&quot;&gt;3. 通过API绑定目录&lt;/h3&gt;
-
-&lt;p&gt;其实这个方法本质上跟2是一样的, 但是唯一不同的就是, API将&lt;code&gt;docker run&lt;/code&gt; 这个命令分成两步了, 分别是: &lt;code&gt;create_container&lt;/code&gt; 和 &lt;code&gt;start&lt;/code&gt;
-在&lt;code&gt;create_container&lt;/code&gt; 中, 通过&lt;code&gt;volumes&lt;/code&gt; 参数定义需要挂载的目录.
-在&lt;code&gt;start&lt;/code&gt; 中, &lt;code&gt;binds&lt;/code&gt; 参数绑定.&lt;/p&gt;
-
-&lt;p&gt;下面是一个简单的example:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;#!/usr/bin/env python2.7
-import docker
-c = docker.Client()
-
-container = c.create_container(&#39;ubunt&#39;,
-                               command=&#39;bash&#39;, volumes=[&#39;/mnt&#39;],
-                               tty=True, stdin_open=True)
-
-c.start(container[&#39;Id&#39;], binds={&#39;/data&#39;:&#39;/mnt&#39;})
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;这里就创建了一个挂载了&lt;code&gt;/data&lt;/code&gt;目录的container.&lt;/p&gt;
-
-&lt;h3 id=&quot;section&quot;&gt;4. 通过环境变量传递文件&lt;/h3&gt;
-
-&lt;p&gt;这个是我自己发明的小技巧, 因为在利用&lt;code&gt;volumes&lt;/code&gt; 参数的时候, 发现docker有些不稳定. 经常无法删除. 所以就通过创建的时候通过环境变量传输文件.&lt;/p&gt;
-
-&lt;p&gt;先将文件通过&lt;code&gt;base64&lt;/code&gt;编码, 然后通过&lt;code&gt;create_container&lt;/code&gt; 方法的 &lt;code&gt;environment&lt;/code&gt;参数传递变量到container中, 在container中再解码放入到合适的路径下即可.&lt;/p&gt;
-
-&lt;h3 id=&quot;section-1&quot;&gt;5. 总结&lt;/h3&gt;
-
-&lt;p&gt;总的来说, 有三种不同的方式, 将host中的文件传递到container.&lt;/p&gt;
-
-&lt;p&gt;分别是:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;创建Image时, 添加文件到Image&lt;/li&gt;
-  &lt;li&gt;创建Container时, 通过volumes参数传递文件&lt;/li&gt;
-  &lt;li&gt;创建Container时, 通过environment参数传递文件&lt;/li&gt;
-&lt;/ol&gt;
-</description>
-        <pubDate>Fri, 23 May 2014 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2014/05/23/copy-file-from-host-to-docker/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/05/23/copy-file-from-host-to-docker/</guid>
       </item>
     
   </channel>
