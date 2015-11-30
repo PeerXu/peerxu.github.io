@@ -7,6 +7,119 @@
     <atom:link href="http://blog.e3rp4y.me/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
+        <title>Docker源代码分析 -- pull repository</title>
+        <description>&lt;p&gt;本系列文章是从源代码入手分析Docker部分功能或者模块的具体实现&lt;/p&gt;
+
+&lt;p&gt;今天我们就先来看看在我们输入了&lt;code&gt;docker pull debian&lt;/code&gt;之后到底发生了些什么事情&lt;/p&gt;
+
+&lt;p&gt;注意: 本文是基于docker v0.5.1版本分析&lt;/p&gt;
+
+&lt;h2 id=&quot;section&quot;&gt;切入点&lt;/h2&gt;
+
+&lt;p&gt;熟悉docker的同学都知道, 我们在运行一个container之前是需要下载container的image的.&lt;/p&gt;
+
+&lt;p&gt;我们可以通过以下的命令实现下载镜像的功能:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker pull debian
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;然后我们就可以运行基于&lt;code&gt;debian&lt;/code&gt;的容器:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker run -i -t --rm --name debian debian /bin/bash
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;那么现在我们就看看, 到底在&lt;code&gt;pull&lt;/code&gt;后面发生了多少不为人知的秘密.&lt;/p&gt;
+
+&lt;p&gt;我们知道, &lt;code&gt;commands.go&lt;/code&gt;是命令行参数的入口:&lt;/p&gt;
+
+&lt;h2 id=&quot;commandsgo&quot;&gt;commands.go:&lt;/h2&gt;
+
+&lt;p&gt;&lt;code&gt;CmdPull&lt;/code&gt;作为客户端的入口, 调用&lt;code&gt;utils.ParseRepositoryTag&lt;/code&gt;处理参数, 分离出&lt;code&gt;fromImage&lt;/code&gt;和&lt;code&gt;tag&lt;/code&gt;两个参数, 然后调用服务端的&lt;code&gt;/images/create&lt;/code&gt;接口.&lt;/p&gt;
+
+&lt;h2 id=&quot;apigo&quot;&gt;api.go:&lt;/h2&gt;
+
+&lt;p&gt;&lt;code&gt;api.go&lt;/code&gt;作为服务端路由解析器, 将&lt;code&gt;/images/create&lt;/code&gt;转发到&lt;code&gt;PostImagesCreate&lt;/code&gt;函数上.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;PostImagesCreate&lt;/code&gt;进行一些参数处理, 之后开始调用获取镜像函数&lt;code&gt;server.go/ImagePull&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;servergo&quot;&gt;server.go:&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;func (srv *Server) ImagePull(localName string, tag string, out io.Writer, sf *utils.StreamFormatter, authConfig *auth.AuthConfig) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这是&lt;code&gt;ImagePull&lt;/code&gt;的方法声明.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;ImagePull&lt;/code&gt;方法的重要步骤:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;通过&lt;code&gt;registry.NewRegistry&lt;/code&gt;创建&lt;code&gt;Registry&lt;/code&gt;对象&lt;code&gt;r&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;为获取镜像这个行为上锁(&lt;code&gt;srv.poolAdd&lt;/code&gt;)并且在结束时释放锁(&lt;code&gt;srv.poolRemove&lt;/code&gt;).&lt;/li&gt;
+  &lt;li&gt;通过&lt;code&gt;registry.ResolveRepositoryName&lt;/code&gt;解析出仓库(&lt;code&gt;repository&lt;/code&gt;)结构.&lt;/li&gt;
+  &lt;li&gt;通过&lt;code&gt;srv.pullRepository&lt;/code&gt;获取仓库结构.&lt;/li&gt;
+  &lt;li&gt;如果失败了, 则通过&lt;code&gt;srv.pullImage&lt;/code&gt;下载镜像.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;下面我们继续来分析&lt;code&gt;srv.pullRepository&lt;/code&gt;和&lt;code&gt;srv.pullImage&lt;/code&gt;方法.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;func (srv *Server) pullRepository(r *registry.Registry, out io.Writer, localName, remoteName, askedTag, indexEp string, sf *utils.StreamFormatter) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这是&lt;code&gt;pullRepository&lt;/code&gt;的方法声明.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;pullRepository&lt;/code&gt;方法的重要步骤:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;通过上面创建的&lt;code&gt;Registry&lt;/code&gt;对象&lt;code&gt;r&lt;/code&gt;的方法&lt;code&gt;GetRepositoryData&lt;/code&gt;获取仓库的数据&lt;code&gt;repoData&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;这时候通过&lt;code&gt;graph&lt;/code&gt;对象的&lt;code&gt;UpdateChecksums&lt;/code&gt;方法更新仓库上所有镜像的校验码.&lt;/li&gt;
+  &lt;li&gt;接下来是通过r的方法&lt;code&gt;GetRemoteTags&lt;/code&gt;获取&lt;code&gt;repoData&lt;/code&gt;的仓库列表上, 每个仓库的&lt;code&gt;tag&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;接下来会判断一下在&lt;code&gt;CmdPull&lt;/code&gt;解析到的&lt;code&gt;tag&lt;/code&gt;是否在上面的&lt;code&gt;tags&lt;/code&gt;列表上, 如果存在则下载该&lt;code&gt;tag&lt;/code&gt;和相关联的&lt;code&gt;images&lt;/code&gt;, 否则就下载所有&lt;code&gt;tag&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;接下来就是通过&lt;code&gt;srv.pullImage&lt;/code&gt;方法来下载由步骤4中指定的&lt;code&gt;tag&lt;/code&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;接下来我们分析一下&lt;code&gt;pullImage&lt;/code&gt;函数&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;func (srv *Server) pullImage(r *registry.Registry, out io.Writer, imgID, endpoint string, token []string, sf *utils.StreamFormatter) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这是&lt;code&gt;pullImage&lt;/code&gt;的函数声明&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;pullImage&lt;/code&gt;方法的重要步骤:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;通过&lt;code&gt;r.GetRemoteHistory&lt;/code&gt;获取镜像的父节点&lt;code&gt;history&lt;/code&gt;对象, &lt;em&gt;注意: 这里的父节点是包含自己的&lt;/em&gt;.&lt;/li&gt;
+  &lt;li&gt;然后就是遍历&lt;code&gt;history&lt;/code&gt;对象, 逐个下载镜像相关内容.
+&amp;gt; 1. 通过&lt;code&gt;r.GetRemoteImageJSON&lt;/code&gt;获取镜像的&lt;code&gt;json&lt;/code&gt;内容&lt;code&gt;imgJSON&lt;/code&gt;, 还有镜像大小&lt;code&gt;imgSize&lt;/code&gt;
+&amp;gt; 1. 由&lt;code&gt;imgJSON&lt;/code&gt;通过&lt;code&gt;NewImgJSON&lt;/code&gt;方法创建&lt;code&gt;Image&lt;/code&gt;对象&lt;code&gt;img&lt;/code&gt;
+&amp;gt; 1. 通过&lt;code&gt;img&lt;/code&gt;获取到镜像&lt;code&gt;layer结构&lt;/code&gt;
+&amp;gt; 1. 最后通过&lt;code&gt;graph.Register&lt;/code&gt;下载并保存整个镜像的内容及其相关的上下文.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;最后, 我们来分析一下&lt;code&gt;graph.Register&lt;/code&gt;方法.&lt;/p&gt;
+
+&lt;h2 id=&quot;graphgo&quot;&gt;graph.go&lt;/h2&gt;
+
+&lt;p&gt;这是&lt;code&gt;Register&lt;/code&gt;的方法声明.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;func (graph *Graph) Register(layerData Archive, store bool, img *Image) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这是&lt;code&gt;Register&lt;/code&gt;方法的重要步骤:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;先通过&lt;code&gt;ValidateID&lt;/code&gt;验证一下&lt;code&gt;镜像ID&lt;/code&gt;的有效性.&lt;/li&gt;
+  &lt;li&gt;通过&lt;code&gt;StoreImage&lt;/code&gt;保存下载的镜像在临时目录.&lt;/li&gt;
+  &lt;li&gt;然后将下载完成的镜像保存在对应的镜像目录.&lt;/li&gt;
+  &lt;li&gt;最后再添加镜像到&lt;code&gt;graph&lt;/code&gt;的缓存里面.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;that’s all&lt;/p&gt;
+</description>
+        <pubDate>Sun, 29 Nov 2015 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2015/11/29/docker-source-code-analysis-pull/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2015/11/29/docker-source-code-analysis-pull/</guid>
+      </item>
+    
+      <item>
         <title>利用Docker跨平台编译Windows平台的qemu-ga.exe</title>
         <description>&lt;h2 id=&quot;section&quot;&gt;介绍&lt;/h2&gt;
 
@@ -772,161 +885,6 @@ app.run(debug=True, port=8888)
         <pubDate>Thu, 12 Jun 2014 00:00:00 +0800</pubDate>
         <link>http://blog.e3rp4y.me/2014/06/12/send-request-to-restful-api-service-from-browser/</link>
         <guid isPermaLink="true">http://blog.e3rp4y.me/2014/06/12/send-request-to-restful-api-service-from-browser/</guid>
-      </item>
-    
-      <item>
-        <title>采用Flask-Restful插件返回Javascript脚本的两种方法</title>
-        <description>&lt;p&gt;&lt;a href=&quot;https://github.com/mitsuhiko/flask&quot;&gt;Flask&lt;/a&gt; 是Python的一个轻量级的Web框架.&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://github.com/twilio/flask-restful&quot;&gt;Flask-Restful&lt;/a&gt; 是将Flask应用构建为Restful API的一个插件.&lt;/p&gt;
-
-&lt;p&gt;一个Flask-Restful插件的demo:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ cat app.py
-#! /usr/bin/env python2.7
-# filename: app.py
-
-from flask import Flask
-from flask.ext.restful import Api, Resource
-
-app = Flask(__name__)
-api = Api(app)
-
-class User(Resource):
-  def get(self, user_id):
-    return {&#39;user_id&#39;: user_id}
-
-api.add_resource(User, &#39;/users/&amp;lt;int:user_id&amp;gt;&#39;)
-
-if __name__ == &#39;__main__&#39;:
-  app.run(port=8888, debug=True)
-
-$ python app.py
- * Running on http://127.0.0.1:8888/
- * Restarting with reloader
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;这里我们可以看见Flask Demo已经成功运行.&lt;/p&gt;
-
-&lt;p&gt;我们可以通过&lt;code&gt;curl&lt;/code&gt;这个工具来进行简单测试.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ curl -v http://localhost:8888/users/1
-* Adding handle: conn: 0x22f5a40
-* Adding handle: send: 0
-* Adding handle: recv: 0
-* Curl_addHandleToPipeline: length: 1
-* - Conn 0 (0x22f5a40) send_pipe: 1, recv_pipe: 0
-* About to connect() to localhost port 8888 (#0)
-*   Trying 127.0.0.1...
-* Connected to localhost (127.0.0.1) port 8888 (#0)
-&amp;gt; GET /users/1 HTTP/1.1
-&amp;gt; User-Agent: curl/7.32.0
-&amp;gt; Host: localhost:8888
-&amp;gt; Accept: */*
-&amp;gt;
-* HTTP 1.0, assume close after body
-&amp;lt; HTTP/1.0 200 OK
-&amp;lt; Content-Type: application/json
-&amp;lt; Content-Length: 21
-&amp;lt; Server: Werkzeug/0.9.4 Python/2.7.5+
-&amp;lt; Date: Mon, 09 Jun 2014 15:25:42 GMT
-&amp;lt;
-{
-    &quot;user_id&quot;: 1
-}
-* Closing connection 0
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;curl的Response部分, 包含了一些信息.&lt;/p&gt;
-
-&lt;p&gt;其中Content-Type字段表示的是, 返回的内容是json格式的.&lt;/p&gt;
-
-&lt;p&gt;如果我们需要返回的值是javascript脚本的话, 那么我们就需要对demo进行一些改造.&lt;/p&gt;
-
-&lt;p&gt;有两种办法:&lt;/p&gt;
-
-&lt;h3 id=&quot;flaskmakeresponse&quot;&gt;1. 通过Flask的make_response函数&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code&gt;$ cat app.py
-#! /usr/bin/env python2.7
-# filename: app.py
-
-import simplejson as json
-from flask import Flask, make_response
-from flask.ext.restful import Api, Resource
-
-app = Flask(__name__)
-api = Api(app)
-
-class User(Resource):
-  def get(self, user_id):
-    user = {&#39;user_id&#39;: user_id}
-    data = json.dumps(user)
-    response = make_response(data)
-    response.headers.extend({
-      &#39;Content-Type&#39;: &#39;application/javascript&#39;
-    })
-    return response
-
-api.add_resource(User, &#39;/users/&amp;lt;int:user_id&amp;gt;&#39;)
-
-if __name__ == &#39;__main__&#39;:
-  app.run(port=8888, debug=True)
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;添加Content-Type字段到response的headers中, 可以将返回的内容类型设置为javascript.&lt;/p&gt;
-
-&lt;h3 id=&quot;request-headersresponse&quot;&gt;2. 通过Request Headers限制Response类型&lt;/h3&gt;
-
-&lt;p&gt;HTTP协议中规定, 在Request Header中指定Accept字段, 可以指定客户端接受的Response类型.&lt;/p&gt;
-
-&lt;p&gt;例如在curl中指定Accept字段:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ curl -H &#39;Accept: application/javascript&#39; http://localhost:8888/users/1
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;但是在Flask-Restful插件中, 貌似是不支持javascript作为返回值类型.&lt;/p&gt;
-
-&lt;p&gt;所以我们需要做一些patch.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;#! /usr/bin/env python2.7
-# filename: app.py
-
-import simplejson as json
-from flask import Flask, make_response
-from flask.ext.restful import Api, Resource
-
-# monkey patch: application/javascript mimetype
-
-from flask.ext import restful
-def output_javascript(data, code, headers=None):
-  response = make_response(data, code)
-  response.headers.extend(headers or {})
-  return response
-
-restful.DEFAULT_REPRESENTATIONS[&#39;application/javascript&#39;] = output_javascript
-
-# end monkey patch
-
-app = Flask(__name__)
-api = Api(app)
-
-class User(Resource):
-  def get(self, user_id):
-    return {&#39;user_id&#39;: user_id}
-
-api.add_resource(User, &#39;/users/&amp;lt;int:user_id&amp;gt;&#39;)
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;这种方式显得更加优雅.&lt;/p&gt;
-
-&lt;p&gt;但是需要在发起Request的时候设置Request Header的&lt;code&gt;Accept&lt;/code&gt;字段为&lt;code&gt;application/javascript&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;the end.&lt;/p&gt;
-</description>
-        <pubDate>Mon, 09 Jun 2014 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/</guid>
       </item>
     
   </channel>
