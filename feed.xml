@@ -7,6 +7,74 @@
     <atom:link href="http://blog.e3rp4y.me/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
+        <title>使golang中的http response body可重读</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;前言&lt;/h2&gt;
+
+&lt;p&gt;首先来介绍一下今天遇到的问题: 在读取&lt;code&gt;net/http.Response.Body&lt;/code&gt;时, 发现只能用&lt;code&gt;ioutil.ReadAll&lt;/code&gt;读取一遍, 然后再读取就会失败了.&lt;/p&gt;
+
+&lt;p&gt;这就相当的尴尬了, 因为我读了一遍, 只是&lt;code&gt;Middleware&lt;/code&gt;做检查, 后面还需要将&lt;code&gt;Response&lt;/code&gt;对象传递到下个使用者上.&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;问题分析&lt;/h2&gt;
+
+&lt;p&gt;当我分析&lt;code&gt;net/http/response.go&lt;/code&gt;文件时, 发现&lt;code&gt;Response&lt;/code&gt;对象的&lt;code&gt;Body&lt;/code&gt;属性定义如下:&lt;/p&gt;
+
+&lt;pre&gt;
+type Response struct {
+...
+	// Body represents the response body.
+	//
+	// The http Client and Transport guarantee that Body is always
+	// non-nil, even on responses without a body or responses with
+	// a zero-length body. It is the caller&#39;s responsibility to
+	// close Body. The default HTTP client&#39;s Transport does not
+	// attempt to reuse HTTP/1.0 or HTTP/1.1 TCP connections
+	// (&quot;keep-alive&quot;) unless the Body is read to completion and is
+	// closed.
+	//
+	// The Body is automatically dechunked if the server replied
+	// with a &quot;chunked&quot; Transfer-Encoding.
+	Body io.ReadCloser
+...
+}
+&lt;/pre&gt;
+
+&lt;p&gt;上面我们能看见, &lt;code&gt;Body&lt;/code&gt;是一个&lt;code&gt;ReadCloser&lt;/code&gt;对象, 那么意味着, 不能采用&lt;code&gt;Seek&lt;/code&gt;方法将&lt;code&gt;Body&lt;/code&gt;锚定到目标位置.&lt;/p&gt;
+
+&lt;p&gt;那么, 唯有采取更加极端的方式了.&lt;/p&gt;
+
+&lt;h2 id=&quot;section-2&quot;&gt;解决方案&lt;/h2&gt;
+
+&lt;p&gt;上面也说过了, 因为&lt;code&gt;Body&lt;/code&gt;是&lt;code&gt;ReadCloser&lt;/code&gt;, 不能&lt;code&gt;Seek&lt;/code&gt;, 所以, 只能把&lt;code&gt;Body&lt;/code&gt;读出来, 保存到&lt;code&gt;buffer&lt;/code&gt;里面, 然后再将&lt;code&gt;buffer&lt;/code&gt;包装成&lt;code&gt;io.ReadCloser&lt;/code&gt;, 然后再绑定到&lt;code&gt;Response.Body&lt;/code&gt;上.&lt;/p&gt;
+
+&lt;p&gt;直接上代码吧.&lt;/p&gt;
+
+&lt;pre&gt;
+import (
+	&quot;bytes&quot;
+	&quot;io&quot;
+	&quot;io/ioutil&quot;
+	&quot;net/http&quot;
+)
+
+func ReadAndAssignResponseBody(res *http.Response) (io.Reader, error) {
+	buf, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	res.Body = ioutil.NopCloser(bytes.NewReader(buf))
+	return bytes.NewReader(buf), nil
+}
+&lt;/pre&gt;
+
+&lt;p&gt;enjoy it~&lt;/p&gt;
+</description>
+        <pubDate>Wed, 17 Aug 2016 00:00:00 +0800</pubDate>
+        <link>http://blog.e3rp4y.me/2016/08/17/re-read-http-response-body-on-golang/</link>
+        <guid isPermaLink="true">http://blog.e3rp4y.me/2016/08/17/re-read-http-response-body-on-golang/</guid>
+      </item>
+    
+      <item>
         <title>Docker源代码分析 -- pull repository</title>
         <description>&lt;p&gt;本系列文章是从源代码入手分析Docker部分功能或者模块的具体实现&lt;/p&gt;
 
@@ -789,102 +857,6 @@ $ python google.py input.txt
         <pubDate>Thu, 03 Jul 2014 00:00:00 +0800</pubDate>
         <link>http://blog.e3rp4y.me/2014/07/03/google-ip-explorer-tutorial/</link>
         <guid isPermaLink="true">http://blog.e3rp4y.me/2014/07/03/google-ip-explorer-tutorial/</guid>
-      </item>
-    
-      <item>
-        <title>在浏览器中调用RESTful API Service</title>
-        <description>&lt;p&gt;&lt;strong&gt;以下内容请自备梯子&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;http://zh.wikipedia.org/wiki/REST&quot;&gt;RESTful&lt;/a&gt; API Service是以REST风格提供的API Service.&lt;/p&gt;
-
-&lt;p&gt;通常情况下会采用到HTTP的GET, POST, DELETE, PUT等方法.&lt;/p&gt;
-
-&lt;p&gt;因为浏览器的正常访问手段(直接通过连接访问或Form提交), 无法向Service发起DELETE, PUT等方法的请求.&lt;/p&gt;
-
-&lt;p&gt;所以只能通过&lt;a href=&quot;https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest&quot;&gt;&lt;code&gt;XMLHttpRequest&lt;/code&gt;&lt;/a&gt;对象来提供完整交互操作.&lt;/p&gt;
-
-&lt;p&gt;那么最后的问题就回归到, 如果使用&lt;code&gt;XMLHttpRequest&lt;/code&gt;对象上了.&lt;/p&gt;
-
-&lt;p&gt;参考上面给出的&lt;a href=&quot;https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest&quot;&gt;&lt;code&gt;XMLHttpRequest&lt;/code&gt;&lt;/a&gt;的链接, 我们学习到使用方法.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// javascript
-var xhr = new XMLHttpRequest();
-xhr.open(&quot;DELETE&quot;, &quot;http://localhost:8888/messages/1&quot;);
-xhr.send();
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;上面就是&lt;code&gt;XMLHttpRequest&lt;/code&gt;的简单使用方法. 当然, 这里只是发送了, 并完成后续的处理. 我们现在只关心发送.&lt;/p&gt;
-
-&lt;p&gt;那么在这里也奉上Server端的源代码.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;#! /usr/bin/env python2.7
-# filename: app.py
-
-from flask import Flask, make_response
-
-app = Flask(__name__)
-
-@app.route(&#39;/messages/&amp;lt;int:msg_id&amp;gt;&#39;, methods=[&#39;DELETE&#39;])
-def delete_message(msg_id):
-  return &#39;delete message #%s&#39; % msg_id
-
-app.run(debug=True, port=8888)
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;上面就是服务端的代码.&lt;/p&gt;
-
-&lt;p&gt;但是通过浏览器console发起请求的时候, 我们可以观察到一下错误提示:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;OPTIONS http://localhost:8888/messages/1 No &#39;Access-Control-Allow-Origin&#39; header is present on the requested resource. Origin &#39;https://developer.mozilla.org&#39; is therefore not allowed access.
-XMLHttpRequest cannot load http://localhost:8888/messages/1. No &#39;Access-Control-Allow-Origin&#39; header is present on the requested resource. Origin &#39;https://developer.mozilla.org&#39; is therefore not allowed access.
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;这两行错误提示表明, 我们需要在服务端上, 在返回&lt;code&gt;Response&lt;/code&gt;对象时候, 在&lt;code&gt;Response Header&lt;/code&gt;上提供&lt;code&gt;Access-Control-Allow-Origin&lt;/code&gt;字段.&lt;/p&gt;
-
-&lt;p&gt;并且通过Chrome Developer Tools的Network中观察到, &lt;code&gt;XMLHttpRequest&lt;/code&gt;会发送HTTP的&lt;code&gt;OPTIONS&lt;/code&gt; Request到服务端上. 通过这次Request的Response的&lt;code&gt;Access-Control-Allow-Origin&lt;/code&gt;和&lt;code&gt;Access-Control-Allow-Methods&lt;/code&gt;这两个字段来决定, xhr是否有对该域发起请求的权限.&lt;/p&gt;
-
-&lt;p&gt;其中, &lt;code&gt;Access-Control-Allow-Origin&lt;/code&gt;字段代表的是, 是否允许本域向API Service发起请求. &lt;code&gt;*&lt;/code&gt;代表所有域都能发起请求.&lt;/p&gt;
-
-&lt;p&gt;而&lt;code&gt;Access-Control-Allow-Methods&lt;/code&gt;则代表的允许请求的方法有那些.&lt;/p&gt;
-
-&lt;p&gt;那么这时我们就&lt;strong&gt;将就地&lt;/strong&gt;添加&lt;code&gt;Access-Control-Allow-Origin&lt;/code&gt;字段为&lt;code&gt;*&lt;/code&gt; **(注意: 请在生产环境中谨慎添加允许跨域的主机), 添加&lt;code&gt;Access-Control-Allow-Methods&lt;/code&gt;字段为&lt;code&gt;POST,DELETE,PUT,GET&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;再次修改服务端代码:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;#! /usr/bin/env python2.7
-# filename: app.py
-
-from flask import Flask, make_response
-
-app = Flask(__name__)
-
-@app.route(&#39;/messages/&amp;lt;int:msg_id&amp;gt;&#39;, methods=[&#39;OPTIONS&#39;])
-def options_message(msg_id):
-  resp = make_response(&#39;&#39;)
-  resp.headers.extend({
-      &#39;Access-Control-Allow-Origin&#39;: &#39;*&#39;,
-      &#39;Access-Control-Allow-Methods&#39;: &#39;POST,DELETE,PUT,GET&#39;
-  })
-  return resp
-
-@app.route(&#39;/messages/&amp;lt;int:msg_id&amp;gt;&#39;, methods=[&#39;DELETE&#39;])
-def delete_message(msg_id):
-  resp = make_response(&#39;delete message #%s&#39; % msg_id)
-  resp.headers[&#39;Access-Control-Allow-Origin&#39;] = &#39;*&#39;
-  return resp
-
-app.run(debug=True, port=8888)
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;在&lt;code&gt;OPTIONS&lt;/code&gt;处理函数中, 添加Response Header的&lt;code&gt;Access-Control-Allow-Origin&lt;/code&gt;和&lt;code&gt;Access-Control-Allow-Methods&lt;/code&gt;字段. 来声明权限和允许的方法.&lt;/p&gt;
-
-&lt;p&gt;在&lt;code&gt;DELETE&lt;/code&gt;处理函数中, 添加&lt;code&gt;Access-Control-Allow-Origin&lt;/code&gt;字段来声明权限.&lt;/p&gt;
-
-&lt;p&gt;that’s all.&lt;/p&gt;
-</description>
-        <pubDate>Thu, 12 Jun 2014 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2014/06/12/send-request-to-restful-api-service-from-browser/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/06/12/send-request-to-restful-api-service-from-browser/</guid>
       </item>
     
   </channel>

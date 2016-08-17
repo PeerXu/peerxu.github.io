@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Peer Studio Blog的来源 &#8211; PeerStudio</title>
+    <title>使golang中的http response body可重读 &#8211; PeerStudio</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="我的世界">
     <meta name="author" content="Peer Xu">
     <meta name="keywords" content="">
-    <link rel="canonical" href="http://blog.e3rp4y.me/2011/11/27/about-this-blog/">
+    <link rel="canonical" href="http://blog.e3rp4y.me/2016/08/17/re-read-http-response-body-on-golang/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
@@ -26,17 +26,17 @@
     <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
-    <meta property="og:title" content="Peer Studio Blog的来源">
+    <meta property="og:title" content="使golang中的http response body可重读">
     <meta property="og:description" content="我的世界">
-    <meta property="og:url" content="http://blog.e3rp4y.me/2011/11/27/about-this-blog/">
+    <meta property="og:url" content="http://blog.e3rp4y.me/2016/08/17/re-read-http-response-body-on-golang/">
     <meta property="og:site_name" content="PeerStudio">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary" />
     
-    <meta name="twitter:title" content="Peer Studio Blog的来源" />
+    <meta name="twitter:title" content="使golang中的http response body可重读" />
     <meta name="twitter:description" content="我的世界" />
-    <meta name="twitter:url" content="http://blog.e3rp4y.me/2011/11/27/about-this-blog/" />
+    <meta name="twitter:url" content="http://blog.e3rp4y.me/2016/08/17/re-read-http-response-body-on-golang/" />
 
     <!-- Icons -->
     <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
@@ -118,8 +118,8 @@
 
 
 <div class="post-header mb2">
-  <h1>Peer Studio Blog的来源</h1>
-  <span class="post-meta">Nov 27, 2011</span><br>
+  <h1>使golang中的http response body可重读</h1>
+  <span class="post-meta">Aug 17, 2016</span><br>
     
   <span class="post-meta small">
   
@@ -129,11 +129,67 @@
 </div>
 
 <article class="post-content">
-  <p>创建一个博客的构思在很久之前已经有了,但是以前有鉴于自信,或是过分自信的原因,很多知识都存放在我的个人磁盘中(大脑).但是最近发现年老的缘故,记忆也开始变得不可靠了.所以这个博客就在捣腾中诞生了.</p>
-<p>此博客构建的基础是github pages.暂时是存放在 <a href="http://peerxu.github.com/">http://peerxu.github.com/</a> 上.</p>
-<p>使用的模板是根据 <a href="http://mojombo.github.com">mojombo.github.com</a> 的风格而成的.</p>
-<p>喜欢的话就fork me吧.</p>
-<p>暂时就写这么多吧, 我会努力丰富这个小博客的!</p>
+  <h2 id="section">前言</h2>
+
+<p>首先来介绍一下今天遇到的问题: 在读取<code>net/http.Response.Body</code>时, 发现只能用<code>ioutil.ReadAll</code>读取一遍, 然后再读取就会失败了.</p>
+
+<p>这就相当的尴尬了, 因为我读了一遍, 只是<code>Middleware</code>做检查, 后面还需要将<code>Response</code>对象传递到下个使用者上.</p>
+
+<h2 id="section-1">问题分析</h2>
+
+<p>当我分析<code>net/http/response.go</code>文件时, 发现<code>Response</code>对象的<code>Body</code>属性定义如下:</p>
+
+<pre>
+type Response struct {
+...
+	// Body represents the response body.
+	//
+	// The http Client and Transport guarantee that Body is always
+	// non-nil, even on responses without a body or responses with
+	// a zero-length body. It is the caller's responsibility to
+	// close Body. The default HTTP client's Transport does not
+	// attempt to reuse HTTP/1.0 or HTTP/1.1 TCP connections
+	// ("keep-alive") unless the Body is read to completion and is
+	// closed.
+	//
+	// The Body is automatically dechunked if the server replied
+	// with a "chunked" Transfer-Encoding.
+	Body io.ReadCloser
+...
+}
+</pre>
+
+<p>上面我们能看见, <code>Body</code>是一个<code>ReadCloser</code>对象, 那么意味着, 不能采用<code>Seek</code>方法将<code>Body</code>锚定到目标位置.</p>
+
+<p>那么, 唯有采取更加极端的方式了.</p>
+
+<h2 id="section-2">解决方案</h2>
+
+<p>上面也说过了, 因为<code>Body</code>是<code>ReadCloser</code>, 不能<code>Seek</code>, 所以, 只能把<code>Body</code>读出来, 保存到<code>buffer</code>里面, 然后再将<code>buffer</code>包装成<code>io.ReadCloser</code>, 然后再绑定到<code>Response.Body</code>上.</p>
+
+<p>直接上代码吧.</p>
+
+<pre>
+import (
+	"bytes"
+	"io"
+	"io/ioutil"
+	"net/http"
+)
+
+func ReadAndAssignResponseBody(res *http.Response) (io.Reader, error) {
+	buf, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	res.Body = ioutil.NopCloser(bytes.NewReader(buf))
+	return bytes.NewReader(buf), nil
+}
+</pre>
+
+<p>enjoy it~</p>
+
 </article>
 
 
@@ -144,7 +200,7 @@
   <div id="disqus_thread"></div>
   <script type="text/javascript">
     var disqus_shortname  = 'peerstudioblog';
-    var disqus_identifier = '/2011/11/27/about-this-blog';
+    var disqus_identifier = '/2016/08/17/re-read-http-response-body-on-golang';
     var disqus_title      = '';
 
     (function() {
