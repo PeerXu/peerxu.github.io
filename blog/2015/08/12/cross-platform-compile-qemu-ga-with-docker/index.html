@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>利用Docker跨平台编译Windows平台的qemu-ga.exe &#8211; PeerStudio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="我的世界">
+    <meta name="author" content="Peer Xu">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css?201608180006" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="利用Docker跨平台编译Windows平台的qemu-ga.exe">
+    <meta property="og:description" content="我的世界">
+    <meta property="og:url" content="http://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/">
+    <meta property="og:site_name" content="PeerStudio">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    
+    <meta name="twitter:title" content="利用Docker跨平台编译Windows平台的qemu-ga.exe" />
+    <meta name="twitter:description" content="我的世界" />
+    <meta name="twitter:url" content="http://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/" />
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+        
+    
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-52061731-2']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+    </script>
+    
+</head>
+
+<body class="site animated fade-in-down">
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://blog.e3rp4y.me" class="site-title">PeerStudio</a>
+      <nav class="site-nav">
+        <a href="/about/">About</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+        <div class="social-icons">
+  <div class="left">
+    
+      <a class="fa fa-github" href="https://github.com/PeerXu"></a>
+    
+    
+    <a class="fa fa-rss" href="/feed.xml"></a>
+    
+    
+    
+      <a class="fa fa-envelope" href="mailto:pppeerxu@gmail.com"></a>
+    
+    
+    
+    
+  </div>
+  <div class="right">
+    
+    
+    
+  </div>
+</div>
+<div class="clearfix"></div>
+
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>利用Docker跨平台编译Windows平台的qemu-ga.exe</h1>
+  <span class="post-meta">Aug 12, 2015</span><br>
+    
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
+</div>
+
+<article class="post-content">
+  <h2 id="section">介绍</h2>
+
+<p>今天, 我们介绍一下怎么在Linux环境下编译Windows的可执行文件.</p>
+
+<p>首先, 我们要先熟悉一下<a href="https://zh.wikipedia.org/wiki/MinGW">mingw</a>. <del>基本上就是一个能够编译出windows可执行文件的gcc吧.</del></p>
+
+<p>其次, 我们用一个已经搭好mingw环境的docker容器来做今天的展示.</p>
+
+<p><a href="https://hub.docker.com/r/e3rp4y/centos-mingw-base/">centos-mingw-base</a>是在<a href="https://hub.docker.com/_/centos/">Centos</a>上构建的mingw编译环境.</p>
+
+<p><a href="https://hub.docker.com/r/e3rp4y/centos-mingw-base/~/dockerfile/">Dockerfile</a> (<a href="https://github.com/PeerXu/centos-mingw-base">github</a>) 可以自己添加组件.</p>
+
+<h2 id="glance">Glance</h2>
+
+<p>我们先运行一下<code>centos-mingw-base</code>容器看看.</p>
+
+<pre><code>$ docker run --rm -t -i e3rp4y/centos-mingw-base /bin/bash
+
+[root@4ad795647521 /]# rpm -qa|grep mingw
+mingw-binutils-generic-2.25-1.el7.x86_64
+mingw64-filesystem-100-1.el7.noarch
+mingw32-crt-4.0.2-1.el7.noarch
+mingw64-crt-4.0.2-1.el7.noarch
+mingw64-headers-4.0.2-1.el7.noarch
+mingw32-cpp-4.9.1-3.el7.x86_64
+mingw32-gcc-4.9.1-3.el7.x86_64
+mingw64-binutils-2.25-1.el7.x86_64
+mingw32-pkg-config-0.28-2.el7.x86_64
+mingw32-zlib-1.2.8-2.el7.noarch
+mingw64-zlib-static-1.2.8-2.el7.noarch
+mingw32-win-iconv-0.0.6-1.el7.noarch
+mingw32-gcc-c++-4.9.1-3.el7.x86_64
+mingw64-gcc-c++-4.9.1-3.el7.x86_64
+mingw64-gettext-0.18.3.2-1.el7.noarch
+mingw64-glib2-2.40.0-3.el7.noarch
+mingw32-termcap-1.3.1-15.el7.noarch
+mingw32-glib2-2.40.0-3.el7.noarch
+mingw32-glib2-static-2.40.0-3.el7.noarch
+mingw-filesystem-base-100-1.el7.noarch
+mingw32-filesystem-100-1.el7.noarch
+mingw32-winpthreads-4.0.2-1.el7.noarch
+mingw64-winpthreads-4.0.2-1.el7.noarch
+mingw32-headers-4.0.2-1.el7.noarch
+mingw32-binutils-2.25-1.el7.x86_64
+mingw64-cpp-4.9.1-3.el7.x86_64
+mingw64-gcc-4.9.1-3.el7.x86_64
+mingw64-pkg-config-0.28-2.el7.x86_64
+mingw64-zlib-1.2.8-2.el7.noarch
+mingw32-zlib-static-1.2.8-2.el7.noarch
+mingw64-termcap-1.3.1-15.el7.noarch
+mingw64-libffi-3.0.13-4.el7.noarch
+mingw64-win-iconv-0.0.6-1.el7.noarch
+mingw64-gettext-static-0.18.3.2-1.el7.noarch
+mingw32-libffi-3.0.13-4.el7.noarch
+mingw32-gettext-0.18.3.2-1.el7.noarch
+mingw32-gettext-static-0.18.3.2-1.el7.noarch
+mingw64-glib2-static-2.40.0-3.el7.noarch
+[root@4ad795647521 /]#
+</code></pre>
+
+<p>我们能够直观的看见, 安装了mingw环境的相关组件.</p>
+
+<p>下面我们先来简单的编译一个Windows平台的”Hello World”.</p>
+
+<pre><code>[root@4ad795647521 /]# cd /tmp
+[root@4ad795647521 tmp]# cat hello.c
+#include &lt;stdio.h&gt;
+int main(void) {
+    printf("hello world\n");
+    return 0;
+}
+[root@4ad795647521 tmp]# i686-w64-mingw32-gcc -o hello.exe hello.c
+[root@4ad795647521 tmp]# ls -lh hello.exe
+-rwxr-xr-x 1 root root 54K Aug 12 10:53 hello.exe
+[root@4ad795647521 tmp]# file hello.exe
+hello.exe: PE32 executable (console) Intel 80386, for MS Windows
+</code></pre>
+
+<p>这样我们就成功地编译出一个windows平台 32位系统的<code>hello.exe</code>.</p>
+
+<p>备注: 如果想要编译64位的话, 将编译器换成<code>x86_64-w64-mingw32-gcc</code>即可.</p>
+
+<h2 id="qemu-gaexe">编译qemu-ga.exe</h2>
+
+<p>下面, 我们来编译一下qemu-ga.exe</p>
+
+<p>首先, 我们需要将源代码放置到容器里面.</p>
+
+<p>我们可以采用docker的<code>--volume</code>参数.</p>
+
+<pre><code>docker run --rm --volume=/Users/peer/tmp/qemu-2.3.0/:/tmp/qemu -t -i e3rp4y/centos-mingw-base
+</code></pre>
+
+<p>这里, 我们用<code>--volume</code>参数, 将本机的<code>/Users/peer/tmp/qemu-2.3.0/</code>目录映射到容器的<code>/tmp/qemu/</code>目录上.</p>
+
+<p>然后我们可以开始编译了.</p>
+
+<pre><code>[root@035df45036cc /]# cd /tmp/qemu
+[root@035df45036cc qemu]# mkdir build
+[root@035df45036cc qemu]# cd build
+[root@035df45036cc build]# ../confug --target-list=x86_64-softmmu --cross-prefix=i686-w64-mingw32-
+[root@035df45036cc build]# make V=1 VL_LDFLAGS=-Wl,--build-id qemu-ga.exe
+</code></pre>
+
+<p>拷贝走你的<code>qemu-ga.exe</code> happy去吧.</p>
+
+<p>enjoy it.</p>
+
+</article>
+
+
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'peerstudioblog';
+    var disqus_identifier = '/2015/08/12/cross-platform-compile-qemu-ga-with-docker';
+    var disqus_title      = '';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Github: <a href="https://github.com/PeerXu">@PeerXu</a>.<br>
+      Weibo: <a href="http://weibo.com/peerstudio">@eerpay</a>.<br>
+      Twitter: <a href="https://twitter.com/PeerXu">@PeerXu</a>.<br>
+    </small>
+    <small>
+      Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-52061731-2', 'auto');
+    ga('send', 'pageview');
+  </script>
+  
+</footer>
+
+</body>
+</html>

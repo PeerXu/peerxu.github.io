@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Git Patch简单教程 &#8211; PeerStudio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="我的世界">
+    <meta name="author" content="Peer Xu">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://blog.e3rp4y.me/2013/11/21/patch-with-git-tutorial/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css?201608180006" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Git Patch简单教程">
+    <meta property="og:description" content="我的世界">
+    <meta property="og:url" content="http://blog.e3rp4y.me/2013/11/21/patch-with-git-tutorial/">
+    <meta property="og:site_name" content="PeerStudio">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    
+    <meta name="twitter:title" content="Git Patch简单教程" />
+    <meta name="twitter:description" content="我的世界" />
+    <meta name="twitter:url" content="http://blog.e3rp4y.me/2013/11/21/patch-with-git-tutorial/" />
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+        
+    
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-52061731-2']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+    </script>
+    
+</head>
+
+<body class="site animated fade-in-down">
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://blog.e3rp4y.me" class="site-title">PeerStudio</a>
+      <nav class="site-nav">
+        <a href="/about/">About</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+        <div class="social-icons">
+  <div class="left">
+    
+      <a class="fa fa-github" href="https://github.com/PeerXu"></a>
+    
+    
+    <a class="fa fa-rss" href="/feed.xml"></a>
+    
+    
+    
+      <a class="fa fa-envelope" href="mailto:pppeerxu@gmail.com"></a>
+    
+    
+    
+    
+  </div>
+  <div class="right">
+    
+    
+    
+  </div>
+</div>
+<div class="clearfix"></div>
+
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>Git Patch简单教程</h1>
+  <span class="post-meta">Nov 21, 2013</span><br>
+    
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
+</div>
+
+<article class="post-content">
+  <p>今天我们来学习一下关于git怎么创建与应用patch.</p>
+
+<h3 id="section">预备资料</h3>
+
+<p><a href="http://zh.wikipedia.org/zh-cn/Patch">patch</a>是用来对现有的源代码进行更新的一种手段.</p>
+
+<p>patch可以通过diff, git, svn, hg等工具生成.</p>
+
+<p>diff与git产成的patch文件有点差异(下面会简单的介绍patch文档的结构).</p>
+
+<p>下面我们就来介绍怎么创建一个patch.</p>
+
+<h3 id="section-1">前戏</h3>
+
+<p>首先, 你得有一个好环(ji)境(you), 才能开展patch的工作.</p>
+
+<p>所以我在这里简单的创(ji)建(you)一个环境给大家使用. :P</p>
+
+<pre><code>$ mkdir Hello
+$ cd hello
+$ git init
+$ cat &lt;&lt; EOF &gt; hello.py
+#!/usr/bin/env python2.7
+print "hello, world"
+EOF
+$ git add .
+$ git commit -m "initial commit" -a
+</code></pre>
+
+<p>至此, 大家已经有一个可以使用的好环(ji)境(you).(怎么感觉节奏不对)</p>
+
+<h3 id="ing">动作片播放ing…</h3>
+
+<p>好了, 我们已经创建好了一个可以用的基友, 那么就开始干吧!</p>
+
+<pre><code>$ git checkout -b my-feature
+$ vi hello.py
+$ cat hello.py
+#!/usr/bin/env python2.7
+def hello(name):
+    print "hello, %s" % name
+
+hello("world")
+$ git commit -m "add feature" -a
+$ git format-patch master
+$ ls
+0001-add-feature.patch  hello.py
+</code></pre>
+
+<p>下面来为大家讲解一下上面的_动作_要领.</p>
+
+<p>首先我们很大众的开局, 先创建一个my-feature.</p>
+
+<p>然后啪啪啪地编辑了一下文档, 添加了一个相当犀利的特性.</p>
+
+<p>然后按照正常套路去commit咱们牛逼的特性.</p>
+
+<p>当全世界都以为我们要merge到master的时候, 我只能说你们, 图样图森普.</p>
+
+<p>我们的目标是没有蛀牙. 咳咳, 是创建patch.</p>
+
+<p>所以我们最后使用 <code>git format-patch master</code> 创建一个patch.</p>
+
+<p>好了, 通常动作片的中场都是要休息一下的.</p>
+
+<h3 id="ing-1">动作片继续播放ing…</h3>
+
+<p>我们既然已经生成了patch文件, 咱们就看看这文件到底是什么样子的.</p>
+
+<pre><code>From a9706e72ba4976f69d1c3ca5e93ab9a00757c9fd Mon Sep 17 00:00:00 2001
+From: Peer Xu &lt;pppeerxu@gmail.com&gt;
+Date: Thu, 21 Nov 2013 23:37:41 +0800
+Subject: [PATCH] add feature
+
+---
+ hello.py | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/hello.py b/hello.py
+index 6635083..c314e13 100644
+--- a/hello.py
++++ b/hello.py
+@@ -1,2 +1,5 @@
+ #!/usr/bin/env python2.7
+-print "hello,world"
++def hello(name):
++    print "hello, %s" % name
++
++hello("world")
+--
+1.8.3.2
+</code></pre>
+
+<p>以我阅片无数的经验, 这是一封邮件.</p>
+
+<p>嗯, 剩下的就留给各位看官自己去YY吧.</p>
+
+<h3 id="section-2">动作片通常都是分开三部播放的…</h3>
+
+<p>这里, 我传授大家怎么将git生成的patch应用到项目中去.</p>
+
+<p>还是咱们的好环境.</p>
+
+<pre><code>$ cp 0001-add-feature.patch /dev/shm/
+$ rm 0001-add-feature.patch # 删除生成的patch, 保证环境干净 (这是你洁癖的证据!)
+$ git checkout master
+$ git am /dev/shm/0001-add-feature.patch
+$ cat hello.py
+#!/usr/bin/env python2.7
+def hello(name):
+    print "hello, %s" % name
+
+hello("world")
+$ git log # 这里可以看到应用patch的日志
+</code></pre>
+
+<p>我们先将patch复制到另外一个地方(假装是从很远的地方下载下来的)</p>
+
+<p>然后checkout到master(假装在别的环境中…)</p>
+
+<p>然后使用 <code>git am</code> 这命令使patch应用到环境中去.</p>
+
+<p>然后, 就没有然后了…</p>
+
+<h3 id="section-3">动作片再好, 也不能经常看…</h3>
+
+</article>
+
+
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'peerstudioblog';
+    var disqus_identifier = '/2013/11/21/patch-with-git-tutorial';
+    var disqus_title      = '';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Github: <a href="https://github.com/PeerXu">@PeerXu</a>.<br>
+      Weibo: <a href="http://weibo.com/peerstudio">@eerpay</a>.<br>
+      Twitter: <a href="https://twitter.com/PeerXu">@PeerXu</a>.<br>
+    </small>
+    <small>
+      Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-52061731-2', 'auto');
+    ga('send', 'pageview');
+  </script>
+  
+</footer>
+
+</body>
+</html>
