@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 _site
 .sass-cache
 .DS_Store
@@ -7,3 +8,14 @@ _site
 _config.gh-pages.yml
 
 Gemfile.lock
+=======
+_drafts/
+_site/
+*~
+_site
+.sass-cache
+.DS_Store
+
+# Ignore the config file that's used for gh-pages.
+_config.gh-pages.yml
+>>>>>>> 48c23f7f1736c45d1ba0411d58072039e5446c4e
