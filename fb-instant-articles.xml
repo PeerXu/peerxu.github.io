@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title></title>
-    <link>http://localhost:4000</link>
+    <link>https://blog.e3rp4y.me</link>
     <description>
       Peer的博客
     </description>
@@ -10,7 +10,7 @@
         
             <item>
                 <title>在macOS下通过Docker交叉编译GO程序</title>
-                <link>http://localhost:4000/2018/05/10/cross-compile-golang-by-docker-on-macos/</link>
+                <link>https://blog.e3rp4y.me/2018/05/10/cross-compile-golang-by-docker-on-macos/</link>
                 <content:encoded>
                     <![CDATA[
                     <h2 id="前言">前言</h2>
@@ -140,7 +140,7 @@ plugin.so: ELF 32-bit LSB shared object, ARM, EABI5 version 1 (SYSV), dynamicall
         
             <item>
                 <title>使golang中的http response body可重读</title>
-                <link>http://localhost:4000/2016/08/17/re-read-http-response-body-on-golang/</link>
+                <link>https://blog.e3rp4y.me/2016/08/17/re-read-http-response-body-on-golang/</link>
                 <content:encoded>
                     <![CDATA[
                     <h2 id="前言">前言</h2>
@@ -218,7 +218,7 @@ func ReadAndAssignResponseBody(res *http.Response) (io.Reader, error) {
         
             <item>
                 <title>Docker源代码分析 -- pull repository</title>
-                <link>http://localhost:4000/2015/11/29/docker-source-code-analysis-pull/</link>
+                <link>https://blog.e3rp4y.me/2015/11/29/docker-source-code-analysis-pull/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>本系列文章是从源代码入手分析Docker部分功能或者模块的具体实现</p>
@@ -346,7 +346,7 @@ func ReadAndAssignResponseBody(res *http.Response) (io.Reader, error) {
         
             <item>
                 <title>利用Docker跨平台编译Windows平台的qemu-ga.exe</title>
-                <link>http://localhost:4000/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</link>
+                <link>https://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</link>
                 <content:encoded>
                     <![CDATA[
                     <h2 id="介绍">介绍</h2>
@@ -471,7 +471,7 @@ hello.exe: PE32 executable (console) Intel 80386, for MS Windows
         
             <item>
                 <title>在C中调用Python程序(II)</title>
-                <link>http://localhost:4000/2015/08/07/call-python-from-c-II/</link>
+                <link>https://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/</link>
                 <content:encoded>
                     <![CDATA[
                     <h2 id="承上启下的段落">承上启下的段落</h2>
@@ -602,7 +602,7 @@ result=9.000000
         
             <item>
                 <title>在C中调用Python程序(I)</title>
-                <link>http://localhost:4000/2015/08/07/call-python-from-c-I/</link>
+                <link>https://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/</link>
                 <content:encoded>
                     <![CDATA[
                     <h2 id="废话">废话</h2>
@@ -727,7 +727,7 @@ Hello, C! -- from Python
         
             <item>
                 <title>在Emacs上预览graphviz图</title>
-                <link>http://localhost:4000/2015/07/19/preview-graphviz-on-emacs/</link>
+                <link>https://blog.e3rp4y.me/2015/07/19/preview-graphviz-on-emacs/</link>
                 <content:encoded>
                     <![CDATA[
                     <p><a href="http://www.graphviz.org/">graphviz</a>是AT&amp;T发明的一个结构化图片描述语言.</p>
@@ -804,7 +804,7 @@ digraph structs {
         
             <item>
                 <title>Announcing Version 2.0</title>
-                <link>http://localhost:4000/jekyll/pixyll/2015/07/11/announcing-pixyll-version-2/</link>
+                <link>https://blog.e3rp4y.me/jekyll/pixyll/2015/07/11/announcing-pixyll-version-2/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>In an effort to make Pixyll easier to customize and more aesthetically pleasing, we’ve released version <code class="highlighter-rouge">2.0</code>.</p>
@@ -834,7 +834,7 @@ digraph structs {
         
             <item>
                 <title>一次无意识的DNS劫持</title>
-                <link>http://localhost:4000/2014/11/07/dns-hijack-with-dnsmasq/</link>
+                <link>https://blog.e3rp4y.me/2014/11/07/dns-hijack-with-dnsmasq/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>0x00 前言</p>
@@ -887,7 +887,7 @@ digraph structs {
         
             <item>
                 <title>SQLAlchemy多对多关系使用方法</title>
-                <link>http://localhost:4000/2014/08/21/sqlalchemy-many-to-many-relationship/</link>
+                <link>https://blog.e3rp4y.me/2014/08/21/sqlalchemy-many-to-many-relationship/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>SQLAlchemy是一个Python的数据库ORM框架.</p>
@@ -1050,7 +1050,7 @@ if __name__ == '__main__':
         
             <item>
                 <title>老板, 要挑个号码么?</title>
-                <link>http://localhost:4000/2014/07/08/choose-your-favorite-number-from-alibaba/</link>
+                <link>https://blog.e3rp4y.me/2014/07/08/choose-your-favorite-number-from-alibaba/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>0x00</p>
@@ -1094,7 +1094,7 @@ if __name__ == '__main__':
         
             <item>
                 <title>Google IP Explorer使用教程</title>
-                <link>http://localhost:4000/2014/07/03/google-ip-explorer-tutorial/</link>
+                <link>https://blog.e3rp4y.me/2014/07/03/google-ip-explorer-tutorial/</link>
                 <content:encoded>
                     <![CDATA[
                     <h2 id="教程">教程</h2>
@@ -1128,7 +1128,7 @@ $ python google.py input.txt
         
             <item>
                 <title>在浏览器中调用RESTful API Service</title>
-                <link>http://localhost:4000/2014/06/12/send-request-to-restful-api-service-from-browser/</link>
+                <link>https://blog.e3rp4y.me/2014/06/12/send-request-to-restful-api-service-from-browser/</link>
                 <content:encoded>
                     <![CDATA[
                     <p><strong>以下内容请自备梯子</strong></p>
@@ -1234,7 +1234,7 @@ XMLHttpRequest cannot load http://localhost:8888/messages/1. No 'Access-Control-
         
             <item>
                 <title>Hello, Pixyll</title>
-                <link>http://localhost:4000/jekyll/pixyll/2014/06/11/welcome-to-pixyll/</link>
+                <link>https://blog.e3rp4y.me/jekyll/pixyll/2014/06/11/welcome-to-pixyll/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>Hello.</p>
@@ -1272,7 +1272,7 @@ XMLHttpRequest cannot load http://localhost:8888/messages/1. No 'Access-Control-
         
             <item>
                 <title>Pixyll in Action</title>
-                <link>http://localhost:4000/jekyll/pixyll/2014/06/10/see-pixyll-in-action/</link>
+                <link>https://blog.e3rp4y.me/jekyll/pixyll/2014/06/10/see-pixyll-in-action/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>There is a significant amount of subtle, yet precisely calibrated, styling to ensure
@@ -1422,7 +1422,7 @@ or add, features.</p>
         
             <item>
                 <title>So, What is Jekyll?</title>
-                <link>http://localhost:4000/jekyll/pixyll/2014/06/09/so-what-is-jekyll/</link>
+                <link>https://blog.e3rp4y.me/jekyll/pixyll/2014/06/09/so-what-is-jekyll/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>Jekyll is a tool for transforming your plain text into static websites and 
@@ -1451,7 +1451,7 @@ and <a href="http://en.wikipedia.org/wiki/Textile_(markup_language)">Textile</a>
         
             <item>
                 <title>采用Flask-Restful插件返回Javascript脚本的两种方法</title>
-                <link>http://localhost:4000/2014/06/09/response-javascript-with-flask-restful-api/</link>
+                <link>https://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/</link>
                 <content:encoded>
                     <![CDATA[
                     <p><a href="https://github.com/mitsuhiko/flask">Flask</a> 是Python的一个轻量级的Web框架.</p>
@@ -1616,7 +1616,7 @@ if __name__ == '__main__':
         
             <item>
                 <title>Pixyll has Pagination</title>
-                <link>http://localhost:4000/jekyll/pixyll/2014/06/08/pixyll-has-pagination/</link>
+                <link>https://blog.e3rp4y.me/jekyll/pixyll/2014/06/08/pixyll-has-pagination/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>This is an empty post to illustrate the pagination component with Pixyll.</p>
@@ -1637,7 +1637,7 @@ if __name__ == '__main__':
         
             <item>
                 <title>从主机复制文件到Docker的几种方法</title>
-                <link>http://localhost:4000/2014/05/23/copy-file-from-host-to-docker/</link>
+                <link>https://blog.e3rp4y.me/2014/05/23/copy-file-from-host-to-docker/</link>
                 <content:encoded>
                     <![CDATA[
                     <p><a href="https://www.docker.io">Docker</a>是个Linux Container管理软件.</p>
@@ -1734,7 +1734,7 @@ bilibala
         
             <item>
                 <title>pipework -- docker网络增强工具</title>
-                <link>http://localhost:4000/2014/04/07/docker-with-openvswitch/</link>
+                <link>https://blog.e3rp4y.me/2014/04/07/docker-with-openvswitch/</link>
                 <content:encoded>
                     <![CDATA[
                     <p><a href="https://github.com/jpetazzo/pipework">pipework</a>是<a href="https://www.docker.io/">Docker</a>的一个网络增强功能插件.</p>
@@ -1874,7 +1874,7 @@ root@f94dc85c44b1:/# ping 10.1.1.20  # unreachable
         
             <item>
                 <title>让你的Docker运行在Open vSwitch上</title>
-                <link>http://localhost:4000/2013/12/24/docker-on-openvswitch/</link>
+                <link>https://blog.e3rp4y.me/2013/12/24/docker-on-openvswitch/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>docker创建的container只能运行在docker创建的docker0上(linux bridge).
@@ -1917,7 +1917,7 @@ root@f94dc85c44b1:/# ping 10.1.1.20  # unreachable
         
             <item>
                 <title>Git Patch简单教程</title>
-                <link>http://localhost:4000/2013/11/21/patch-with-git-tutorial/</link>
+                <link>https://blog.e3rp4y.me/2013/11/21/patch-with-git-tutorial/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>今天我们来学习一下关于git怎么创建与应用patch.</p>
@@ -2060,7 +2060,7 @@ $ git log # 这里可以看到应用patch的日志
         
             <item>
                 <title>kombu 入门教程(上)</title>
-                <link>http://localhost:4000/2013/10/05/kombu-tutorial_I/</link>
+                <link>https://blog.e3rp4y.me/2013/10/05/kombu-tutorial_I/</link>
                 <content:encoded>
                     <![CDATA[
                     <h2 id="前言">前言</h2>
@@ -2171,7 +2171,7 @@ queue.put('hello, world')
         
             <item>
                 <title>机器学习笔记 -- k-临近算法</title>
-                <link>http://localhost:4000/2013/08/18/machine-learning-knn-with-clojure/</link>
+                <link>https://blog.e3rp4y.me/2013/08/18/machine-learning-knn-with-clojure/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>k-临近算法是一种分类算法, 计算输入值与各个特征值之间距离来进行分类.</p>
@@ -2249,7 +2249,7 @@ queue.put('hello, world')
         
             <item>
                 <title>InetAddress类中isReachable方法检测原理</title>
-                <link>http://localhost:4000/2013/04/03/check-host-is-reachable-by-clojure/</link>
+                <link>https://blog.e3rp4y.me/2013/04/03/check-host-is-reachable-by-clojure/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>今日, 有一同事问我, 为什么我用ping命令可以连通的一台主机, 用java的InetAddress类中的isReachable方法就测试失败呢?</p>
@@ -2282,7 +2282,7 @@ queue.put('hello, world')
         
             <item>
                 <title>利用cscope阅读python代码</title>
-                <link>http://localhost:4000/2013/02/14/read-python-code-with-cscope-on-emacs/</link>
+                <link>https://blog.e3rp4y.me/2013/02/14/read-python-code-with-cscope-on-emacs/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>本文是教你怎么使用 cscope+emacs来阅读 python代码, 网上已经有很多使用 cscope+emacs阅读 c/c++代码的教程. 但是没有找到python的, 故有了本文.</p>
@@ -2363,7 +2363,7 @@ C-c s u         Pop mark.
         
             <item>
                 <title>git备忘录</title>
-                <link>http://localhost:4000/2013/01/28/git-notes/</link>
+                <link>https://blog.e3rp4y.me/2013/01/28/git-notes/</link>
                 <content:encoded>
                     <![CDATA[
                     <ol>
@@ -2403,7 +2403,7 @@ C-c s u         Pop mark.
         
             <item>
                 <title>OpenvSwitch gre隧道配置</title>
-                <link>http://localhost:4000/2013/01/15/open-vswitch-gre-tunnel-configuration/</link>
+                <link>https://blog.e3rp4y.me/2013/01/15/open-vswitch-gre-tunnel-configuration/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>本文是讲述如何在OpenvSwitch交换机上配置gre隧道的. 不废话, 马上开始吧.</p>
@@ -2500,7 +2500,7 @@ rtt min/avg/max/mdev = 0.499/27.526/54.554/27.028 ms
         
             <item>
                 <title>用树莓派与github构建自己的DDNS服务(上)</title>
-                <link>http://localhost:4000/2013/01/13/using-rpi-and-github-to-build-your-ddns-server-part-1/</link>
+                <link>https://blog.e3rp4y.me/2013/01/13/using-rpi-and-github-to-build-your-ddns-server-part-1/</link>
                 <content:encoded>
                     <![CDATA[
                     <p><em>[DDNS][1]</em> – 动态域名解析服务, 是一种把互联网域名指向可变IP地址的系统.
@@ -2557,7 +2557,7 @@ rtt min/avg/max/mdev = 0.499/27.526/54.554/27.028 ms
         
             <item>
                 <title>在树莓派的archlinux中安装lxde</title>
-                <link>http://localhost:4000/2013/01/03/rpi-install-lxde-on-archlinux/</link>
+                <link>https://blog.e3rp4y.me/2013/01/03/rpi-install-lxde-on-archlinux/</link>
                 <content:encoded>
                     <![CDATA[
                     p. archlinux是一个很好的linux发行版, 比raspbian好多了. 况且archlinux的yaourt工具实在是太强大了.
@@ -2587,7 +2587,7 @@ p. 经过漫长的等待之后就可以启动这个 _丑陋的_ 桌面了.
         
             <item>
                 <title>SSH反向链接配置</title>
-                <link>http://localhost:4000/2012/11/27/remote-server-host-for-ssh/</link>
+                <link>https://blog.e3rp4y.me/2012/11/27/remote-server-host-for-ssh/</link>
                 <content:encoded>
                     <![CDATA[
                     p. 应用场景:
@@ -2617,7 +2617,7 @@ p. enjoy it.
         
             <item>
                 <title>clojure-py gevent wsgi hello world</title>
-                <link>http://localhost:4000/2012/10/11/clojure-py-gevent-wsgi-hello-world/</link>
+                <link>https://blog.e3rp4y.me/2012/10/11/clojure-py-gevent-wsgi-hello-world/</link>
                 <content:encoded>
                     <![CDATA[
                     p. clojure-py项目是clojure语言在pure python上的实现. 可以在github上找到该项目或者直接用easy_install安装.
@@ -2656,7 +2656,7 @@ p. enjoy it.
         
             <item>
                 <title>在ubuntu12.04中编译newlisp</title>
-                <link>http://localhost:4000/2012/08/30/compile-newlisp-on-ubuntu-12.04/</link>
+                <link>https://blog.e3rp4y.me/2012/08/30/compile-newlisp-on-ubuntu-12.04/</link>
                 <content:encoded>
                     <![CDATA[
                     bc. $ wget http://www.newlisp.org/downloads/newlisp-10.4.3.tgz
@@ -2700,7 +2700,7 @@ p. enjoy it!
         
             <item>
                 <title>sqlite中的连接操作符</title>
-                <link>http://localhost:4000/2012/08/28/sqlite-on-left-join/</link>
+                <link>https://blog.e3rp4y.me/2012/08/28/sqlite-on-left-join/</link>
                 <content:encoded>
                     <![CDATA[
                     p. sqlite中, 要使用join连接符的话, 后面的where要改成on! 例如:
@@ -2725,7 +2725,7 @@ bc. select * from t1 left join t2 on t1.id == t2.id;
         
             <item>
                 <title>Zombie进程的几种解决方法</title>
-                <link>http://localhost:4000/2012/08/17/zombie-process-solution/</link>
+                <link>https://blog.e3rp4y.me/2012/08/17/zombie-process-solution/</link>
                 <content:encoded>
                     <![CDATA[
                     p. 在unix和类unix系统中, 僵尸进程是指已经完成工作但是依然存有进程实例存在于进程表中的进程. 这个实例仍然需要父进程去读取它的退出状态(exit status). 通常来说, 僵尸进程并不像普通进程那样, 能够被kill命令所杀死.  --- 渣翻译, 出自 <a herf='http://en.wikipedia.org/wiki/Zombie_process'>http://en.wikipedia.org/wiki/Zombie_process</a>
@@ -2825,7 +2825,7 @@ p. 好吧, 讲完了.
         
             <item>
                 <title>Clojure笔记 -- namespace操作</title>
-                <link>http://localhost:4000/2012/08/12/study-clojure-namespace/</link>
+                <link>https://blog.e3rp4y.me/2012/08/12/study-clojure-namespace/</link>
                 <content:encoded>
                     <![CDATA[
                     bc. (create-ns 'my.ns) ;;; 创建一个命名空间
@@ -2855,7 +2855,7 @@ bc. (alias 'str 'clojure.string) ;;; 为clojure.string起个别名 (str/split ..
         
             <item>
                 <title>在ubuntu12.04上传goagent server端到GAE</title>
-                <link>http://localhost:4000/2012/08/11/upload-goagent-on-ubuntu12.04/</link>
+                <link>https://blog.e3rp4y.me/2012/08/11/upload-goagent-on-ubuntu12.04/</link>
                 <content:encoded>
                     <![CDATA[
                     p. 到 <a href='https://developers.google.com/appengine/downloads'>这里</a>下载 google_appengine_*.zip.
@@ -2884,7 +2884,7 @@ p. enjoy!
         
             <item>
                 <title>在emacs上使用中文输入法fcitx</title>
-                <link>http://localhost:4000/2012/07/21/emacs-with-fcitx-on-linux/</link>
+                <link>https://blog.e3rp4y.me/2012/07/21/emacs-with-fcitx-on-linux/</link>
                 <content:encoded>
                     <![CDATA[
                     p. 在ubuntu 12.04中, 无法在emacs调用fcitx输入法. 所以给出一下解决方案.
@@ -2911,7 +2911,7 @@ bc. alias emacs="LC_CTYPE='zh_CN.UTF-8' emacs"
         
             <item>
                 <title>通过openvswitch划分vlan</title>
-                <link>http://localhost:4000/2012/07/17/create-vlan-on-openvswitch-with-libvirt/</link>
+                <link>https://blog.e3rp4y.me/2012/07/17/create-vlan-on-openvswitch-with-libvirt/</link>
                 <content:encoded>
                     <![CDATA[
                     p. 目的: 在ubuntu12.04上通过openvswitch为vm划分vlan. 其中vm的管理是通过libvirt实现.
@@ -3013,7 +3013,7 @@ VMb与VMd之间能够互通.
         
             <item>
                 <title>linux, out of memory</title>
-                <link>http://localhost:4000/2011/12/11/linux-out-of-memory/</link>
+                <link>https://blog.e3rp4y.me/2011/12/11/linux-out-of-memory/</link>
                 <content:encoded>
                     <![CDATA[
                     加班归来, 由于纠结了一天, 所以必须把这个给记录下来.
@@ -3040,7 +3040,7 @@ VMb与VMd之间能够互通.
         
             <item>
                 <title>在ubuntu下创建deb包</title>
-                <link>http://localhost:4000/2011/12/04/create-deb-package-on-ubuntu/</link>
+                <link>https://blog.e3rp4y.me/2011/12/04/create-deb-package-on-ubuntu/</link>
                 <content:encoded>
                     <![CDATA[
                     今天跟大家讲解一下如何制造自己的deb包.
@@ -3163,7 +3163,7 @@ h3. 4. 总结
         
             <item>
                 <title>libvirtd使用证书创建连接简介(下)</title>
-                <link>http://localhost:4000/2011/12/01/libvirtd-tutorial-for-connect-domain-with-cert-2/</link>
+                <link>https://blog.e3rp4y.me/2011/12/01/libvirtd-tutorial-for-connect-domain-with-cert-2/</link>
                 <content:encoded>
                     <![CDATA[
                     p. *事例程序:*
@@ -3197,7 +3197,7 @@ p. 用tls的方式创建连接的简介就这么多了,有什么不明白的可�
         
             <item>
                 <title>libvirtd使用证书创建连接简介(上)</title>
-                <link>http://localhost:4000/2011/11/30/libvirtd-tutorial-for-connect-domain-with-cert-1/</link>
+                <link>https://blog.e3rp4y.me/2011/11/30/libvirtd-tutorial-for-connect-domain-with-cert-1/</link>
                 <content:encoded>
                     <![CDATA[
                     h2. libvirtd使用证书创建连接简介(上)
@@ -3308,7 +3308,7 @@ p. 引用 "http://libvirt.org/remote.html":http://libvirt.org/remote.html
         
             <item>
                 <title>Textile Demo</title>
-                <link>http://localhost:4000/2011/11/27/textile-demo/</link>
+                <link>https://blog.e3rp4y.me/2011/11/27/textile-demo/</link>
                 <content:encoded>
                     <![CDATA[
                     code with:
@@ -3465,7 +3465,7 @@ p. Textile Reference
         
             <item>
                 <title>Hello World</title>
-                <link>http://localhost:4000/2011/11/27/hello-world/</link>
+                <link>https://blog.e3rp4y.me/2011/11/27/hello-world/</link>
                 <content:encoded>
                     <![CDATA[
                     <p>My first page, Hello World.</p>
@@ -3484,7 +3484,7 @@ p. Textile Reference
         
             <item>
                 <title>Peer Studio Blog的来源</title>
-                <link>http://localhost:4000/2011/11/27/about-this-blog/</link>
+                <link>https://blog.e3rp4y.me/2011/11/27/about-this-blog/</link>
                 <content:encoded>
                     <![CDATA[
                     p. 创建一个博客的构思在很久之前已经有了,但是以前有鉴于自信,或是过分自信的原因,很多知识都存放在我的个人磁盘中(大脑).但是最近发现年老的缘故,记忆也开始变得不可靠了.所以这个博客就在捣腾中诞生了.

@@ -3,8 +3,8 @@
   <channel>
     <title>PeerStudio</title>
     <description>Peer的博客</description>
-    <link>http://localhost:4000/</link>
-    <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
+    <link>https://blog.e3rp4y.me/</link>
+    <atom:link href="https://blog.e3rp4y.me/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
         <title>在macOS下通过Docker交叉编译GO程序</title>
@@ -122,8 +122,8 @@ plugin.so: ELF 32-bit LSB shared object, ARM, EABI5 version 1 (SYSV), dynamicall
 &lt;/ol&gt;
 </description>
         <pubDate>Thu, 10 May 2018 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2018/05/10/cross-compile-golang-by-docker-on-macos/</link>
-        <guid isPermaLink="true">http://localhost:4000/2018/05/10/cross-compile-golang-by-docker-on-macos/</guid>
+        <link>https://blog.e3rp4y.me/2018/05/10/cross-compile-golang-by-docker-on-macos/</link>
+        <guid isPermaLink="true">https://blog.e3rp4y.me/2018/05/10/cross-compile-golang-by-docker-on-macos/</guid>
       </item>
     
       <item>
@@ -190,8 +190,8 @@ func ReadAndAssignResponseBody(res *http.Response) (io.Reader, error) {
 &lt;p&gt;enjoy it~&lt;/p&gt;
 </description>
         <pubDate>Wed, 17 Aug 2016 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2016/08/17/re-read-http-response-body-on-golang/</link>
-        <guid isPermaLink="true">http://localhost:4000/2016/08/17/re-read-http-response-body-on-golang/</guid>
+        <link>https://blog.e3rp4y.me/2016/08/17/re-read-http-response-body-on-golang/</link>
+        <guid isPermaLink="true">https://blog.e3rp4y.me/2016/08/17/re-read-http-response-body-on-golang/</guid>
       </item>
     
       <item>
@@ -308,8 +308,8 @@ func ReadAndAssignResponseBody(res *http.Response) (io.Reader, error) {
 &lt;p&gt;that’s all&lt;/p&gt;
 </description>
         <pubDate>Sun, 29 Nov 2015 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2015/11/29/docker-source-code-analysis-pull/</link>
-        <guid isPermaLink="true">http://localhost:4000/2015/11/29/docker-source-code-analysis-pull/</guid>
+        <link>https://blog.e3rp4y.me/2015/11/29/docker-source-code-analysis-pull/</link>
+        <guid isPermaLink="true">https://blog.e3rp4y.me/2015/11/29/docker-source-code-analysis-pull/</guid>
       </item>
     
       <item>
@@ -423,8 +423,8 @@ hello.exe: PE32 executable (console) Intel 80386, for MS Windows
 &lt;p&gt;enjoy it.&lt;/p&gt;
 </description>
         <pubDate>Wed, 12 Aug 2015 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</link>
-        <guid isPermaLink="true">http://localhost:4000/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</guid>
+        <link>https://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</link>
+        <guid isPermaLink="true">https://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</guid>
       </item>
     
       <item>
@@ -544,8 +544,8 @@ result=9.000000
 &lt;p&gt;enjoy it~&lt;/p&gt;
 </description>
         <pubDate>Fri, 07 Aug 2015 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2015/08/07/call-python-from-c-II/</link>
-        <guid isPermaLink="true">http://localhost:4000/2015/08/07/call-python-from-c-II/</guid>
+        <link>https://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/</link>
+        <guid isPermaLink="true">https://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/</guid>
       </item>
     
       <item>
@@ -659,8 +659,8 @@ Hello, C! -- from Python
 &lt;p&gt;enjoy it~&lt;/p&gt;
 </description>
         <pubDate>Fri, 07 Aug 2015 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2015/08/07/call-python-from-c-I/</link>
-        <guid isPermaLink="true">http://localhost:4000/2015/08/07/call-python-from-c-I/</guid>
+        <link>https://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/</link>
+        <guid isPermaLink="true">https://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/</guid>
       </item>
     
       <item>
@@ -726,8 +726,8 @@ digraph structs {
 
 </description>
         <pubDate>Sun, 19 Jul 2015 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2015/07/19/preview-graphviz-on-emacs/</link>
-        <guid isPermaLink="true">http://localhost:4000/2015/07/19/preview-graphviz-on-emacs/</guid>
+        <link>https://blog.e3rp4y.me/2015/07/19/preview-graphviz-on-emacs/</link>
+        <guid isPermaLink="true">https://blog.e3rp4y.me/2015/07/19/preview-graphviz-on-emacs/</guid>
       </item>
     
       <item>
@@ -744,8 +744,8 @@ digraph structs {
 &lt;/ul&gt;
 </description>
         <pubDate>Sat, 11 Jul 2015 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/jekyll/pixyll/2015/07/11/announcing-pixyll-version-2/</link>
-        <guid isPermaLink="true">http://localhost:4000/jekyll/pixyll/2015/07/11/announcing-pixyll-version-2/</guid>
+        <link>https://blog.e3rp4y.me/jekyll/pixyll/2015/07/11/announcing-pixyll-version-2/</link>
+        <guid isPermaLink="true">https://blog.e3rp4y.me/jekyll/pixyll/2015/07/11/announcing-pixyll-version-2/</guid>
       </item>
     
       <item>
@@ -787,8 +787,8 @@ digraph structs {
 &lt;p&gt;当你无法保证所在网络绝对安全的情况下, 请手动设置DNS地址.&lt;/p&gt;
 </description>
         <pubDate>Fri, 07 Nov 2014 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2014/11/07/dns-hijack-with-dnsmasq/</link>
-        <guid isPermaLink="true">http://localhost:4000/2014/11/07/dns-hijack-with-dnsmasq/</guid>
+        <link>https://blog.e3rp4y.me/2014/11/07/dns-hijack-with-dnsmasq/</link>
+        <guid isPermaLink="true">https://blog.e3rp4y.me/2014/11/07/dns-hijack-with-dnsmasq/</guid>
       </item>
     
       <item>
@@ -940,8 +940,8 @@ if __name__ == '__main__':
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 </description>
         <pubDate>Thu, 21 Aug 2014 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/2014/08/21/sqlalchemy-many-to-many-relationship/</link>
-        <guid isPermaLink="true">http://localhost:4000/2014/08/21/sqlalchemy-many-to-many-relationship/</guid>
+        <link>https://blog.e3rp4y.me/2014/08/21/sqlalchemy-many-to-many-relationship/</link>
+        <guid isPermaLink="true">https://blog.e3rp4y.me/2014/08/21/sqlalchemy-many-to-many-relationship/</guid>
       </item>
     
   </channel>
