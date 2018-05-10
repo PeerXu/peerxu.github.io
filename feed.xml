@@ -2,21 +2,141 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>PeerStudio</title>
-    <description>我的世界</description>
-    <link>http://blog.e3rp4y.me/</link>
-    <atom:link href="http://blog.e3rp4y.me/feed.xml" rel="self" type="application/rss+xml" />
+    <description>Peer的博客</description>
+    <link>http://localhost:4000/</link>
+    <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
+    
+      <item>
+        <title>在macOS下通过Docker交叉编译GO程序</title>
+        <description>&lt;h2 id=&quot;前言&quot;&gt;前言&lt;/h2&gt;
+
+&lt;p&gt;&lt;em&gt;TL;DR&lt;/em&gt;&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;普通情况下, 只需要设置环境变量 &lt;code class=&quot;highlighter-rouge&quot;&gt;GOOS&lt;/code&gt;和 &lt;code class=&quot;highlighter-rouge&quot;&gt;GOARCH&lt;/code&gt;即可编译成目标平台的二进制文件.&lt;/li&gt;
+  &lt;li&gt;特殊情况下(需要采用Golang的 &lt;code class=&quot;highlighter-rouge&quot;&gt;plugin&lt;/code&gt;包或其他情况), 因为macOS安装 &lt;code class=&quot;highlighter-rouge&quot;&gt;arm&lt;/code&gt;平台的编译工具链不方便, 所以在Docker里面编译.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Golang对交叉编译的支持是很棒的, 通常情况下, 我们只需要配置 &lt;code class=&quot;highlighter-rouge&quot;&gt;GOOS&lt;/code&gt;和 &lt;code class=&quot;highlighter-rouge&quot;&gt;GOARCH&lt;/code&gt;这两个环境变量, 就能够正常交叉编译了.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cat&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;go&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;fmt&quot;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fmt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Println&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;hello, world&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;GOOS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;linux&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;GOARCH&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arm&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;GOARM&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;6&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;go&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;build&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;o&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hello&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;go&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;file&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hello&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;hello&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ELF&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bit&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;LSB&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;executable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ARM&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;EABI5&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;version&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;SYSV&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;statically&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;linked&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;debug_info&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;not&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stripped&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;把上面的&lt;code class=&quot;highlighter-rouge&quot;&gt;hello&lt;/code&gt;程序复制到Raspberry Pi Zero W(下文都是采用这个平台作为测试)上, 可以运行.&lt;/p&gt;
+
+&lt;p&gt;接下来提出这篇文章需要解决的问题.&lt;/p&gt;
+
+&lt;p&gt;Golang 1.8中, 添加了一个新的包: &lt;a href=&quot;https://golang.org/pkg/plugin/&quot;&gt;plugin&lt;/a&gt;. 支持Golang代码以插件形式执行.&lt;/p&gt;
+
+&lt;p&gt;下面是演示代码.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;plugin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plugin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;go&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;fmt&quot;&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Hello&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fmt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Println&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;hello, world&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;go&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;plugin&quot;&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;err&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;plugin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;plugin.so&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;err&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;!= nil {
+&lt;/span&gt;                &lt;span class=&quot;n&quot;&gt;panic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;HelloFn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;err&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Lookup&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Hello&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;err&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;!= nil {
+&lt;/span&gt;                &lt;span class=&quot;n&quot;&gt;panic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;HelloFn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;func&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())()&lt;/span&gt;  &lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prints&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hello, world&quot;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ go build -o plugin.so -buildmode=plugin plugin/plugin.go
+$ go build -o hello main.go
+$ ./hello
+hello, world
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;以上是编译成本地可执行二进制文件的流程.&lt;/p&gt;
+
+&lt;p&gt;但是, 如果采用交叉编译, 就会出现以下错误.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ GOOS=linux GOARCH=arm GOARM=6 go build -o plugin.so -buildmode=plugin plugin/plugin.go
+# command-line-arguments
+loadinternal: cannot find runtime/cgo
+/usr/local/opt/go/libexec/pkg/tool/darwin_amd64/link: running clang failed: exit status 1
+clang: error: invalid linker name in argument '-fuse-ld=gold'
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;解决问题&quot;&gt;解决问题&lt;/h2&gt;
+
+&lt;p&gt;前言有点多, 后面就长话短说.&lt;/p&gt;
+
+&lt;p&gt;因为没有在网上找到太多的解决方案, 决定在linux环境下编译试试. 得到如下结果.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ GOOS=linux GOARCH=arm GOARM=6 go build -o plugin.so -buildmode=plugin plugin/plugin.go
+# command-line-arguments
+loadinternal: cannot find runtime/cgo
+/usr/local/go/pkg/tool/linux_amd64/link: running gcc failed: exit status 1
+gcc: error: unrecognized command line option '-marm'; did you mean '-mabm'?
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;然后通过搜索得到&lt;a href=&quot;https://github.com/golang/go/issues/16801&quot;&gt;结果&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;需要指定 &lt;code class=&quot;highlighter-rouge&quot;&gt;CC&lt;/code&gt;环境变量, 指向 &lt;code class=&quot;highlighter-rouge&quot;&gt;arm-linux-gnueabihf-gcc&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ CC=arm-linux-gnueabihf-gcc GOOS=linux GOARCH=arm GOARM=6 go build -o hello main.go
+$ CC=arm-linux-gnueabihf-gcc GOOS=linux GOARCH=arm GOARM=6 go build -o plugin.so -buildmode=plugin plugin/plugin.go
+$ file hello plugin.so
+hello:     ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-armhf.so.3, for GNU/Linux 2.6.32, not stripped
+plugin.so: ELF 32-bit LSB shared object, ARM, EABI5 version 1 (SYSV), dynamically linked, not stripped
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;编译成功&lt;/p&gt;
+
+&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
+
+&lt;p&gt;如果觉得上面都太复杂了的话, 可以试试这个&lt;a href=&quot;https://hub.docker.com/r/e3rp4y/rpi-cross-compiler-platform/&quot;&gt;docker镜像&lt;/a&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ docker run -it --rm e3rp4y/rpi-cross-compiler-platform /bin/bash
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;已经配置好 &lt;code class=&quot;highlighter-rouge&quot;&gt;GOOS&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;GOARCH&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;GOARM&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;CC&lt;/code&gt;和 &lt;code class=&quot;highlighter-rouge&quot;&gt;CGO_ENABLED&lt;/code&gt;几个环境变量.&lt;/p&gt;
+
+&lt;h2 id=&quot;备注&quot;&gt;备注&lt;/h2&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;RPi有自己的&lt;a href=&quot;git://github.com/raspberrypi/tools.git&quot;&gt;编译工具&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</description>
+        <pubDate>Thu, 10 May 2018 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/2018/05/10/cross-compile-golang-by-docker-on-macos/</link>
+        <guid isPermaLink="true">http://localhost:4000/2018/05/10/cross-compile-golang-by-docker-on-macos/</guid>
+      </item>
     
       <item>
         <title>使golang中的http response body可重读</title>
-        <description>&lt;h2 id=&quot;section&quot;&gt;前言&lt;/h2&gt;
+        <description>&lt;h2 id=&quot;前言&quot;&gt;前言&lt;/h2&gt;
 
-&lt;p&gt;首先来介绍一下今天遇到的问题: 在读取&lt;code&gt;net/http.Response.Body&lt;/code&gt;时, 发现只能用&lt;code&gt;ioutil.ReadAll&lt;/code&gt;读取一遍, 然后再读取就会失败了.&lt;/p&gt;
+&lt;p&gt;首先来介绍一下今天遇到的问题: 在读取&lt;code class=&quot;highlighter-rouge&quot;&gt;net/http.Response.Body&lt;/code&gt;时, 发现只能用&lt;code class=&quot;highlighter-rouge&quot;&gt;ioutil.ReadAll&lt;/code&gt;读取一遍, 然后再读取就会失败了.&lt;/p&gt;
 
-&lt;p&gt;这就相当的尴尬了, 因为我读了一遍, 只是&lt;code&gt;Middleware&lt;/code&gt;做检查, 后面还需要将&lt;code&gt;Response&lt;/code&gt;对象传递到下个使用者上.&lt;/p&gt;
+&lt;p&gt;这就相当的尴尬了, 因为我读了一遍, 只是&lt;code class=&quot;highlighter-rouge&quot;&gt;Middleware&lt;/code&gt;做检查, 后面还需要将&lt;code class=&quot;highlighter-rouge&quot;&gt;Response&lt;/code&gt;对象传递到下个使用者上.&lt;/p&gt;
 
-&lt;h2 id=&quot;section-1&quot;&gt;问题分析&lt;/h2&gt;
+&lt;h2 id=&quot;问题分析&quot;&gt;问题分析&lt;/h2&gt;
 
-&lt;p&gt;当我分析&lt;code&gt;net/http/response.go&lt;/code&gt;文件时, 发现&lt;code&gt;Response&lt;/code&gt;对象的&lt;code&gt;Body&lt;/code&gt;属性定义如下:&lt;/p&gt;
+&lt;p&gt;当我分析&lt;code class=&quot;highlighter-rouge&quot;&gt;net/http/response.go&lt;/code&gt;文件时, 发现&lt;code class=&quot;highlighter-rouge&quot;&gt;Response&lt;/code&gt;对象的&lt;code class=&quot;highlighter-rouge&quot;&gt;Body&lt;/code&gt;属性定义如下:&lt;/p&gt;
 
 &lt;pre&gt;
 type Response struct {
@@ -25,8 +145,8 @@ type Response struct {
 	//
 	// The http Client and Transport guarantee that Body is always
 	// non-nil, even on responses without a body or responses with
-	// a zero-length body. It is the caller&#39;s responsibility to
-	// close Body. The default HTTP client&#39;s Transport does not
+	// a zero-length body. It is the caller's responsibility to
+	// close Body. The default HTTP client's Transport does not
 	// attempt to reuse HTTP/1.0 or HTTP/1.1 TCP connections
 	// (&quot;keep-alive&quot;) unless the Body is read to completion and is
 	// closed.
@@ -38,13 +158,13 @@ type Response struct {
 }
 &lt;/pre&gt;
 
-&lt;p&gt;上面我们能看见, &lt;code&gt;Body&lt;/code&gt;是一个&lt;code&gt;ReadCloser&lt;/code&gt;对象, 那么意味着, 不能采用&lt;code&gt;Seek&lt;/code&gt;方法将&lt;code&gt;Body&lt;/code&gt;锚定到目标位置.&lt;/p&gt;
+&lt;p&gt;上面我们能看见, &lt;code class=&quot;highlighter-rouge&quot;&gt;Body&lt;/code&gt;是一个&lt;code class=&quot;highlighter-rouge&quot;&gt;ReadCloser&lt;/code&gt;对象, 那么意味着, 不能采用&lt;code class=&quot;highlighter-rouge&quot;&gt;Seek&lt;/code&gt;方法将&lt;code class=&quot;highlighter-rouge&quot;&gt;Body&lt;/code&gt;锚定到目标位置.&lt;/p&gt;
 
 &lt;p&gt;那么, 唯有采取更加极端的方式了.&lt;/p&gt;
 
-&lt;h2 id=&quot;section-2&quot;&gt;解决方案&lt;/h2&gt;
+&lt;h2 id=&quot;解决方案&quot;&gt;解决方案&lt;/h2&gt;
 
-&lt;p&gt;上面也说过了, 因为&lt;code&gt;Body&lt;/code&gt;是&lt;code&gt;ReadCloser&lt;/code&gt;, 不能&lt;code&gt;Seek&lt;/code&gt;, 所以, 只能把&lt;code&gt;Body&lt;/code&gt;读出来, 保存到&lt;code&gt;buffer&lt;/code&gt;里面, 然后再将&lt;code&gt;buffer&lt;/code&gt;包装成&lt;code&gt;io.ReadCloser&lt;/code&gt;, 然后再绑定到&lt;code&gt;Response.Body&lt;/code&gt;上.&lt;/p&gt;
+&lt;p&gt;上面也说过了, 因为&lt;code class=&quot;highlighter-rouge&quot;&gt;Body&lt;/code&gt;是&lt;code class=&quot;highlighter-rouge&quot;&gt;ReadCloser&lt;/code&gt;, 不能&lt;code class=&quot;highlighter-rouge&quot;&gt;Seek&lt;/code&gt;, 所以, 只能把&lt;code class=&quot;highlighter-rouge&quot;&gt;Body&lt;/code&gt;读出来, 保存到&lt;code class=&quot;highlighter-rouge&quot;&gt;buffer&lt;/code&gt;里面, 然后再将&lt;code class=&quot;highlighter-rouge&quot;&gt;buffer&lt;/code&gt;包装成&lt;code class=&quot;highlighter-rouge&quot;&gt;io.ReadCloser&lt;/code&gt;, 然后再绑定到&lt;code class=&quot;highlighter-rouge&quot;&gt;Response.Body&lt;/code&gt;上.&lt;/p&gt;
 
 &lt;p&gt;直接上代码吧.&lt;/p&gt;
 
@@ -70,126 +190,131 @@ func ReadAndAssignResponseBody(res *http.Response) (io.Reader, error) {
 &lt;p&gt;enjoy it~&lt;/p&gt;
 </description>
         <pubDate>Wed, 17 Aug 2016 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2016/08/17/re-read-http-response-body-on-golang/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2016/08/17/re-read-http-response-body-on-golang/</guid>
+        <link>http://localhost:4000/2016/08/17/re-read-http-response-body-on-golang/</link>
+        <guid isPermaLink="true">http://localhost:4000/2016/08/17/re-read-http-response-body-on-golang/</guid>
       </item>
     
       <item>
         <title>Docker源代码分析 -- pull repository</title>
         <description>&lt;p&gt;本系列文章是从源代码入手分析Docker部分功能或者模块的具体实现&lt;/p&gt;
 
-&lt;p&gt;今天我们就先来看看在我们输入了&lt;code&gt;docker pull debian&lt;/code&gt;之后到底发生了些什么事情&lt;/p&gt;
+&lt;p&gt;今天我们就先来看看在我们输入了&lt;code class=&quot;highlighter-rouge&quot;&gt;docker pull debian&lt;/code&gt;之后到底发生了些什么事情&lt;/p&gt;
 
 &lt;p&gt;注意: 本文是基于docker v0.5.1版本分析&lt;/p&gt;
 
-&lt;h2 id=&quot;section&quot;&gt;切入点&lt;/h2&gt;
+&lt;h2 id=&quot;切入点&quot;&gt;切入点&lt;/h2&gt;
 
 &lt;p&gt;熟悉docker的同学都知道, 我们在运行一个container之前是需要下载container的image的.&lt;/p&gt;
 
 &lt;p&gt;我们可以通过以下的命令实现下载镜像的功能:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;docker pull debian
-&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;docker pull debian
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;然后我们就可以运行基于&lt;code&gt;debian&lt;/code&gt;的容器:&lt;/p&gt;
+&lt;p&gt;然后我们就可以运行基于&lt;code class=&quot;highlighter-rouge&quot;&gt;debian&lt;/code&gt;的容器:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;docker run -i -t --rm --name debian debian /bin/bash
-&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;docker run -i -t --rm --name debian debian /bin/bash
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;那么现在我们就看看, 到底在&lt;code&gt;pull&lt;/code&gt;后面发生了多少不为人知的秘密.&lt;/p&gt;
+&lt;p&gt;那么现在我们就看看, 到底在&lt;code class=&quot;highlighter-rouge&quot;&gt;pull&lt;/code&gt;后面发生了多少不为人知的秘密.&lt;/p&gt;
 
-&lt;p&gt;我们知道, &lt;code&gt;commands.go&lt;/code&gt;是命令行参数的入口:&lt;/p&gt;
+&lt;p&gt;我们知道, &lt;code class=&quot;highlighter-rouge&quot;&gt;commands.go&lt;/code&gt;是命令行参数的入口:&lt;/p&gt;
 
 &lt;h2 id=&quot;commandsgo&quot;&gt;commands.go:&lt;/h2&gt;
 
-&lt;p&gt;&lt;code&gt;CmdPull&lt;/code&gt;作为客户端的入口, 调用&lt;code&gt;utils.ParseRepositoryTag&lt;/code&gt;处理参数, 分离出&lt;code&gt;fromImage&lt;/code&gt;和&lt;code&gt;tag&lt;/code&gt;两个参数, 然后调用服务端的&lt;code&gt;/images/create&lt;/code&gt;接口.&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;CmdPull&lt;/code&gt;作为客户端的入口, 调用&lt;code class=&quot;highlighter-rouge&quot;&gt;utils.ParseRepositoryTag&lt;/code&gt;处理参数, 分离出&lt;code class=&quot;highlighter-rouge&quot;&gt;fromImage&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;tag&lt;/code&gt;两个参数, 然后调用服务端的&lt;code class=&quot;highlighter-rouge&quot;&gt;/images/create&lt;/code&gt;接口.&lt;/p&gt;
 
 &lt;h2 id=&quot;apigo&quot;&gt;api.go:&lt;/h2&gt;
 
-&lt;p&gt;&lt;code&gt;api.go&lt;/code&gt;作为服务端路由解析器, 将&lt;code&gt;/images/create&lt;/code&gt;转发到&lt;code&gt;PostImagesCreate&lt;/code&gt;函数上.&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;api.go&lt;/code&gt;作为服务端路由解析器, 将&lt;code class=&quot;highlighter-rouge&quot;&gt;/images/create&lt;/code&gt;转发到&lt;code class=&quot;highlighter-rouge&quot;&gt;PostImagesCreate&lt;/code&gt;函数上.&lt;/p&gt;
 
-&lt;p&gt;&lt;code&gt;PostImagesCreate&lt;/code&gt;进行一些参数处理, 之后开始调用获取镜像函数&lt;code&gt;server.go/ImagePull&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;PostImagesCreate&lt;/code&gt;进行一些参数处理, 之后开始调用获取镜像函数&lt;code class=&quot;highlighter-rouge&quot;&gt;server.go/ImagePull&lt;/code&gt;.&lt;/p&gt;
 
 &lt;h2 id=&quot;servergo&quot;&gt;server.go:&lt;/h2&gt;
 
-&lt;pre&gt;&lt;code&gt;func (srv *Server) ImagePull(localName string, tag string, out io.Writer, sf *utils.StreamFormatter, authConfig *auth.AuthConfig) error
-&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;func (srv *Server) ImagePull(localName string, tag string, out io.Writer, sf *utils.StreamFormatter, authConfig *auth.AuthConfig) error
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;这是&lt;code&gt;ImagePull&lt;/code&gt;的方法声明.&lt;/p&gt;
+&lt;p&gt;这是&lt;code class=&quot;highlighter-rouge&quot;&gt;ImagePull&lt;/code&gt;的方法声明.&lt;/p&gt;
 
-&lt;p&gt;&lt;code&gt;ImagePull&lt;/code&gt;方法的重要步骤:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;通过&lt;code&gt;registry.NewRegistry&lt;/code&gt;创建&lt;code&gt;Registry&lt;/code&gt;对象&lt;code&gt;r&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;为获取镜像这个行为上锁(&lt;code&gt;srv.poolAdd&lt;/code&gt;)并且在结束时释放锁(&lt;code&gt;srv.poolRemove&lt;/code&gt;).&lt;/li&gt;
-  &lt;li&gt;通过&lt;code&gt;registry.ResolveRepositoryName&lt;/code&gt;解析出仓库(&lt;code&gt;repository&lt;/code&gt;)结构.&lt;/li&gt;
-  &lt;li&gt;通过&lt;code&gt;srv.pullRepository&lt;/code&gt;获取仓库结构.&lt;/li&gt;
-  &lt;li&gt;如果失败了, 则通过&lt;code&gt;srv.pullImage&lt;/code&gt;下载镜像.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;下面我们继续来分析&lt;code&gt;srv.pullRepository&lt;/code&gt;和&lt;code&gt;srv.pullImage&lt;/code&gt;方法.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;func (srv *Server) pullRepository(r *registry.Registry, out io.Writer, localName, remoteName, askedTag, indexEp string, sf *utils.StreamFormatter) error
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;这是&lt;code&gt;pullRepository&lt;/code&gt;的方法声明.&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;pullRepository&lt;/code&gt;方法的重要步骤:&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ImagePull&lt;/code&gt;方法的重要步骤:&lt;/p&gt;
 
 &lt;ol&gt;
-  &lt;li&gt;通过上面创建的&lt;code&gt;Registry&lt;/code&gt;对象&lt;code&gt;r&lt;/code&gt;的方法&lt;code&gt;GetRepositoryData&lt;/code&gt;获取仓库的数据&lt;code&gt;repoData&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;这时候通过&lt;code&gt;graph&lt;/code&gt;对象的&lt;code&gt;UpdateChecksums&lt;/code&gt;方法更新仓库上所有镜像的校验码.&lt;/li&gt;
-  &lt;li&gt;接下来是通过r的方法&lt;code&gt;GetRemoteTags&lt;/code&gt;获取&lt;code&gt;repoData&lt;/code&gt;的仓库列表上, 每个仓库的&lt;code&gt;tag&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;接下来会判断一下在&lt;code&gt;CmdPull&lt;/code&gt;解析到的&lt;code&gt;tag&lt;/code&gt;是否在上面的&lt;code&gt;tags&lt;/code&gt;列表上, 如果存在则下载该&lt;code&gt;tag&lt;/code&gt;和相关联的&lt;code&gt;images&lt;/code&gt;, 否则就下载所有&lt;code&gt;tag&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;接下来就是通过&lt;code&gt;srv.pullImage&lt;/code&gt;方法来下载由步骤4中指定的&lt;code&gt;tag&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;通过&lt;code class=&quot;highlighter-rouge&quot;&gt;registry.NewRegistry&lt;/code&gt;创建&lt;code class=&quot;highlighter-rouge&quot;&gt;Registry&lt;/code&gt;对象&lt;code class=&quot;highlighter-rouge&quot;&gt;r&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;为获取镜像这个行为上锁(&lt;code class=&quot;highlighter-rouge&quot;&gt;srv.poolAdd&lt;/code&gt;)并且在结束时释放锁(&lt;code class=&quot;highlighter-rouge&quot;&gt;srv.poolRemove&lt;/code&gt;).&lt;/li&gt;
+  &lt;li&gt;通过&lt;code class=&quot;highlighter-rouge&quot;&gt;registry.ResolveRepositoryName&lt;/code&gt;解析出仓库(&lt;code class=&quot;highlighter-rouge&quot;&gt;repository&lt;/code&gt;)结构.&lt;/li&gt;
+  &lt;li&gt;通过&lt;code class=&quot;highlighter-rouge&quot;&gt;srv.pullRepository&lt;/code&gt;获取仓库结构.&lt;/li&gt;
+  &lt;li&gt;如果失败了, 则通过&lt;code class=&quot;highlighter-rouge&quot;&gt;srv.pullImage&lt;/code&gt;下载镜像.&lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;p&gt;接下来我们分析一下&lt;code&gt;pullImage&lt;/code&gt;函数&lt;/p&gt;
+&lt;p&gt;下面我们继续来分析&lt;code class=&quot;highlighter-rouge&quot;&gt;srv.pullRepository&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;srv.pullImage&lt;/code&gt;方法.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;func (srv *Server) pullImage(r *registry.Registry, out io.Writer, imgID, endpoint string, token []string, sf *utils.StreamFormatter) error
-&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;func (srv *Server) pullRepository(r *registry.Registry, out io.Writer, localName, remoteName, askedTag, indexEp string, sf *utils.StreamFormatter) error
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;这是&lt;code&gt;pullImage&lt;/code&gt;的函数声明&lt;/p&gt;
+&lt;p&gt;这是&lt;code class=&quot;highlighter-rouge&quot;&gt;pullRepository&lt;/code&gt;的方法声明.&lt;/p&gt;
 
-&lt;p&gt;&lt;code&gt;pullImage&lt;/code&gt;方法的重要步骤:&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;pullRepository&lt;/code&gt;方法的重要步骤:&lt;/p&gt;
 
 &lt;ol&gt;
-  &lt;li&gt;通过&lt;code&gt;r.GetRemoteHistory&lt;/code&gt;获取镜像的父节点&lt;code&gt;history&lt;/code&gt;对象, &lt;em&gt;注意: 这里的父节点是包含自己的&lt;/em&gt;.&lt;/li&gt;
-  &lt;li&gt;然后就是遍历&lt;code&gt;history&lt;/code&gt;对象, 逐个下载镜像相关内容.
-&amp;gt; 1. 通过&lt;code&gt;r.GetRemoteImageJSON&lt;/code&gt;获取镜像的&lt;code&gt;json&lt;/code&gt;内容&lt;code&gt;imgJSON&lt;/code&gt;, 还有镜像大小&lt;code&gt;imgSize&lt;/code&gt;
-&amp;gt; 1. 由&lt;code&gt;imgJSON&lt;/code&gt;通过&lt;code&gt;NewImgJSON&lt;/code&gt;方法创建&lt;code&gt;Image&lt;/code&gt;对象&lt;code&gt;img&lt;/code&gt;
-&amp;gt; 1. 通过&lt;code&gt;img&lt;/code&gt;获取到镜像&lt;code&gt;layer结构&lt;/code&gt;
-&amp;gt; 1. 最后通过&lt;code&gt;graph.Register&lt;/code&gt;下载并保存整个镜像的内容及其相关的上下文.&lt;/li&gt;
+  &lt;li&gt;通过上面创建的&lt;code class=&quot;highlighter-rouge&quot;&gt;Registry&lt;/code&gt;对象&lt;code class=&quot;highlighter-rouge&quot;&gt;r&lt;/code&gt;的方法&lt;code class=&quot;highlighter-rouge&quot;&gt;GetRepositoryData&lt;/code&gt;获取仓库的数据&lt;code class=&quot;highlighter-rouge&quot;&gt;repoData&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;这时候通过&lt;code class=&quot;highlighter-rouge&quot;&gt;graph&lt;/code&gt;对象的&lt;code class=&quot;highlighter-rouge&quot;&gt;UpdateChecksums&lt;/code&gt;方法更新仓库上所有镜像的校验码.&lt;/li&gt;
+  &lt;li&gt;接下来是通过r的方法&lt;code class=&quot;highlighter-rouge&quot;&gt;GetRemoteTags&lt;/code&gt;获取&lt;code class=&quot;highlighter-rouge&quot;&gt;repoData&lt;/code&gt;的仓库列表上, 每个仓库的&lt;code class=&quot;highlighter-rouge&quot;&gt;tag&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;接下来会判断一下在&lt;code class=&quot;highlighter-rouge&quot;&gt;CmdPull&lt;/code&gt;解析到的&lt;code class=&quot;highlighter-rouge&quot;&gt;tag&lt;/code&gt;是否在上面的&lt;code class=&quot;highlighter-rouge&quot;&gt;tags&lt;/code&gt;列表上, 如果存在则下载该&lt;code class=&quot;highlighter-rouge&quot;&gt;tag&lt;/code&gt;和相关联的&lt;code class=&quot;highlighter-rouge&quot;&gt;images&lt;/code&gt;, 否则就下载所有&lt;code class=&quot;highlighter-rouge&quot;&gt;tag&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;接下来就是通过&lt;code class=&quot;highlighter-rouge&quot;&gt;srv.pullImage&lt;/code&gt;方法来下载由步骤4中指定的&lt;code class=&quot;highlighter-rouge&quot;&gt;tag&lt;/code&gt;.&lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;p&gt;最后, 我们来分析一下&lt;code&gt;graph.Register&lt;/code&gt;方法.&lt;/p&gt;
+&lt;p&gt;接下来我们分析一下&lt;code class=&quot;highlighter-rouge&quot;&gt;pullImage&lt;/code&gt;函数&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;func (srv *Server) pullImage(r *registry.Registry, out io.Writer, imgID, endpoint string, token []string, sf *utils.StreamFormatter) error
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;这是&lt;code class=&quot;highlighter-rouge&quot;&gt;pullImage&lt;/code&gt;的函数声明&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;pullImage&lt;/code&gt;方法的重要步骤:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;通过&lt;code class=&quot;highlighter-rouge&quot;&gt;r.GetRemoteHistory&lt;/code&gt;获取镜像的父节点&lt;code class=&quot;highlighter-rouge&quot;&gt;history&lt;/code&gt;对象, &lt;em&gt;注意: 这里的父节点是包含自己的&lt;/em&gt;.&lt;/li&gt;
+  &lt;li&gt;然后就是遍历&lt;code class=&quot;highlighter-rouge&quot;&gt;history&lt;/code&gt;对象, 逐个下载镜像相关内容.
+    &lt;blockquote&gt;
+      &lt;ol&gt;
+        &lt;li&gt;通过&lt;code class=&quot;highlighter-rouge&quot;&gt;r.GetRemoteImageJSON&lt;/code&gt;获取镜像的&lt;code class=&quot;highlighter-rouge&quot;&gt;json&lt;/code&gt;内容&lt;code class=&quot;highlighter-rouge&quot;&gt;imgJSON&lt;/code&gt;, 还有镜像大小&lt;code class=&quot;highlighter-rouge&quot;&gt;imgSize&lt;/code&gt;&lt;/li&gt;
+        &lt;li&gt;由&lt;code class=&quot;highlighter-rouge&quot;&gt;imgJSON&lt;/code&gt;通过&lt;code class=&quot;highlighter-rouge&quot;&gt;NewImgJSON&lt;/code&gt;方法创建&lt;code class=&quot;highlighter-rouge&quot;&gt;Image&lt;/code&gt;对象&lt;code class=&quot;highlighter-rouge&quot;&gt;img&lt;/code&gt;&lt;/li&gt;
+        &lt;li&gt;通过&lt;code class=&quot;highlighter-rouge&quot;&gt;img&lt;/code&gt;获取到镜像&lt;code class=&quot;highlighter-rouge&quot;&gt;layer结构&lt;/code&gt;&lt;/li&gt;
+        &lt;li&gt;最后通过&lt;code class=&quot;highlighter-rouge&quot;&gt;graph.Register&lt;/code&gt;下载并保存整个镜像的内容及其相关的上下文.&lt;/li&gt;
+      &lt;/ol&gt;
+    &lt;/blockquote&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;最后, 我们来分析一下&lt;code class=&quot;highlighter-rouge&quot;&gt;graph.Register&lt;/code&gt;方法.&lt;/p&gt;
 
 &lt;h2 id=&quot;graphgo&quot;&gt;graph.go&lt;/h2&gt;
 
-&lt;p&gt;这是&lt;code&gt;Register&lt;/code&gt;的方法声明.&lt;/p&gt;
+&lt;p&gt;这是&lt;code class=&quot;highlighter-rouge&quot;&gt;Register&lt;/code&gt;的方法声明.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;func (graph *Graph) Register(layerData Archive, store bool, img *Image) error
-&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;func (graph *Graph) Register(layerData Archive, store bool, img *Image) error
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;这是&lt;code&gt;Register&lt;/code&gt;方法的重要步骤:&lt;/p&gt;
+&lt;p&gt;这是&lt;code class=&quot;highlighter-rouge&quot;&gt;Register&lt;/code&gt;方法的重要步骤:&lt;/p&gt;
 
 &lt;ol&gt;
-  &lt;li&gt;先通过&lt;code&gt;ValidateID&lt;/code&gt;验证一下&lt;code&gt;镜像ID&lt;/code&gt;的有效性.&lt;/li&gt;
-  &lt;li&gt;通过&lt;code&gt;StoreImage&lt;/code&gt;保存下载的镜像在临时目录.&lt;/li&gt;
+  &lt;li&gt;先通过&lt;code class=&quot;highlighter-rouge&quot;&gt;ValidateID&lt;/code&gt;验证一下&lt;code class=&quot;highlighter-rouge&quot;&gt;镜像ID&lt;/code&gt;的有效性.&lt;/li&gt;
+  &lt;li&gt;通过&lt;code class=&quot;highlighter-rouge&quot;&gt;StoreImage&lt;/code&gt;保存下载的镜像在临时目录.&lt;/li&gt;
   &lt;li&gt;然后将下载完成的镜像保存在对应的镜像目录.&lt;/li&gt;
-  &lt;li&gt;最后再添加镜像到&lt;code&gt;graph&lt;/code&gt;的缓存里面.&lt;/li&gt;
+  &lt;li&gt;最后再添加镜像到&lt;code class=&quot;highlighter-rouge&quot;&gt;graph&lt;/code&gt;的缓存里面.&lt;/li&gt;
 &lt;/ol&gt;
 
 &lt;p&gt;that’s all&lt;/p&gt;
 </description>
         <pubDate>Sun, 29 Nov 2015 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2015/11/29/docker-source-code-analysis-pull/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2015/11/29/docker-source-code-analysis-pull/</guid>
+        <link>http://localhost:4000/2015/11/29/docker-source-code-analysis-pull/</link>
+        <guid isPermaLink="true">http://localhost:4000/2015/11/29/docker-source-code-analysis-pull/</guid>
       </item>
     
       <item>
         <title>利用Docker跨平台编译Windows平台的qemu-ga.exe</title>
-        <description>&lt;h2 id=&quot;section&quot;&gt;介绍&lt;/h2&gt;
+        <description>&lt;h2 id=&quot;介绍&quot;&gt;介绍&lt;/h2&gt;
 
 &lt;p&gt;今天, 我们介绍一下怎么在Linux环境下编译Windows的可执行文件.&lt;/p&gt;
 
@@ -203,9 +328,9 @@ func ReadAndAssignResponseBody(res *http.Response) (io.Reader, error) {
 
 &lt;h2 id=&quot;glance&quot;&gt;Glance&lt;/h2&gt;
 
-&lt;p&gt;我们先运行一下&lt;code&gt;centos-mingw-base&lt;/code&gt;容器看看.&lt;/p&gt;
+&lt;p&gt;我们先运行一下&lt;code class=&quot;highlighter-rouge&quot;&gt;centos-mingw-base&lt;/code&gt;容器看看.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;$ docker run --rm -t -i e3rp4y/centos-mingw-base /bin/bash
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ docker run --rm -t -i e3rp4y/centos-mingw-base /bin/bash
 
 [root@4ad795647521 /]# rpm -qa|grep mingw
 mingw-binutils-generic-2.25-1.el7.x86_64
@@ -247,13 +372,13 @@ mingw32-gettext-0.18.3.2-1.el7.noarch
 mingw32-gettext-static-0.18.3.2-1.el7.noarch
 mingw64-glib2-static-2.40.0-3.el7.noarch
 [root@4ad795647521 /]#
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;我们能够直观的看见, 安装了mingw环境的相关组件.&lt;/p&gt;
 
 &lt;p&gt;下面我们先来简单的编译一个Windows平台的”Hello World”.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;[root@4ad795647521 /]# cd /tmp
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[root@4ad795647521 /]# cd /tmp
 [root@4ad795647521 tmp]# cat hello.c
 #include &amp;lt;stdio.h&amp;gt;
 int main(void) {
@@ -265,77 +390,77 @@ int main(void) {
 -rwxr-xr-x 1 root root 54K Aug 12 10:53 hello.exe
 [root@4ad795647521 tmp]# file hello.exe
 hello.exe: PE32 executable (console) Intel 80386, for MS Windows
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;这样我们就成功地编译出一个windows平台 32位系统的&lt;code&gt;hello.exe&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;这样我们就成功地编译出一个windows平台 32位系统的&lt;code class=&quot;highlighter-rouge&quot;&gt;hello.exe&lt;/code&gt;.&lt;/p&gt;
 
-&lt;p&gt;备注: 如果想要编译64位的话, 将编译器换成&lt;code&gt;x86_64-w64-mingw32-gcc&lt;/code&gt;即可.&lt;/p&gt;
+&lt;p&gt;备注: 如果想要编译64位的话, 将编译器换成&lt;code class=&quot;highlighter-rouge&quot;&gt;x86_64-w64-mingw32-gcc&lt;/code&gt;即可.&lt;/p&gt;
 
-&lt;h2 id=&quot;qemu-gaexe&quot;&gt;编译qemu-ga.exe&lt;/h2&gt;
+&lt;h2 id=&quot;编译qemu-gaexe&quot;&gt;编译qemu-ga.exe&lt;/h2&gt;
 
 &lt;p&gt;下面, 我们来编译一下qemu-ga.exe&lt;/p&gt;
 
 &lt;p&gt;首先, 我们需要将源代码放置到容器里面.&lt;/p&gt;
 
-&lt;p&gt;我们可以采用docker的&lt;code&gt;--volume&lt;/code&gt;参数.&lt;/p&gt;
+&lt;p&gt;我们可以采用docker的&lt;code class=&quot;highlighter-rouge&quot;&gt;--volume&lt;/code&gt;参数.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;docker run --rm --volume=/Users/peer/tmp/qemu-2.3.0/:/tmp/qemu -t -i e3rp4y/centos-mingw-base
-&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;docker run --rm --volume=/Users/peer/tmp/qemu-2.3.0/:/tmp/qemu -t -i e3rp4y/centos-mingw-base
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;这里, 我们用&lt;code&gt;--volume&lt;/code&gt;参数, 将本机的&lt;code&gt;/Users/peer/tmp/qemu-2.3.0/&lt;/code&gt;目录映射到容器的&lt;code&gt;/tmp/qemu/&lt;/code&gt;目录上.&lt;/p&gt;
+&lt;p&gt;这里, 我们用&lt;code class=&quot;highlighter-rouge&quot;&gt;--volume&lt;/code&gt;参数, 将本机的&lt;code class=&quot;highlighter-rouge&quot;&gt;/Users/peer/tmp/qemu-2.3.0/&lt;/code&gt;目录映射到容器的&lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp/qemu/&lt;/code&gt;目录上.&lt;/p&gt;
 
 &lt;p&gt;然后我们可以开始编译了.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;[root@035df45036cc /]# cd /tmp/qemu
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[root@035df45036cc /]# cd /tmp/qemu
 [root@035df45036cc qemu]# mkdir build
 [root@035df45036cc qemu]# cd build
 [root@035df45036cc build]# ../confug --target-list=x86_64-softmmu --cross-prefix=i686-w64-mingw32-
 [root@035df45036cc build]# make V=1 VL_LDFLAGS=-Wl,--build-id qemu-ga.exe
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;拷贝走你的&lt;code&gt;qemu-ga.exe&lt;/code&gt; happy去吧.&lt;/p&gt;
+&lt;p&gt;拷贝走你的&lt;code class=&quot;highlighter-rouge&quot;&gt;qemu-ga.exe&lt;/code&gt; happy去吧.&lt;/p&gt;
 
 &lt;p&gt;enjoy it.&lt;/p&gt;
 </description>
         <pubDate>Wed, 12 Aug 2015 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</guid>
+        <link>http://localhost:4000/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</link>
+        <guid isPermaLink="true">http://localhost:4000/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</guid>
       </item>
     
       <item>
         <title>在C中调用Python程序(II)</title>
-        <description>&lt;h2 id=&quot;section&quot;&gt;承上启下的段落&lt;/h2&gt;
+        <description>&lt;h2 id=&quot;承上启下的段落&quot;&gt;承上启下的段落&lt;/h2&gt;
 
 &lt;p&gt;&lt;a href=&quot;http://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/&quot;&gt;上一节&lt;/a&gt;我们已经介绍了, 怎么在C语言中, 采用Python API调用Python程序.&lt;/p&gt;
 
-&lt;p&gt;上一节采用的是&lt;code&gt;PyRun_SimpleString&lt;/code&gt;这个API函数.&lt;/p&gt;
+&lt;p&gt;上一节采用的是&lt;code class=&quot;highlighter-rouge&quot;&gt;PyRun_SimpleString&lt;/code&gt;这个API函数.&lt;/p&gt;
 
 &lt;p&gt;这个函数的优点就是方便, 不用初始化环境变量就能够正常运行了.&lt;/p&gt;
 
 &lt;p&gt;缺点也是相当明显, 便利带来的就是灵活性不够高. 最简单的C-Python交互都无法正常完成.&lt;/p&gt;
 
-&lt;h2 id=&quot;section-1&quot;&gt;摊开你的双手, 来迎接新挑战吧!&lt;/h2&gt;
+&lt;h2 id=&quot;摊开你的双手-来迎接新挑战吧&quot;&gt;摊开你的双手, 来迎接新挑战吧!&lt;/h2&gt;
 
 &lt;p&gt;首先, 我们还是得先看看文档.&lt;/p&gt;
 
-&lt;p&gt;&lt;a href=&quot;https://docs.python.org/2/c-api/veryhigh.html&quot;&gt;The Very High Level Layer&lt;/a&gt;告诉我们, 除了&lt;code&gt;PyRun_SimpleString&lt;/code&gt;之外, 还有&lt;code&gt;PyRun_String&lt;/code&gt;, &lt;code&gt;PyRun_File&lt;/code&gt;, etc.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://docs.python.org/2/c-api/veryhigh.html&quot;&gt;The Very High Level Layer&lt;/a&gt;告诉我们, 除了&lt;code class=&quot;highlighter-rouge&quot;&gt;PyRun_SimpleString&lt;/code&gt;之外, 还有&lt;code class=&quot;highlighter-rouge&quot;&gt;PyRun_String&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;PyRun_File&lt;/code&gt;, etc.&lt;/p&gt;
 
-&lt;p&gt;我们今天就来介绍一下&lt;code&gt;PyRun_String&lt;/code&gt;的用法.&lt;/p&gt;
+&lt;p&gt;我们今天就来介绍一下&lt;code class=&quot;highlighter-rouge&quot;&gt;PyRun_String&lt;/code&gt;的用法.&lt;/p&gt;
 
-&lt;p&gt;这个是&lt;code&gt;PyRun_String&lt;/code&gt;的函数签名:&lt;/p&gt;
+&lt;p&gt;这个是&lt;code class=&quot;highlighter-rouge&quot;&gt;PyRun_String&lt;/code&gt;的函数签名:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;PyObject*             // PyRun_String的返回值类型
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;PyObject*             // PyRun_String的返回值类型
 PyRun_String(         // 函数名
   const char *str,    // 执行的Python代码
   int start,          // 载入类型, 分别有: Py_eval_input, Py_file_input, Py_single_input
   PyObject *globals,  // 全局对象
   PyObject *locals    // 局部对象
 )
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;上面我们可以知道, &lt;code&gt;PyRun_String&lt;/code&gt;和&lt;code&gt;PyRun_SimpleString&lt;/code&gt;是相似的功能, 都是运行一段Python代码.&lt;/p&gt;
+&lt;p&gt;上面我们可以知道, &lt;code class=&quot;highlighter-rouge&quot;&gt;PyRun_String&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;PyRun_SimpleString&lt;/code&gt;是相似的功能, 都是运行一段Python代码.&lt;/p&gt;
 
-&lt;p&gt;&lt;code&gt;start&lt;/code&gt;参数是指执行的这段代码, 到底是怎么导入的, 这里分了三种模式:&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;start&lt;/code&gt;参数是指执行的这段代码, 到底是怎么导入的, 这里分了三种模式:&lt;/p&gt;
 
 &lt;ul&gt;
   &lt;li&gt;&lt;a href=&quot;https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_eval_input&quot;&gt;Py_eval_input&lt;/a&gt;, 是执行隔离的表达式用的.&lt;/li&gt;
@@ -343,15 +468,15 @@ PyRun_String(         // 函数名
   &lt;li&gt;&lt;a href=&quot;https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_single_input&quot;&gt;Py_single_input&lt;/a&gt;, 这种模式, 是表示输入的代码是从交互接口输入的.&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;&lt;code&gt;globals&lt;/code&gt;参数是表示Python的&lt;code&gt;globals&lt;/code&gt;对象&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;globals&lt;/code&gt;参数是表示Python的&lt;code class=&quot;highlighter-rouge&quot;&gt;globals&lt;/code&gt;对象&lt;/p&gt;
 
-&lt;p&gt;&lt;code&gt;locals&lt;/code&gt;参数是表示Python的&lt;code&gt;locals&lt;/code&gt;对象&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;locals&lt;/code&gt;参数是表示Python的&lt;code class=&quot;highlighter-rouge&quot;&gt;locals&lt;/code&gt;对象&lt;/p&gt;
 
-&lt;p&gt;好了, 了解了&lt;code&gt;PyRun_String&lt;/code&gt;函数的各个变量含义后, 我们就来写点代码吧.&lt;/p&gt;
+&lt;p&gt;好了, 了解了&lt;code class=&quot;highlighter-rouge&quot;&gt;PyRun_String&lt;/code&gt;函数的各个变量含义后, 我们就来写点代码吧.&lt;/p&gt;
 
-&lt;h2 id=&quot;section-2&quot;&gt;代码解析&lt;/h2&gt;
+&lt;h2 id=&quot;代码解析&quot;&gt;代码解析&lt;/h2&gt;
 
-&lt;pre&gt;&lt;code&gt;// file: py.c
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;// file: py.c
 
 #include &amp;lt;python2.7/Python.h&amp;gt;
 
@@ -401,16 +526,16 @@ int main() {
 
   return 0;
 }
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;编译一下看看结果?&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;$ gcc -lpython2.7 -o py py.c
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ gcc -lpython2.7 -o py py.c
 $ ./py
 result=9.000000
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;h2 id=&quot;section-3&quot;&gt;总结点什么吧&lt;/h2&gt;
+&lt;h2 id=&quot;总结点什么吧&quot;&gt;总结点什么吧&lt;/h2&gt;
 
 &lt;p&gt;好吧, 上面的注释应该写得够清楚了, 还有什么不明白的话, 就是我表达能力有问题了…&lt;/p&gt;
 
@@ -419,27 +544,27 @@ result=9.000000
 &lt;p&gt;enjoy it~&lt;/p&gt;
 </description>
         <pubDate>Fri, 07 Aug 2015 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/</guid>
+        <link>http://localhost:4000/2015/08/07/call-python-from-c-II/</link>
+        <guid isPermaLink="true">http://localhost:4000/2015/08/07/call-python-from-c-II/</guid>
       </item>
     
       <item>
         <title>在C中调用Python程序(I)</title>
-        <description>&lt;h2 id=&quot;section&quot;&gt;废话&lt;/h2&gt;
+        <description>&lt;h2 id=&quot;废话&quot;&gt;废话&lt;/h2&gt;
 
 &lt;p&gt;通常, 我们会在终端上启动Python程序.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;$ python -c &#39;print &quot;Hello, World&quot;&#39;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ python -c 'print &quot;Hello, World&quot;'
 Hello, World
 $ python hello.py
 Hello, World
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;但是我们今天来介绍一下, 怎么在C语言中调用Python程序.&lt;/p&gt;
 
-&lt;p&gt;&lt;del&gt;我们当然不是在C中调用&lt;code&gt;system&lt;/code&gt;这么low的方法啦&lt;/del&gt;&lt;/p&gt;
+&lt;p&gt;&lt;del&gt;我们当然不是在C中调用&lt;code class=&quot;highlighter-rouge&quot;&gt;system&lt;/code&gt;这么low的方法啦&lt;/del&gt;&lt;/p&gt;
 
-&lt;h2 id=&quot;section-1&quot;&gt;文档导读&lt;/h2&gt;
+&lt;h2 id=&quot;文档导读&quot;&gt;文档导读&lt;/h2&gt;
 
 &lt;p&gt;首先, 先把我们的&lt;a href=&quot;https://docs.python.org/2/c-api/index.html&quot;&gt;官方文档&lt;/a&gt;祭出来. 让大家膜拜一下.&lt;/p&gt;
 
@@ -453,13 +578,13 @@ Hello, World
 
 &lt;p&gt;其他文档重要吗? 当然重要啊, 回去读10遍回来比看我这篇破文章靠谱多了.&lt;/p&gt;
 
-&lt;h2 id=&quot;section-2&quot;&gt;当然我们是从最简单的开始&lt;/h2&gt;
+&lt;h2 id=&quot;当然我们是从最简单的开始&quot;&gt;当然我们是从最简单的开始&lt;/h2&gt;
 
 &lt;p&gt;我们先来看看这个介绍&lt;a href=&quot;https://docs.python.org/2/c-api/intro.html#embedding-python&quot;&gt;Embedding Python&lt;/a&gt;.&lt;/p&gt;
 
 &lt;p&gt;里面详细介绍了Python初始化环境的流程, 我们先看一个最简单的环境.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;// file: py.c
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;// file: py.c
 
 // 导入Python的头文件, 这里我采用的是Python2.7版本
 #include &amp;lt;python2.7/Python.h&amp;gt;
@@ -470,31 +595,31 @@ int main() {
   // 完了
   return 0;
 }
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;写完上面惊为天人的代码以后, 我们就来编译它.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;$ gcc -lpython2.7 -o py py.c
-&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ gcc -lpython2.7 -o py py.c
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;&lt;code&gt;-lpython2.7&lt;/code&gt;意思是告诉gcc编译器采用&lt;code&gt;python2.7&lt;/code&gt;的代码库.&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;-lpython2.7&lt;/code&gt;意思是告诉gcc编译器采用&lt;code class=&quot;highlighter-rouge&quot;&gt;python2.7&lt;/code&gt;的代码库.&lt;/p&gt;
 
 &lt;p&gt;注意: 在编译之前请安装相应平台的python开发库.&lt;/p&gt;
 
-&lt;p&gt;例如: ubuntu就安装&lt;code&gt;python-dev&lt;/code&gt;, centos就安装&lt;code&gt;python-devel&lt;/code&gt;, osx貌似直接&lt;code&gt;brew install python&lt;/code&gt;就可以了.&lt;/p&gt;
+&lt;p&gt;例如: ubuntu就安装&lt;code class=&quot;highlighter-rouge&quot;&gt;python-dev&lt;/code&gt;, centos就安装&lt;code class=&quot;highlighter-rouge&quot;&gt;python-devel&lt;/code&gt;, osx貌似直接&lt;code class=&quot;highlighter-rouge&quot;&gt;brew install python&lt;/code&gt;就可以了.&lt;/p&gt;
 
-&lt;p&gt;编译完成后, 会生成一个&lt;code&gt;py&lt;/code&gt;的可执行文件.&lt;/p&gt;
+&lt;p&gt;编译完成后, 会生成一个&lt;code class=&quot;highlighter-rouge&quot;&gt;py&lt;/code&gt;的可执行文件.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt; $ ./py  // 当然什么都没有显示啊笨蛋!
-&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; $ ./py  // 当然什么都没有显示啊笨蛋!
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;h2 id=&quot;bb-&quot;&gt;别bb了, 快入正题&lt;/h2&gt;
+&lt;h2 id=&quot;别bb了-快入正题&quot;&gt;别bb了, 快入正题&lt;/h2&gt;
 
 &lt;p&gt;我们上面的程序写了那么长, 然而并没有什么卵用.&lt;/p&gt;
 
 &lt;p&gt;我们下面来点实际点的, 调用python的print来输出点什么东西.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;// file: py.c
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;// file: py.c
 
 // 导入Python的头文件, 这里我采用的是Python2.7版本
 #include &amp;lt;python2.7/Python.h&amp;gt;
@@ -510,16 +635,16 @@ int main() {
   Py_Finalize();
   return 0;
 }
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;再编译后执行试试?&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;$ gcc -lpython2.7 -o py py.c
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ gcc -lpython2.7 -o py py.c
 $ ./py
 Hello, C! -- from Python
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;h2 id=&quot;bb&quot;&gt;bb完要总结点东西吧&lt;/h2&gt;
+&lt;h2 id=&quot;bb完要总结点东西吧&quot;&gt;bb完要总结点东西吧&lt;/h2&gt;
 
 &lt;p&gt;现在我们已经能够在C里面通过Python API来创建Python运行环境和执行Python代码了.&lt;/p&gt;
 
@@ -534,8 +659,8 @@ Hello, C! -- from Python
 &lt;p&gt;enjoy it~&lt;/p&gt;
 </description>
         <pubDate>Fri, 07 Aug 2015 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/</guid>
+        <link>http://localhost:4000/2015/08/07/call-python-from-c-I/</link>
+        <guid isPermaLink="true">http://localhost:4000/2015/08/07/call-python-from-c-I/</guid>
       </item>
     
       <item>
@@ -544,44 +669,44 @@ Hello, C! -- from Python
 
 &lt;p&gt;接下来就是介绍如何在Emacs上编辑Graphviz文件并且预览.&lt;/p&gt;
 
-&lt;h3 id=&quot;graphviz&quot;&gt;安装Graphviz&lt;/h3&gt;
+&lt;h3 id=&quot;安装graphviz&quot;&gt;安装Graphviz&lt;/h3&gt;
 
 &lt;p&gt;安装Graphviz, 这里安装的是带GUI的, 不用Emacs预览的使用也能用Graphviz.app 预览.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;brew install Caskroom/cask/graphviz
-&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;brew install Caskroom/cask/graphviz
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;h3 id=&quot;graphviz-dot-modeel&quot;&gt;下载graphviz-dot-mode.el&lt;/h3&gt;
+&lt;h3 id=&quot;下载graphviz-dot-modeel&quot;&gt;下载graphviz-dot-mode.el&lt;/h3&gt;
 
 &lt;p&gt;&lt;a href=&quot;https://raw.githubusercontent.com/ppareit/graphviz-dot-mode/master/graphviz-dot-mode.el&quot;&gt;graphviz-dot-mode.el&lt;/a&gt;是Emacs的graphviz插件, 能够编译和预览graphviz图片.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;$ cd ~/.emacs.d/  // 放置在Emacs配置目录下, 你可以放在别的地方, 下面的地址跟着修改就可以了.
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ cd ~/.emacs.d/  // 放置在Emacs配置目录下, 你可以放在别的地方, 下面的地址跟着修改就可以了.
 $ wget https://raw.githubusercontent.com/ppareit/graphviz-dot-mode/master/graphviz-dot-mode.el
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;h3 id=&quot;initel&quot;&gt;在init.el中载入插件&lt;/h3&gt;
+&lt;h3 id=&quot;在initel中载入插件&quot;&gt;在init.el中载入插件&lt;/h3&gt;
 
-&lt;p&gt;打开&lt;code&gt;init.el&lt;/code&gt;, 在最后载入&lt;code&gt;graphviz-dot-mode.el&lt;/code&gt;插件.&lt;/p&gt;
+&lt;p&gt;打开&lt;code class=&quot;highlighter-rouge&quot;&gt;init.el&lt;/code&gt;, 在最后载入&lt;code class=&quot;highlighter-rouge&quot;&gt;graphviz-dot-mode.el&lt;/code&gt;插件.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;$ cat ~/.emacs.d/init.el
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ cat ~/.emacs.d/init.el
 
 ...
 ;; Graphviz Mode
 ;; 如果之前保存插件地址更改了, 这里也需要作出相应的修改.
 (load-file &quot;~/.emacs.d/graphviz-dot-mode.el&quot;)
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;添加后, 每次启动Emacs都会自动载入&lt;code&gt;graphviz-dot-mode.el&lt;/code&gt;这个插件了.&lt;/p&gt;
+&lt;p&gt;添加后, 每次启动Emacs都会自动载入&lt;code class=&quot;highlighter-rouge&quot;&gt;graphviz-dot-mode.el&lt;/code&gt;这个插件了.&lt;/p&gt;
 
-&lt;p&gt;如果不想重启Emacs的话, 可以在句末按下, &lt;code&gt;&amp;lt;C-x&amp;gt; &amp;lt;C-e&amp;gt;&lt;/code&gt; 这样就会动态载入&lt;code&gt;graphviz-dot-mode.el&lt;/code&gt;插件了.&lt;/p&gt;
+&lt;p&gt;如果不想重启Emacs的话, 可以在句末按下, &lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;lt;C-x&amp;gt; &amp;lt;C-e&amp;gt;&lt;/code&gt; 这样就会动态载入&lt;code class=&quot;highlighter-rouge&quot;&gt;graphviz-dot-mode.el&lt;/code&gt;插件了.&lt;/p&gt;
 
-&lt;h3 id=&quot;section&quot;&gt;品尝成功的果实&lt;/h3&gt;
+&lt;h3 id=&quot;品尝成功的果实&quot;&gt;品尝成功的果实&lt;/h3&gt;
 
-&lt;p&gt;好了, 现在万事俱备, 只欠&lt;code&gt;graphviz&lt;/code&gt;了.&lt;/p&gt;
+&lt;p&gt;好了, 现在万事俱备, 只欠&lt;code class=&quot;highlighter-rouge&quot;&gt;graphviz&lt;/code&gt;了.&lt;/p&gt;
 
-&lt;p&gt;我们随便编辑个&lt;code&gt;graphviz&lt;/code&gt;文件.&lt;/p&gt;
+&lt;p&gt;我们随便编辑个&lt;code class=&quot;highlighter-rouge&quot;&gt;graphviz&lt;/code&gt;文件.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;$ cat /tmp/test.dot
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ cat /tmp/test.dot
 
 digraph structs {
     node [shape=record];
@@ -591,18 +716,36 @@ digraph structs {
     struct1: f1 -&amp;gt; struct2:f0;
     struct1: f2 -&amp;gt; struct3:here;
 }
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;用Emacs打开, 然后按下 &lt;code&gt;&amp;lt;C-c c&amp;gt;&lt;/code&gt;, 这样就成功编译&lt;code&gt;test.dot&lt;/code&gt;文件.&lt;/p&gt;
+&lt;p&gt;用Emacs打开, 然后按下 &lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;lt;C-c c&amp;gt;&lt;/code&gt;, 这样就成功编译&lt;code class=&quot;highlighter-rouge&quot;&gt;test.dot&lt;/code&gt;文件.&lt;/p&gt;
 
-&lt;p&gt;之后只需要按下 &lt;code&gt;&amp;lt;C-c p&amp;gt;&lt;/code&gt;, 就能够预览&lt;code&gt;test.dot&lt;/code&gt;编译成png的文件.&lt;/p&gt;
+&lt;p&gt;之后只需要按下 &lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;lt;C-c p&amp;gt;&lt;/code&gt;, 就能够预览&lt;code class=&quot;highlighter-rouge&quot;&gt;test.dot&lt;/code&gt;编译成png的文件.&lt;/p&gt;
 
 &lt;p&gt;enjoy it~&lt;/p&gt;
 
 </description>
         <pubDate>Sun, 19 Jul 2015 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2015/07/19/preview-graphviz-on-emacs/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2015/07/19/preview-graphviz-on-emacs/</guid>
+        <link>http://localhost:4000/2015/07/19/preview-graphviz-on-emacs/</link>
+        <guid isPermaLink="true">http://localhost:4000/2015/07/19/preview-graphviz-on-emacs/</guid>
+      </item>
+    
+      <item>
+        <title>Announcing Version 2.0</title>
+        <description>&lt;p&gt;In an effort to make Pixyll easier to customize and more aesthetically pleasing, we’ve released version &lt;code class=&quot;highlighter-rouge&quot;&gt;2.0&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Pixyll now features:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Line anchors in code blocks and new syntax highlighting&lt;/li&gt;
+  &lt;li&gt;A customizable variables file&lt;/li&gt;
+  &lt;li&gt;Modular, and lighter weight CSS&lt;/li&gt;
+  &lt;li&gt;No more &lt;code class=&quot;highlighter-rouge&quot;&gt;max-width&lt;/code&gt; media queries&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Sat, 11 Jul 2015 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/jekyll/pixyll/2015/07/11/announcing-pixyll-version-2/</link>
+        <guid isPermaLink="true">http://localhost:4000/jekyll/pixyll/2015/07/11/announcing-pixyll-version-2/</guid>
       </item>
     
       <item>
@@ -617,9 +760,9 @@ digraph structs {
 
 &lt;p&gt;经过一轮排查, 发现是使用DHCP获取IP地址的Windows用户, DNS地址被改成了部署Dnsmasq服务的服务器IP地址.&lt;/p&gt;
 
-&lt;p&gt;以为是Dnsmasq的BUG(其实还真算Dnsmasq的BUG). 那么就添加了&lt;code&gt;--port=0&lt;/code&gt;的启动参数, 表示不提供DNS服务, 然后再添加&lt;code&gt;--dhcp-option=6,114.114.114.114&lt;/code&gt;指定DNS服务器IP地址(离真相已经很近了).&lt;/p&gt;
+&lt;p&gt;以为是Dnsmasq的BUG(其实还真算Dnsmasq的BUG). 那么就添加了&lt;code class=&quot;highlighter-rouge&quot;&gt;--port=0&lt;/code&gt;的启动参数, 表示不提供DNS服务, 然后再添加&lt;code class=&quot;highlighter-rouge&quot;&gt;--dhcp-option=6,114.114.114.114&lt;/code&gt;指定DNS服务器IP地址(离真相已经很近了).&lt;/p&gt;
 
-&lt;p&gt;但是因为公司默认的DHCP并非&lt;code&gt;114.114.114.114&lt;/code&gt;, 而是某个不知名的DNS服务器地址. 所以又有人大喊为什么我的DNS变成了&lt;code&gt;114.114.114.114&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;但是因为公司默认的DHCP并非&lt;code class=&quot;highlighter-rouge&quot;&gt;114.114.114.114&lt;/code&gt;, 而是某个不知名的DNS服务器地址. 所以又有人大喊为什么我的DNS变成了&lt;code class=&quot;highlighter-rouge&quot;&gt;114.114.114.114&lt;/code&gt;.&lt;/p&gt;
 
 &lt;p&gt;到现在我才意识到, 问题的严重性.&lt;/p&gt;
 
@@ -629,11 +772,11 @@ digraph structs {
 
 &lt;p&gt;0x02 分析&lt;/p&gt;
 
-&lt;p&gt;发生劫持事件后, 我添加Dnsmasq启动参数&lt;code&gt;--no-daemon&lt;/code&gt;, 表示调试模式.&lt;/p&gt;
+&lt;p&gt;发生劫持事件后, 我添加Dnsmasq启动参数&lt;code class=&quot;highlighter-rouge&quot;&gt;--no-daemon&lt;/code&gt;, 表示调试模式.&lt;/p&gt;
 
-&lt;p&gt;然后启动通过&lt;code&gt;tcpdump -n -i eth0 -vvv port 68&lt;/code&gt;来捕捉DHCP请求.&lt;/p&gt;
+&lt;p&gt;然后启动通过&lt;code class=&quot;highlighter-rouge&quot;&gt;tcpdump -n -i eth0 -vvv port 68&lt;/code&gt;来捕捉DHCP请求.&lt;/p&gt;
 
-&lt;p&gt;经过观察, 发现Windows DHCP 客户端会定时广播&lt;code&gt;DHCPINFORM&lt;/code&gt;, 而Dnsmasq会响应并非在&lt;code&gt;dhcp-hostsfile&lt;/code&gt;列表里面的主机. 响应的结果就是发送&lt;code&gt;DHCPACK&lt;/code&gt;. 而&lt;code&gt;DHCPACK&lt;/code&gt;上又带上了&lt;code&gt;Domain Name Server Option&lt;/code&gt;字段.&lt;/p&gt;
+&lt;p&gt;经过观察, 发现Windows DHCP 客户端会定时广播&lt;code class=&quot;highlighter-rouge&quot;&gt;DHCPINFORM&lt;/code&gt;, 而Dnsmasq会响应并非在&lt;code class=&quot;highlighter-rouge&quot;&gt;dhcp-hostsfile&lt;/code&gt;列表里面的主机. 响应的结果就是发送&lt;code class=&quot;highlighter-rouge&quot;&gt;DHCPACK&lt;/code&gt;. 而&lt;code class=&quot;highlighter-rouge&quot;&gt;DHCPACK&lt;/code&gt;上又带上了&lt;code class=&quot;highlighter-rouge&quot;&gt;Domain Name Server Option&lt;/code&gt;字段.&lt;/p&gt;
 
 &lt;p&gt;所以, Windows DHCP Client会将Dnsmasq返回的DHCPACK包中带上的DNS地址设置为自己的DNS地址.&lt;/p&gt;
 
@@ -644,8 +787,8 @@ digraph structs {
 &lt;p&gt;当你无法保证所在网络绝对安全的情况下, 请手动设置DNS地址.&lt;/p&gt;
 </description>
         <pubDate>Fri, 07 Nov 2014 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2014/11/07/dns-hijack-with-dnsmasq/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/11/07/dns-hijack-with-dnsmasq/</guid>
+        <link>http://localhost:4000/2014/11/07/dns-hijack-with-dnsmasq/</link>
+        <guid isPermaLink="true">http://localhost:4000/2014/11/07/dns-hijack-with-dnsmasq/</guid>
       </item>
     
       <item>
@@ -654,7 +797,7 @@ digraph structs {
 
 &lt;p&gt;多对多数据模型是比较常用的数据关系.&lt;/p&gt;
 
-&lt;p&gt;下面采用文章(&lt;code&gt;Page&lt;/code&gt;)和标签(&lt;code&gt;Tag&lt;/code&gt;)的关系来作为介绍范例.&lt;/p&gt;
+&lt;p&gt;下面采用文章(&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;)和标签(&lt;code class=&quot;highlighter-rouge&quot;&gt;Tag&lt;/code&gt;)的关系来作为介绍范例.&lt;/p&gt;
 
 &lt;ol&gt;
   &lt;li&gt;一篇文章可以通过多个标签来描述概要信息.&lt;/li&gt;
@@ -663,49 +806,49 @@ digraph structs {
 
 &lt;p&gt;首先我们先创建两个Sqlalchemy的模型类:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;class Page(Base):
-    __tablename__ = &#39;page&#39;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;class Page(Base):
+    __tablename__ = 'page'
     id = Column(Integer, primary_key=True)
     name = Column(String)
     
 class Tag(Base):
-    __tablename__ = &#39;tag&#39;
+    __tablename__ = 'tag'
     id = Column(Integer, primary_key=True)
     name = Column(String)
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;这里创建了两个模型, 分别是&lt;code&gt;Page&lt;/code&gt;和&lt;code&gt;Tag&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;这里创建了两个模型, 分别是&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;Tag&lt;/code&gt;.&lt;/p&gt;
 
-&lt;p&gt;添加一个需求: 我们能够在&lt;code&gt;Page&lt;/code&gt;对象中直接获取关联的&lt;code&gt;Tag&lt;/code&gt;列表&lt;/p&gt;
+&lt;p&gt;添加一个需求: 我们能够在&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;对象中直接获取关联的&lt;code class=&quot;highlighter-rouge&quot;&gt;Tag&lt;/code&gt;列表&lt;/p&gt;
 
-&lt;p&gt;那么我们就需要在&lt;code&gt;Page&lt;/code&gt;模型中添加:&lt;/p&gt;
+&lt;p&gt;那么我们就需要在&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;模型中添加:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;class Page(Base):
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;class Page(Base):
 ...
-    tags = relationship(&#39;Tag&#39;, secondary=association_table)
+    tags = relationship('Tag', secondary=association_table)
 ...
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;这里就通过指定&lt;code&gt;relationship&lt;/code&gt;来指定&lt;code&gt;tags&lt;/code&gt;属性是指向&lt;code&gt;Tag&lt;/code&gt;对象的, 关联规则是通过&lt;code&gt;association_table&lt;/code&gt;的关联关系.&lt;/p&gt;
+&lt;p&gt;这里就通过指定&lt;code class=&quot;highlighter-rouge&quot;&gt;relationship&lt;/code&gt;来指定&lt;code class=&quot;highlighter-rouge&quot;&gt;tags&lt;/code&gt;属性是指向&lt;code class=&quot;highlighter-rouge&quot;&gt;Tag&lt;/code&gt;对象的, 关联规则是通过&lt;code class=&quot;highlighter-rouge&quot;&gt;association_table&lt;/code&gt;的关联关系.&lt;/p&gt;
 
-&lt;p&gt;然后就是需要创建关联规则表&lt;code&gt;association_table&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;然后就是需要创建关联规则表&lt;code class=&quot;highlighter-rouge&quot;&gt;association_table&lt;/code&gt;.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;association_table = Table(
-    &#39;association&#39;, Base.metadata,
-    Column(&#39;page_id&#39;, Integer, ForeignKey(&#39;page.id&#39;)),
-    Column(&#39;tag_id&#39;, Integer, ForeignKey(&#39;tag.id&#39;))
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;association_table = Table(
+    'association', Base.metadata,
+    Column('page_id', Integer, ForeignKey('page.id')),
+    Column('tag_id', Integer, ForeignKey('tag.id'))
 )
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;这里就创建一个&lt;code&gt;Page-Tag&lt;/code&gt;关联表, 通过将&lt;code&gt;page_id&lt;/code&gt;作为&lt;code&gt;Page&lt;/code&gt;对象的外键. 同理&lt;code&gt;tag_id&lt;/code&gt;作为&lt;code&gt;Tag&lt;/code&gt;对象的外键.&lt;/p&gt;
+&lt;p&gt;这里就创建一个&lt;code class=&quot;highlighter-rouge&quot;&gt;Page-Tag&lt;/code&gt;关联表, 通过将&lt;code class=&quot;highlighter-rouge&quot;&gt;page_id&lt;/code&gt;作为&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;对象的外键. 同理&lt;code class=&quot;highlighter-rouge&quot;&gt;tag_id&lt;/code&gt;作为&lt;code class=&quot;highlighter-rouge&quot;&gt;Tag&lt;/code&gt;对象的外键.&lt;/p&gt;
 
 &lt;p&gt;至此, 我们已经完成多对多模型的创建.&lt;/p&gt;
 
 &lt;p&gt;接下来就是多对多模型的CRUD了.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;page = Page(name=&#39;Python API Page&#39;)
-api_tag = Tag(name=&#39;api&#39;)
-python_tag = Tag(name=&#39;python&#39;)
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;page = Page(name='Python API Page')
+api_tag = Tag(name='api')
+python_tag = Tag(name='python')
 
 # append tag to page
 page.tags.append(api_tag)
@@ -716,36 +859,36 @@ print [tag.name for tag in page.tags]
 
 # remove tag from page
 page.tags.remove(python_tag)
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;以上就是Sqlalchemy关于多对多模型操作方式~&lt;/p&gt;
 
 &lt;p&gt;下面贴上完整的代码:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;import sqlalchemy as sqla
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import sqlalchemy as sqla
 import sqlalchemy.orm as sqlorm
 from sqlalchemy.ext.declarative import declarative_base as sqla_declarative_base
 
 Base = sqla_declarative_base()
-engine = sqla.create_engine(&#39;sqlite:///test.db&#39;, echo=True)
+engine = sqla.create_engine('sqlite:///test.db', echo=True)
 
 association_table = sqla.Table(
-    &#39;association&#39;, Base.metadata,
-    sqla.Column(&#39;page_id&#39;, sqla.Integer, sqla.ForeignKey(&#39;page.id&#39;)),
-    sqla.Column(&#39;tag_id&#39;, sqla.Integer, sqla.ForeignKey(&#39;tag.id&#39;))
+    'association', Base.metadata,
+    sqla.Column('page_id', sqla.Integer, sqla.ForeignKey('page.id')),
+    sqla.Column('tag_id', sqla.Integer, sqla.ForeignKey('tag.id'))
 )
 
 class Page(Base):
-    __tablename__ = &#39;page&#39;
+    __tablename__ = 'page'
     id = sqla.Column(sqla.Integer, primary_key=True)
     name = sqla.Column(sqla.String)
-    tags = sqlorm.relationship(&#39;Tag&#39;, secondary=association_table)
+    tags = sqlorm.relationship('Tag', secondary=association_table)
 
 class Tag(Base):
-    __tablename__ = &#39;tag&#39;
+    __tablename__ = 'tag'
     id = sqla.Column(sqla.Integer, primary_key=True)
     name = sqla.Column(sqla.String)
-    pages = sqlorm.relationship(&#39;Page&#39;, secondary=association_table)
+    pages = sqlorm.relationship('Page', secondary=association_table)
 
 Base.metadata.bind = engine
 Base.metadata.create_all()
@@ -755,7 +898,7 @@ Session = sqlorm.scoped_session(sqlorm.sessionmaker(bind=engine))
 def save_page():
     sess = Session()
     try:
-        page = Page(name=&#39;Python API Page&#39;)
+        page = Page(name='Python API Page')
         sess.add(page)
 
         sess.flush()
@@ -766,8 +909,8 @@ def save_page():
 def add_tag():
    sess = Session()
    try:
-       python_tag = Tag(name=&#39;python&#39;)
-       api_tag = Tag(name=&#39;api&#39;)
+       python_tag = Tag(name='python')
+       api_tag = Tag(name='api')
        sess.add(python_tag)
        sess.add(api_tag)
        page = sess.query(Page).first()
@@ -783,80 +926,22 @@ def remove_tag():
     sess = Session()
     try:
         page = sess.query(Page).first()
-        api_tag = sess.query(Tag).filter(Tag.name==&#39;api&#39;).first()
+        api_tag = sess.query(Tag).filter(Tag.name=='api').first()
         page.tags.remove(api_tag)
         sess.flush()
         sess.commit()
     finally:
         sess.close()
 
-if __name__ == &#39;__main__&#39;:
+if __name__ == '__main__':
     save_page()
     add_tag()
     remove_tag()
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 </description>
         <pubDate>Thu, 21 Aug 2014 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2014/08/21/sqlalchemy-many-to-many-relationship/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/08/21/sqlalchemy-many-to-many-relationship/</guid>
-      </item>
-    
-      <item>
-        <title>老板, 要挑个号码么?</title>
-        <description>&lt;p&gt;0x00&lt;/p&gt;
-
-&lt;p&gt;注意: 本文仅仅探讨技术, 读者任何行为与本文无关&lt;/p&gt;
-
-&lt;p&gt;注意: 本文探讨技术已经通过正规渠道报告&lt;/p&gt;
-
-&lt;p&gt;0x01&lt;/p&gt;
-
-&lt;p&gt;本文讲的是如何在阿里移动中随意挑选喜好的号码&lt;/p&gt;
-
-&lt;p&gt;0x02&lt;/p&gt;
-
-&lt;p&gt;挑选的几个条件:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;号码必须存在阿里移动后台&lt;/li&gt;
-  &lt;li&gt;号码必须没有被别的用户购买&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;0x03&lt;/p&gt;
-
-&lt;p&gt;改dom大法&lt;/p&gt;
-
-&lt;p&gt;0x04&lt;/p&gt;
-
-&lt;p&gt;enjoy yourself.&lt;/p&gt;
-</description>
-        <pubDate>Tue, 08 Jul 2014 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2014/07/08/choose-your-favorite-number-from-alibaba/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/07/08/choose-your-favorite-number-from-alibaba/</guid>
-      </item>
-    
-      <item>
-        <title>Google IP Explorer使用教程</title>
-        <description>&lt;h2 id=&quot;section&quot;&gt;教程&lt;/h2&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://github.com/PeerXu/google-ip-explorer&quot;&gt;Google IP Explorer&lt;/a&gt;是一个查找Google IP列表的工具. 可以单独使用, 也可以配合Goagent使用.&lt;/p&gt;
-
-&lt;p&gt;如果已经安装了gevent库, 那么可以大大地增加查找速度.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ git clone https://github.com/PeerXu/google-ip-explorer.git
-$ cd google-ip-explorer
-$ python google.py input.txt
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Google IP列表就在output.txt文件中.&lt;/p&gt;
-
-&lt;p&gt;如果你需要直接使用, 那么就挑一个IP直接在浏览器里面就能使用了.&lt;/p&gt;
-
-&lt;p&gt;如果你需要和Goagent配合使用的话, 那么就将&lt;code&gt;proxy.ini&lt;/code&gt; 下的&lt;code&gt;[iplist]&lt;/code&gt; 下的&lt;code&gt;google_cn&lt;/code&gt; 和 &lt;code&gt;google_hk&lt;/code&gt; 替换为output.txt的内容就可以了~&lt;/p&gt;
-</description>
-        <pubDate>Thu, 03 Jul 2014 00:00:00 +0800</pubDate>
-        <link>http://blog.e3rp4y.me/2014/07/03/google-ip-explorer-tutorial/</link>
-        <guid isPermaLink="true">http://blog.e3rp4y.me/2014/07/03/google-ip-explorer-tutorial/</guid>
+        <link>http://localhost:4000/2014/08/21/sqlalchemy-many-to-many-relationship/</link>
+        <guid isPermaLink="true">http://localhost:4000/2014/08/21/sqlalchemy-many-to-many-relationship/</guid>
       </item>
     
   </channel>

@@ -1,42 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
+    
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Docker源代码分析 -- pull repository &#8211; PeerStudio</title>
+    <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="我的世界">
+    <meta name="description" content="Peer的博客">
+    <meta name="robots" content="all">
     <meta name="author" content="Peer Xu">
+    
     <meta name="keywords" content="">
-    <link rel="canonical" href="http://blog.e3rp4y.me/2015/11/29/docker-source-code-analysis-pull/">
+    <link rel="canonical" href="http://localhost:4000/2015/11/29/docker-source-code-analysis-pull/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/pixyll.css?201608180006" type="text/css">
+    <link rel="stylesheet" href="/css/pixyll.css?201805102116" type="text/css">
 
     <!-- Fonts -->
+    
     <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
     <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
     
-      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
     
 
+    <!-- MathJax -->
+    
+
+    <!-- Verifications -->
+    
+    
 
     <!-- Open Graph -->
     <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
     <meta property="og:title" content="Docker源代码分析 -- pull repository">
-    <meta property="og:description" content="我的世界">
-    <meta property="og:url" content="http://blog.e3rp4y.me/2015/11/29/docker-source-code-analysis-pull/">
+    <meta property="og:description" content="Peer的博客">
+    <meta property="og:url" content="http://localhost:4000/2015/11/29/docker-source-code-analysis-pull/">
     <meta property="og:site_name" content="PeerStudio">
+    
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary" />
     
+        <meta name="twitter:site" content="@PeerXu" />
+        <meta name="twitter:creator" content="@PeerXu" />
+    
     <meta name="twitter:title" content="Docker源代码分析 -- pull repository" />
-    <meta name="twitter:description" content="我的世界" />
-    <meta name="twitter:url" content="http://blog.e3rp4y.me/2015/11/29/docker-source-code-analysis-pull/" />
+    <meta name="twitter:description" content="Peer的博客" />
+    <meta name="twitter:url" content="http://localhost:4000/2015/11/29/docker-source-code-analysis-pull/" />
+    
 
     <!-- Icons -->
     <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
@@ -53,57 +69,54 @@
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
     <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
     <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
-        
+
     
     <script type="text/javascript">
-      var _gaq = _gaq || [];
-      _gaq.push(['_setAccount', 'UA-52061731-2']);
-      _gaq.push(['_trackPageview']);
-      (function() {
-        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-      })();
+       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+       ga('create', 'UA-52061731-2', 'auto');
+       ga('send', 'pageview');
     </script>
     
 </head>
 
-<body class="site animated fade-in-down">
+<body class="site">
+  
+	
+
   <div class="site-wrap">
     <header class="site-header px2 px-responsive">
   <div class="mt2 wrap">
     <div class="measure">
-      <a href="http://blog.e3rp4y.me" class="site-title">PeerStudio</a>
+      <a href="http://localhost:4000" class="site-title">PeerStudio</a>
       <nav class="site-nav">
-        <a href="/about/">About</a>
+        
+
+
+
+    
+    
+    
+    
+        <a href="/about/">About Pixyll</a>
+    
+
+    
+
+    
+    
+    
+    
+        <a href="/contact/">Say Hello</a>
+    
+
+    
+
 
       </nav>
       <div class="clearfix"></div>
-      
-        <div class="social-icons">
-  <div class="left">
-    
-      <a class="fa fa-github" href="https://github.com/PeerXu"></a>
-    
-    
-    <a class="fa fa-rss" href="/feed.xml"></a>
-    
-    
-    
-      <a class="fa fa-envelope" href="mailto:pppeerxu@gmail.com"></a>
-    
-    
-    
-    
-  </div>
-  <div class="right">
-    
-    
-    
-  </div>
-</div>
-<div class="clearfix"></div>
-
       
     </div>
   </div>
@@ -115,12 +128,10 @@
         
 
 
-
-
 <div class="post-header mb2">
   <h1>Docker源代码分析 -- pull repository</h1>
   <span class="post-meta">Nov 29, 2015</span><br>
-    
+  
   <span class="post-meta small">
   
     1 minute read
@@ -131,106 +142,111 @@
 <article class="post-content">
   <p>本系列文章是从源代码入手分析Docker部分功能或者模块的具体实现</p>
 
-<p>今天我们就先来看看在我们输入了<code>docker pull debian</code>之后到底发生了些什么事情</p>
+<p>今天我们就先来看看在我们输入了<code class="highlighter-rouge">docker pull debian</code>之后到底发生了些什么事情</p>
 
 <p>注意: 本文是基于docker v0.5.1版本分析</p>
 
-<h2 id="section">切入点</h2>
+<h2 id="切入点">切入点</h2>
 
 <p>熟悉docker的同学都知道, 我们在运行一个container之前是需要下载container的image的.</p>
 
 <p>我们可以通过以下的命令实现下载镜像的功能:</p>
 
-<pre><code>docker pull debian
-</code></pre>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker pull debian
+</code></pre></div></div>
 
-<p>然后我们就可以运行基于<code>debian</code>的容器:</p>
+<p>然后我们就可以运行基于<code class="highlighter-rouge">debian</code>的容器:</p>
 
-<pre><code>docker run -i -t --rm --name debian debian /bin/bash
-</code></pre>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run -i -t --rm --name debian debian /bin/bash
+</code></pre></div></div>
 
-<p>那么现在我们就看看, 到底在<code>pull</code>后面发生了多少不为人知的秘密.</p>
+<p>那么现在我们就看看, 到底在<code class="highlighter-rouge">pull</code>后面发生了多少不为人知的秘密.</p>
 
-<p>我们知道, <code>commands.go</code>是命令行参数的入口:</p>
+<p>我们知道, <code class="highlighter-rouge">commands.go</code>是命令行参数的入口:</p>
 
 <h2 id="commandsgo">commands.go:</h2>
 
-<p><code>CmdPull</code>作为客户端的入口, 调用<code>utils.ParseRepositoryTag</code>处理参数, 分离出<code>fromImage</code>和<code>tag</code>两个参数, 然后调用服务端的<code>/images/create</code>接口.</p>
+<p><code class="highlighter-rouge">CmdPull</code>作为客户端的入口, 调用<code class="highlighter-rouge">utils.ParseRepositoryTag</code>处理参数, 分离出<code class="highlighter-rouge">fromImage</code>和<code class="highlighter-rouge">tag</code>两个参数, 然后调用服务端的<code class="highlighter-rouge">/images/create</code>接口.</p>
 
 <h2 id="apigo">api.go:</h2>
 
-<p><code>api.go</code>作为服务端路由解析器, 将<code>/images/create</code>转发到<code>PostImagesCreate</code>函数上.</p>
+<p><code class="highlighter-rouge">api.go</code>作为服务端路由解析器, 将<code class="highlighter-rouge">/images/create</code>转发到<code class="highlighter-rouge">PostImagesCreate</code>函数上.</p>
 
-<p><code>PostImagesCreate</code>进行一些参数处理, 之后开始调用获取镜像函数<code>server.go/ImagePull</code>.</p>
+<p><code class="highlighter-rouge">PostImagesCreate</code>进行一些参数处理, 之后开始调用获取镜像函数<code class="highlighter-rouge">server.go/ImagePull</code>.</p>
 
 <h2 id="servergo">server.go:</h2>
 
-<pre><code>func (srv *Server) ImagePull(localName string, tag string, out io.Writer, sf *utils.StreamFormatter, authConfig *auth.AuthConfig) error
-</code></pre>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>func (srv *Server) ImagePull(localName string, tag string, out io.Writer, sf *utils.StreamFormatter, authConfig *auth.AuthConfig) error
+</code></pre></div></div>
 
-<p>这是<code>ImagePull</code>的方法声明.</p>
+<p>这是<code class="highlighter-rouge">ImagePull</code>的方法声明.</p>
 
-<p><code>ImagePull</code>方法的重要步骤:</p>
-
-<ol>
-  <li>通过<code>registry.NewRegistry</code>创建<code>Registry</code>对象<code>r</code>.</li>
-  <li>为获取镜像这个行为上锁(<code>srv.poolAdd</code>)并且在结束时释放锁(<code>srv.poolRemove</code>).</li>
-  <li>通过<code>registry.ResolveRepositoryName</code>解析出仓库(<code>repository</code>)结构.</li>
-  <li>通过<code>srv.pullRepository</code>获取仓库结构.</li>
-  <li>如果失败了, 则通过<code>srv.pullImage</code>下载镜像.</li>
-</ol>
-
-<p>下面我们继续来分析<code>srv.pullRepository</code>和<code>srv.pullImage</code>方法.</p>
-
-<pre><code>func (srv *Server) pullRepository(r *registry.Registry, out io.Writer, localName, remoteName, askedTag, indexEp string, sf *utils.StreamFormatter) error
-</code></pre>
-
-<p>这是<code>pullRepository</code>的方法声明.</p>
-
-<p><code>pullRepository</code>方法的重要步骤:</p>
+<p><code class="highlighter-rouge">ImagePull</code>方法的重要步骤:</p>
 
 <ol>
-  <li>通过上面创建的<code>Registry</code>对象<code>r</code>的方法<code>GetRepositoryData</code>获取仓库的数据<code>repoData</code>.</li>
-  <li>这时候通过<code>graph</code>对象的<code>UpdateChecksums</code>方法更新仓库上所有镜像的校验码.</li>
-  <li>接下来是通过r的方法<code>GetRemoteTags</code>获取<code>repoData</code>的仓库列表上, 每个仓库的<code>tag</code>.</li>
-  <li>接下来会判断一下在<code>CmdPull</code>解析到的<code>tag</code>是否在上面的<code>tags</code>列表上, 如果存在则下载该<code>tag</code>和相关联的<code>images</code>, 否则就下载所有<code>tag</code>.</li>
-  <li>接下来就是通过<code>srv.pullImage</code>方法来下载由步骤4中指定的<code>tag</code>.</li>
+  <li>通过<code class="highlighter-rouge">registry.NewRegistry</code>创建<code class="highlighter-rouge">Registry</code>对象<code class="highlighter-rouge">r</code>.</li>
+  <li>为获取镜像这个行为上锁(<code class="highlighter-rouge">srv.poolAdd</code>)并且在结束时释放锁(<code class="highlighter-rouge">srv.poolRemove</code>).</li>
+  <li>通过<code class="highlighter-rouge">registry.ResolveRepositoryName</code>解析出仓库(<code class="highlighter-rouge">repository</code>)结构.</li>
+  <li>通过<code class="highlighter-rouge">srv.pullRepository</code>获取仓库结构.</li>
+  <li>如果失败了, 则通过<code class="highlighter-rouge">srv.pullImage</code>下载镜像.</li>
 </ol>
 
-<p>接下来我们分析一下<code>pullImage</code>函数</p>
+<p>下面我们继续来分析<code class="highlighter-rouge">srv.pullRepository</code>和<code class="highlighter-rouge">srv.pullImage</code>方法.</p>
 
-<pre><code>func (srv *Server) pullImage(r *registry.Registry, out io.Writer, imgID, endpoint string, token []string, sf *utils.StreamFormatter) error
-</code></pre>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>func (srv *Server) pullRepository(r *registry.Registry, out io.Writer, localName, remoteName, askedTag, indexEp string, sf *utils.StreamFormatter) error
+</code></pre></div></div>
 
-<p>这是<code>pullImage</code>的函数声明</p>
+<p>这是<code class="highlighter-rouge">pullRepository</code>的方法声明.</p>
 
-<p><code>pullImage</code>方法的重要步骤:</p>
+<p><code class="highlighter-rouge">pullRepository</code>方法的重要步骤:</p>
 
 <ol>
-  <li>通过<code>r.GetRemoteHistory</code>获取镜像的父节点<code>history</code>对象, <em>注意: 这里的父节点是包含自己的</em>.</li>
-  <li>然后就是遍历<code>history</code>对象, 逐个下载镜像相关内容.
-&gt; 1. 通过<code>r.GetRemoteImageJSON</code>获取镜像的<code>json</code>内容<code>imgJSON</code>, 还有镜像大小<code>imgSize</code>
-&gt; 1. 由<code>imgJSON</code>通过<code>NewImgJSON</code>方法创建<code>Image</code>对象<code>img</code>
-&gt; 1. 通过<code>img</code>获取到镜像<code>layer结构</code>
-&gt; 1. 最后通过<code>graph.Register</code>下载并保存整个镜像的内容及其相关的上下文.</li>
+  <li>通过上面创建的<code class="highlighter-rouge">Registry</code>对象<code class="highlighter-rouge">r</code>的方法<code class="highlighter-rouge">GetRepositoryData</code>获取仓库的数据<code class="highlighter-rouge">repoData</code>.</li>
+  <li>这时候通过<code class="highlighter-rouge">graph</code>对象的<code class="highlighter-rouge">UpdateChecksums</code>方法更新仓库上所有镜像的校验码.</li>
+  <li>接下来是通过r的方法<code class="highlighter-rouge">GetRemoteTags</code>获取<code class="highlighter-rouge">repoData</code>的仓库列表上, 每个仓库的<code class="highlighter-rouge">tag</code>.</li>
+  <li>接下来会判断一下在<code class="highlighter-rouge">CmdPull</code>解析到的<code class="highlighter-rouge">tag</code>是否在上面的<code class="highlighter-rouge">tags</code>列表上, 如果存在则下载该<code class="highlighter-rouge">tag</code>和相关联的<code class="highlighter-rouge">images</code>, 否则就下载所有<code class="highlighter-rouge">tag</code>.</li>
+  <li>接下来就是通过<code class="highlighter-rouge">srv.pullImage</code>方法来下载由步骤4中指定的<code class="highlighter-rouge">tag</code>.</li>
 </ol>
 
-<p>最后, 我们来分析一下<code>graph.Register</code>方法.</p>
+<p>接下来我们分析一下<code class="highlighter-rouge">pullImage</code>函数</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>func (srv *Server) pullImage(r *registry.Registry, out io.Writer, imgID, endpoint string, token []string, sf *utils.StreamFormatter) error
+</code></pre></div></div>
+
+<p>这是<code class="highlighter-rouge">pullImage</code>的函数声明</p>
+
+<p><code class="highlighter-rouge">pullImage</code>方法的重要步骤:</p>
+
+<ol>
+  <li>通过<code class="highlighter-rouge">r.GetRemoteHistory</code>获取镜像的父节点<code class="highlighter-rouge">history</code>对象, <em>注意: 这里的父节点是包含自己的</em>.</li>
+  <li>然后就是遍历<code class="highlighter-rouge">history</code>对象, 逐个下载镜像相关内容.
+    <blockquote>
+      <ol>
+        <li>通过<code class="highlighter-rouge">r.GetRemoteImageJSON</code>获取镜像的<code class="highlighter-rouge">json</code>内容<code class="highlighter-rouge">imgJSON</code>, 还有镜像大小<code class="highlighter-rouge">imgSize</code></li>
+        <li>由<code class="highlighter-rouge">imgJSON</code>通过<code class="highlighter-rouge">NewImgJSON</code>方法创建<code class="highlighter-rouge">Image</code>对象<code class="highlighter-rouge">img</code></li>
+        <li>通过<code class="highlighter-rouge">img</code>获取到镜像<code class="highlighter-rouge">layer结构</code></li>
+        <li>最后通过<code class="highlighter-rouge">graph.Register</code>下载并保存整个镜像的内容及其相关的上下文.</li>
+      </ol>
+    </blockquote>
+  </li>
+</ol>
+
+<p>最后, 我们来分析一下<code class="highlighter-rouge">graph.Register</code>方法.</p>
 
 <h2 id="graphgo">graph.go</h2>
 
-<p>这是<code>Register</code>的方法声明.</p>
+<p>这是<code class="highlighter-rouge">Register</code>的方法声明.</p>
 
-<pre><code>func (graph *Graph) Register(layerData Archive, store bool, img *Image) error
-</code></pre>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>func (graph *Graph) Register(layerData Archive, store bool, img *Image) error
+</code></pre></div></div>
 
-<p>这是<code>Register</code>方法的重要步骤:</p>
+<p>这是<code class="highlighter-rouge">Register</code>方法的重要步骤:</p>
 
 <ol>
-  <li>先通过<code>ValidateID</code>验证一下<code>镜像ID</code>的有效性.</li>
-  <li>通过<code>StoreImage</code>保存下载的镜像在临时目录.</li>
+  <li>先通过<code class="highlighter-rouge">ValidateID</code>验证一下<code class="highlighter-rouge">镜像ID</code>的有效性.</li>
+  <li>通过<code class="highlighter-rouge">StoreImage</code>保存下载的镜像在临时目录.</li>
   <li>然后将下载完成的镜像保存在对应的镜像目录.</li>
-  <li>最后再添加镜像到<code>graph</code>的缓存里面.</li>
+  <li>最后再添加镜像到<code class="highlighter-rouge">graph</code>的缓存里面.</li>
 </ol>
 
 <p>that’s all</p>
@@ -242,11 +258,13 @@
 
 
 
+
+
   <div id="disqus_thread"></div>
   <script type="text/javascript">
     var disqus_shortname  = 'peerstudioblog';
     var disqus_identifier = '/2015/11/29/docker-source-code-analysis-pull';
-    var disqus_title      = '';
+    var disqus_title      = "Docker源代码分析 -- pull repository";
 
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
@@ -259,6 +277,8 @@
 
 
 
+
+
       </div>
     </div>
   </div>
@@ -266,27 +286,12 @@
   <footer class="center">
   <div class="measure">
     <small>
-      Github: <a href="https://github.com/PeerXu">@PeerXu</a>.<br>
-      Weibo: <a href="http://weibo.com/peerstudio">@eerpay</a>.<br>
-      Twitter: <a href="https://twitter.com/PeerXu">@PeerXu</a>.<br>
-    </small>
-    <small>
       Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
-      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">GitHub</a>.
     </small>
   </div>
-  
-  <script>
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-    ga('create', 'UA-52061731-2', 'auto');
-    ga('send', 'pageview');
-  </script>
-  
 </footer>
+
 
 </body>
 </html>

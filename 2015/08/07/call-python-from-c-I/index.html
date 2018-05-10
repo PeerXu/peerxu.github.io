@@ -1,42 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
+    
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>在C中调用Python程序(I) &#8211; PeerStudio</title>
+    <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="我的世界">
+    <meta name="description" content="Peer的博客">
+    <meta name="robots" content="all">
     <meta name="author" content="Peer Xu">
+    
     <meta name="keywords" content="">
-    <link rel="canonical" href="http://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/">
+    <link rel="canonical" href="http://localhost:4000/2015/08/07/call-python-from-c-I/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/pixyll.css?201608180006" type="text/css">
+    <link rel="stylesheet" href="/css/pixyll.css?201805102116" type="text/css">
 
     <!-- Fonts -->
+    
     <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
     <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
     
-      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
     
 
+    <!-- MathJax -->
+    
+
+    <!-- Verifications -->
+    
+    
 
     <!-- Open Graph -->
     <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
     <meta property="og:title" content="在C中调用Python程序(I)">
-    <meta property="og:description" content="我的世界">
-    <meta property="og:url" content="http://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/">
+    <meta property="og:description" content="Peer的博客">
+    <meta property="og:url" content="http://localhost:4000/2015/08/07/call-python-from-c-I/">
     <meta property="og:site_name" content="PeerStudio">
+    
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary" />
     
+        <meta name="twitter:site" content="@PeerXu" />
+        <meta name="twitter:creator" content="@PeerXu" />
+    
     <meta name="twitter:title" content="在C中调用Python程序(I)" />
-    <meta name="twitter:description" content="我的世界" />
-    <meta name="twitter:url" content="http://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/" />
+    <meta name="twitter:description" content="Peer的博客" />
+    <meta name="twitter:url" content="http://localhost:4000/2015/08/07/call-python-from-c-I/" />
+    
 
     <!-- Icons -->
     <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
@@ -53,57 +69,54 @@
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
     <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
     <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
-        
+
     
     <script type="text/javascript">
-      var _gaq = _gaq || [];
-      _gaq.push(['_setAccount', 'UA-52061731-2']);
-      _gaq.push(['_trackPageview']);
-      (function() {
-        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-      })();
+       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+       ga('create', 'UA-52061731-2', 'auto');
+       ga('send', 'pageview');
     </script>
     
 </head>
 
-<body class="site animated fade-in-down">
+<body class="site">
+  
+	
+
   <div class="site-wrap">
     <header class="site-header px2 px-responsive">
   <div class="mt2 wrap">
     <div class="measure">
-      <a href="http://blog.e3rp4y.me" class="site-title">PeerStudio</a>
+      <a href="http://localhost:4000" class="site-title">PeerStudio</a>
       <nav class="site-nav">
-        <a href="/about/">About</a>
+        
+
+
+
+    
+    
+    
+    
+        <a href="/about/">About Pixyll</a>
+    
+
+    
+
+    
+    
+    
+    
+        <a href="/contact/">Say Hello</a>
+    
+
+    
+
 
       </nav>
       <div class="clearfix"></div>
-      
-        <div class="social-icons">
-  <div class="left">
-    
-      <a class="fa fa-github" href="https://github.com/PeerXu"></a>
-    
-    
-    <a class="fa fa-rss" href="/feed.xml"></a>
-    
-    
-    
-      <a class="fa fa-envelope" href="mailto:pppeerxu@gmail.com"></a>
-    
-    
-    
-    
-  </div>
-  <div class="right">
-    
-    
-    
-  </div>
-</div>
-<div class="clearfix"></div>
-
       
     </div>
   </div>
@@ -115,12 +128,10 @@
         
 
 
-
-
 <div class="post-header mb2">
   <h1>在C中调用Python程序(I)</h1>
   <span class="post-meta">Aug 7, 2015</span><br>
-    
+  
   <span class="post-meta small">
   
     1 minute read
@@ -129,21 +140,21 @@
 </div>
 
 <article class="post-content">
-  <h2 id="section">废话</h2>
+  <h2 id="废话">废话</h2>
 
 <p>通常, 我们会在终端上启动Python程序.</p>
 
-<pre><code>$ python -c 'print "Hello, World"'
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ python -c 'print "Hello, World"'
 Hello, World
 $ python hello.py
 Hello, World
-</code></pre>
+</code></pre></div></div>
 
 <p>但是我们今天来介绍一下, 怎么在C语言中调用Python程序.</p>
 
-<p><del>我们当然不是在C中调用<code>system</code>这么low的方法啦</del></p>
+<p><del>我们当然不是在C中调用<code class="highlighter-rouge">system</code>这么low的方法啦</del></p>
 
-<h2 id="section-1">文档导读</h2>
+<h2 id="文档导读">文档导读</h2>
 
 <p>首先, 先把我们的<a href="https://docs.python.org/2/c-api/index.html">官方文档</a>祭出来. 让大家膜拜一下.</p>
 
@@ -157,13 +168,13 @@ Hello, World
 
 <p>其他文档重要吗? 当然重要啊, 回去读10遍回来比看我这篇破文章靠谱多了.</p>
 
-<h2 id="section-2">当然我们是从最简单的开始</h2>
+<h2 id="当然我们是从最简单的开始">当然我们是从最简单的开始</h2>
 
 <p>我们先来看看这个介绍<a href="https://docs.python.org/2/c-api/intro.html#embedding-python">Embedding Python</a>.</p>
 
 <p>里面详细介绍了Python初始化环境的流程, 我们先看一个最简单的环境.</p>
 
-<pre><code>// file: py.c
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// file: py.c
 
 // 导入Python的头文件, 这里我采用的是Python2.7版本
 #include &lt;python2.7/Python.h&gt;
@@ -174,31 +185,31 @@ int main() {
   // 完了
   return 0;
 }
-</code></pre>
+</code></pre></div></div>
 
 <p>写完上面惊为天人的代码以后, 我们就来编译它.</p>
 
-<pre><code>$ gcc -lpython2.7 -o py py.c
-</code></pre>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ gcc -lpython2.7 -o py py.c
+</code></pre></div></div>
 
-<p><code>-lpython2.7</code>意思是告诉gcc编译器采用<code>python2.7</code>的代码库.</p>
+<p><code class="highlighter-rouge">-lpython2.7</code>意思是告诉gcc编译器采用<code class="highlighter-rouge">python2.7</code>的代码库.</p>
 
 <p>注意: 在编译之前请安装相应平台的python开发库.</p>
 
-<p>例如: ubuntu就安装<code>python-dev</code>, centos就安装<code>python-devel</code>, osx貌似直接<code>brew install python</code>就可以了.</p>
+<p>例如: ubuntu就安装<code class="highlighter-rouge">python-dev</code>, centos就安装<code class="highlighter-rouge">python-devel</code>, osx貌似直接<code class="highlighter-rouge">brew install python</code>就可以了.</p>
 
-<p>编译完成后, 会生成一个<code>py</code>的可执行文件.</p>
+<p>编译完成后, 会生成一个<code class="highlighter-rouge">py</code>的可执行文件.</p>
 
-<pre><code> $ ./py  // 当然什么都没有显示啊笨蛋!
-</code></pre>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> $ ./py  // 当然什么都没有显示啊笨蛋!
+</code></pre></div></div>
 
-<h2 id="bb-">别bb了, 快入正题</h2>
+<h2 id="别bb了-快入正题">别bb了, 快入正题</h2>
 
 <p>我们上面的程序写了那么长, 然而并没有什么卵用.</p>
 
 <p>我们下面来点实际点的, 调用python的print来输出点什么东西.</p>
 
-<pre><code>// file: py.c
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// file: py.c
 
 // 导入Python的头文件, 这里我采用的是Python2.7版本
 #include &lt;python2.7/Python.h&gt;
@@ -214,16 +225,16 @@ int main() {
   Py_Finalize();
   return 0;
 }
-</code></pre>
+</code></pre></div></div>
 
 <p>再编译后执行试试?</p>
 
-<pre><code>$ gcc -lpython2.7 -o py py.c
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ gcc -lpython2.7 -o py py.c
 $ ./py
 Hello, C! -- from Python
-</code></pre>
+</code></pre></div></div>
 
-<h2 id="bb">bb完要总结点东西吧</h2>
+<h2 id="bb完要总结点东西吧">bb完要总结点东西吧</h2>
 
 <p>现在我们已经能够在C里面通过Python API来创建Python运行环境和执行Python代码了.</p>
 
@@ -244,11 +255,13 @@ Hello, C! -- from Python
 
 
 
+
+
   <div id="disqus_thread"></div>
   <script type="text/javascript">
     var disqus_shortname  = 'peerstudioblog';
     var disqus_identifier = '/2015/08/07/call-python-from-c-I';
-    var disqus_title      = '';
+    var disqus_title      = "在C中调用Python程序(I)";
 
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
@@ -261,6 +274,8 @@ Hello, C! -- from Python
 
 
 
+
+
       </div>
     </div>
   </div>
@@ -268,27 +283,12 @@ Hello, C! -- from Python
   <footer class="center">
   <div class="measure">
     <small>
-      Github: <a href="https://github.com/PeerXu">@PeerXu</a>.<br>
-      Weibo: <a href="http://weibo.com/peerstudio">@eerpay</a>.<br>
-      Twitter: <a href="https://twitter.com/PeerXu">@PeerXu</a>.<br>
-    </small>
-    <small>
       Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
-      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">GitHub</a>.
     </small>
   </div>
-  
-  <script>
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-    ga('create', 'UA-52061731-2', 'auto');
-    ga('send', 'pageview');
-  </script>
-  
 </footer>
+
 
 </body>
 </html>

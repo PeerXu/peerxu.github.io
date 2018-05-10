@@ -1,42 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
+    
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>采用Flask-Restful插件返回Javascript脚本的两种方法 &#8211; PeerStudio</title>
+    <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="我的世界">
+    <meta name="description" content="Peer的博客">
+    <meta name="robots" content="all">
     <meta name="author" content="Peer Xu">
+    
     <meta name="keywords" content="">
-    <link rel="canonical" href="http://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/">
+    <link rel="canonical" href="http://localhost:4000/2014/06/09/response-javascript-with-flask-restful-api/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/pixyll.css?201608180006" type="text/css">
+    <link rel="stylesheet" href="/css/pixyll.css?201805102116" type="text/css">
 
     <!-- Fonts -->
+    
     <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
     <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
     
-      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
     
 
+    <!-- MathJax -->
+    
+
+    <!-- Verifications -->
+    
+    
 
     <!-- Open Graph -->
     <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
     <meta property="og:title" content="采用Flask-Restful插件返回Javascript脚本的两种方法">
-    <meta property="og:description" content="我的世界">
-    <meta property="og:url" content="http://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/">
+    <meta property="og:description" content="Peer的博客">
+    <meta property="og:url" content="http://localhost:4000/2014/06/09/response-javascript-with-flask-restful-api/">
     <meta property="og:site_name" content="PeerStudio">
+    
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary" />
     
+        <meta name="twitter:site" content="@PeerXu" />
+        <meta name="twitter:creator" content="@PeerXu" />
+    
     <meta name="twitter:title" content="采用Flask-Restful插件返回Javascript脚本的两种方法" />
-    <meta name="twitter:description" content="我的世界" />
-    <meta name="twitter:url" content="http://blog.e3rp4y.me/2014/06/09/response-javascript-with-flask-restful-api/" />
+    <meta name="twitter:description" content="Peer的博客" />
+    <meta name="twitter:url" content="http://localhost:4000/2014/06/09/response-javascript-with-flask-restful-api/" />
+    
 
     <!-- Icons -->
     <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
@@ -53,57 +69,54 @@
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
     <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
     <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
-        
+
     
     <script type="text/javascript">
-      var _gaq = _gaq || [];
-      _gaq.push(['_setAccount', 'UA-52061731-2']);
-      _gaq.push(['_trackPageview']);
-      (function() {
-        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-      })();
+       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+       ga('create', 'UA-52061731-2', 'auto');
+       ga('send', 'pageview');
     </script>
     
 </head>
 
-<body class="site animated fade-in-down">
+<body class="site">
+  
+	
+
   <div class="site-wrap">
     <header class="site-header px2 px-responsive">
   <div class="mt2 wrap">
     <div class="measure">
-      <a href="http://blog.e3rp4y.me" class="site-title">PeerStudio</a>
+      <a href="http://localhost:4000" class="site-title">PeerStudio</a>
       <nav class="site-nav">
-        <a href="/about/">About</a>
+        
+
+
+
+    
+    
+    
+    
+        <a href="/about/">About Pixyll</a>
+    
+
+    
+
+    
+    
+    
+    
+        <a href="/contact/">Say Hello</a>
+    
+
+    
+
 
       </nav>
       <div class="clearfix"></div>
-      
-        <div class="social-icons">
-  <div class="left">
-    
-      <a class="fa fa-github" href="https://github.com/PeerXu"></a>
-    
-    
-    <a class="fa fa-rss" href="/feed.xml"></a>
-    
-    
-    
-      <a class="fa fa-envelope" href="mailto:pppeerxu@gmail.com"></a>
-    
-    
-    
-    
-  </div>
-  <div class="right">
-    
-    
-    
-  </div>
-</div>
-<div class="clearfix"></div>
-
       
     </div>
   </div>
@@ -118,7 +131,7 @@
 <div class="post-header mb2">
   <h1>采用Flask-Restful插件返回Javascript脚本的两种方法</h1>
   <span class="post-meta">Jun 9, 2014</span><br>
-    
+  
   <span class="post-meta small">
   
     1 minute read
@@ -133,7 +146,7 @@
 
 <p>一个Flask-Restful插件的demo:</p>
 
-<pre><code>$ cat app.py
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat app.py
 #! /usr/bin/env python2.7
 # filename: app.py
 
@@ -155,13 +168,13 @@ if __name__ == '__main__':
 $ python app.py
  * Running on http://127.0.0.1:8888/
  * Restarting with reloader
-</code></pre>
+</code></pre></div></div>
 
 <p>这里我们可以看见Flask Demo已经成功运行.</p>
 
-<p>我们可以通过<code>curl</code>这个工具来进行简单测试.</p>
+<p>我们可以通过<code class="highlighter-rouge">curl</code>这个工具来进行简单测试.</p>
 
-<pre><code>$ curl -v http://localhost:8888/users/1
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ curl -v http://localhost:8888/users/1
 * Adding handle: conn: 0x22f5a40
 * Adding handle: send: 0
 * Adding handle: recv: 0
@@ -186,7 +199,7 @@ $ python app.py
     "user_id": 1
 }
 * Closing connection 0
-</code></pre>
+</code></pre></div></div>
 
 <p>curl的Response部分, 包含了一些信息.</p>
 
@@ -196,9 +209,9 @@ $ python app.py
 
 <p>有两种办法:</p>
 
-<h3 id="flaskmakeresponse">1. 通过Flask的make_response函数</h3>
+<h3 id="1-通过flask的make_response函数">1. 通过Flask的make_response函数</h3>
 
-<pre><code>$ cat app.py
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat app.py
 #! /usr/bin/env python2.7
 # filename: app.py
 
@@ -223,55 +236,55 @@ api.add_resource(User, '/users/&lt;int:user_id&gt;')
 
 if __name__ == '__main__':
   app.run(port=8888, debug=True)
-</code></pre>
+</code></pre></div></div>
 
 <p>添加Content-Type字段到response的headers中, 可以将返回的内容类型设置为javascript.</p>
 
-<h3 id="request-headersresponse">2. 通过Request Headers限制Response类型</h3>
+<h3 id="2-通过request-headers限制response类型">2. 通过Request Headers限制Response类型</h3>
 
 <p>HTTP协议中规定, 在Request Header中指定Accept字段, 可以指定客户端接受的Response类型.</p>
 
 <p>例如在curl中指定Accept字段:</p>
 
-<pre><code>$ curl -H 'Accept: application/javascript' http://localhost:8888/users/1
-</code></pre>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ curl -H 'Accept: application/javascript' http://localhost:8888/users/1
+</code></pre></div></div>
 
 <p>但是在Flask-Restful插件中, 貌似是不支持javascript作为返回值类型.</p>
 
 <p>所以我们需要做一些patch.</p>
 
-<pre><code>#! /usr/bin/env python2.7
-# filename: app.py
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#! /usr/bin/env python2.7</span>
+<span class="c"># filename: app.py</span>
 
-import simplejson as json
-from flask import Flask, make_response
-from flask.ext.restful import Api, Resource
+<span class="kn">import</span> <span class="nn">simplejson</span> <span class="k">as</span> <span class="n">json</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">make_response</span>
+<span class="kn">from</span> <span class="nn">flask.ext.restful</span> <span class="kn">import</span> <span class="n">Api</span><span class="p">,</span> <span class="n">Resource</span>
 
-# monkey patch: application/javascript mimetype
+<span class="c"># monkey patch: application/javascript mimetype</span>
 
-from flask.ext import restful
-def output_javascript(data, code, headers=None):
-  response = make_response(data, code)
-  response.headers.extend(headers or {})
-  return response
+<span class="kn">from</span> <span class="nn">flask.ext</span> <span class="kn">import</span> <span class="n">restful</span>
+<span class="k">def</span> <span class="nf">output_javascript</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+  <span class="n">response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span>
+  <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">headers</span> <span class="ow">or</span> <span class="p">{})</span>
+  <span class="k">return</span> <span class="n">response</span>
 
-restful.DEFAULT_REPRESENTATIONS['application/javascript'] = output_javascript
+<span class="n">restful</span><span class="o">.</span><span class="n">DEFAULT_REPRESENTATIONS</span><span class="p">[</span><span class="s">'application/javascript'</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_javascript</span>
 
-# end monkey patch
+<span class="c"># end monkey patch</span>
 
-app = Flask(__name__)
-api = Api(app)
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+<span class="n">api</span> <span class="o">=</span> <span class="n">Api</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
 
-class User(Resource):
-  def get(self, user_id):
-    return {'user_id': user_id}
+<span class="k">class</span> <span class="nc">User</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s">'user_id'</span><span class="p">:</span> <span class="n">user_id</span><span class="p">}</span>
 
-api.add_resource(User, '/users/&lt;int:user_id&gt;')
-</code></pre>
+<span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="s">'/users/&lt;int:user_id&gt;'</span><span class="p">)</span>
+</code></pre></div></div>
 
 <p>这种方式显得更加优雅.</p>
 
-<p>但是需要在发起Request的时候设置Request Header的<code>Accept</code>字段为<code>application/javascript</code>.</p>
+<p>但是需要在发起Request的时候设置Request Header的<code class="highlighter-rouge">Accept</code>字段为<code class="highlighter-rouge">application/javascript</code>.</p>
 
 <p>the end.</p>
 
@@ -282,11 +295,13 @@ api.add_resource(User, '/users/&lt;int:user_id&gt;')
 
 
 
+
+
   <div id="disqus_thread"></div>
   <script type="text/javascript">
     var disqus_shortname  = 'peerstudioblog';
     var disqus_identifier = '/2014/06/09/response-javascript-with-flask-restful-api';
-    var disqus_title      = '';
+    var disqus_title      = "采用Flask-Restful插件返回Javascript脚本的两种方法";
 
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
@@ -299,6 +314,8 @@ api.add_resource(User, '/users/&lt;int:user_id&gt;')
 
 
 
+
+
       </div>
     </div>
   </div>
@@ -306,27 +323,12 @@ api.add_resource(User, '/users/&lt;int:user_id&gt;')
   <footer class="center">
   <div class="measure">
     <small>
-      Github: <a href="https://github.com/PeerXu">@PeerXu</a>.<br>
-      Weibo: <a href="http://weibo.com/peerstudio">@eerpay</a>.<br>
-      Twitter: <a href="https://twitter.com/PeerXu">@PeerXu</a>.<br>
-    </small>
-    <small>
       Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
-      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">GitHub</a>.
     </small>
   </div>
-  
-  <script>
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-    ga('create', 'UA-52061731-2', 'auto');
-    ga('send', 'pageview');
-  </script>
-  
 </footer>
+
 
 </body>
 </html>

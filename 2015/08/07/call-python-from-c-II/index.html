@@ -1,42 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
+    
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>在C中调用Python程序(II) &#8211; PeerStudio</title>
+    <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="我的世界">
+    <meta name="description" content="Peer的博客">
+    <meta name="robots" content="all">
     <meta name="author" content="Peer Xu">
+    
     <meta name="keywords" content="">
-    <link rel="canonical" href="http://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/">
+    <link rel="canonical" href="http://localhost:4000/2015/08/07/call-python-from-c-II/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/pixyll.css?201608180006" type="text/css">
+    <link rel="stylesheet" href="/css/pixyll.css?201805102116" type="text/css">
 
     <!-- Fonts -->
+    
     <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
     <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
     
-      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
     
 
+    <!-- MathJax -->
+    
+
+    <!-- Verifications -->
+    
+    
 
     <!-- Open Graph -->
     <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
     <meta property="og:title" content="在C中调用Python程序(II)">
-    <meta property="og:description" content="我的世界">
-    <meta property="og:url" content="http://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/">
+    <meta property="og:description" content="Peer的博客">
+    <meta property="og:url" content="http://localhost:4000/2015/08/07/call-python-from-c-II/">
     <meta property="og:site_name" content="PeerStudio">
+    
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary" />
     
+        <meta name="twitter:site" content="@PeerXu" />
+        <meta name="twitter:creator" content="@PeerXu" />
+    
     <meta name="twitter:title" content="在C中调用Python程序(II)" />
-    <meta name="twitter:description" content="我的世界" />
-    <meta name="twitter:url" content="http://blog.e3rp4y.me/2015/08/07/call-python-from-c-II/" />
+    <meta name="twitter:description" content="Peer的博客" />
+    <meta name="twitter:url" content="http://localhost:4000/2015/08/07/call-python-from-c-II/" />
+    
 
     <!-- Icons -->
     <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
@@ -53,57 +69,54 @@
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
     <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
     <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
-        
+
     
     <script type="text/javascript">
-      var _gaq = _gaq || [];
-      _gaq.push(['_setAccount', 'UA-52061731-2']);
-      _gaq.push(['_trackPageview']);
-      (function() {
-        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-      })();
+       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+       ga('create', 'UA-52061731-2', 'auto');
+       ga('send', 'pageview');
     </script>
     
 </head>
 
-<body class="site animated fade-in-down">
+<body class="site">
+  
+	
+
   <div class="site-wrap">
     <header class="site-header px2 px-responsive">
   <div class="mt2 wrap">
     <div class="measure">
-      <a href="http://blog.e3rp4y.me" class="site-title">PeerStudio</a>
+      <a href="http://localhost:4000" class="site-title">PeerStudio</a>
       <nav class="site-nav">
-        <a href="/about/">About</a>
+        
+
+
+
+    
+    
+    
+    
+        <a href="/about/">About Pixyll</a>
+    
+
+    
+
+    
+    
+    
+    
+        <a href="/contact/">Say Hello</a>
+    
+
+    
+
 
       </nav>
       <div class="clearfix"></div>
-      
-        <div class="social-icons">
-  <div class="left">
-    
-      <a class="fa fa-github" href="https://github.com/PeerXu"></a>
-    
-    
-    <a class="fa fa-rss" href="/feed.xml"></a>
-    
-    
-    
-      <a class="fa fa-envelope" href="mailto:pppeerxu@gmail.com"></a>
-    
-    
-    
-    
-  </div>
-  <div class="right">
-    
-    
-    
-  </div>
-</div>
-<div class="clearfix"></div>
-
       
     </div>
   </div>
@@ -118,7 +131,7 @@
 <div class="post-header mb2">
   <h1>在C中调用Python程序(II)</h1>
   <span class="post-meta">Aug 7, 2015</span><br>
-    
+  
   <span class="post-meta small">
   
     1 minute read
@@ -127,38 +140,38 @@
 </div>
 
 <article class="post-content">
-  <h2 id="section">承上启下的段落</h2>
+  <h2 id="承上启下的段落">承上启下的段落</h2>
 
 <p><a href="http://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/">上一节</a>我们已经介绍了, 怎么在C语言中, 采用Python API调用Python程序.</p>
 
-<p>上一节采用的是<code>PyRun_SimpleString</code>这个API函数.</p>
+<p>上一节采用的是<code class="highlighter-rouge">PyRun_SimpleString</code>这个API函数.</p>
 
 <p>这个函数的优点就是方便, 不用初始化环境变量就能够正常运行了.</p>
 
 <p>缺点也是相当明显, 便利带来的就是灵活性不够高. 最简单的C-Python交互都无法正常完成.</p>
 
-<h2 id="section-1">摊开你的双手, 来迎接新挑战吧!</h2>
+<h2 id="摊开你的双手-来迎接新挑战吧">摊开你的双手, 来迎接新挑战吧!</h2>
 
 <p>首先, 我们还是得先看看文档.</p>
 
-<p><a href="https://docs.python.org/2/c-api/veryhigh.html">The Very High Level Layer</a>告诉我们, 除了<code>PyRun_SimpleString</code>之外, 还有<code>PyRun_String</code>, <code>PyRun_File</code>, etc.</p>
+<p><a href="https://docs.python.org/2/c-api/veryhigh.html">The Very High Level Layer</a>告诉我们, 除了<code class="highlighter-rouge">PyRun_SimpleString</code>之外, 还有<code class="highlighter-rouge">PyRun_String</code>, <code class="highlighter-rouge">PyRun_File</code>, etc.</p>
 
-<p>我们今天就来介绍一下<code>PyRun_String</code>的用法.</p>
+<p>我们今天就来介绍一下<code class="highlighter-rouge">PyRun_String</code>的用法.</p>
 
-<p>这个是<code>PyRun_String</code>的函数签名:</p>
+<p>这个是<code class="highlighter-rouge">PyRun_String</code>的函数签名:</p>
 
-<pre><code>PyObject*             // PyRun_String的返回值类型
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PyObject*             // PyRun_String的返回值类型
 PyRun_String(         // 函数名
   const char *str,    // 执行的Python代码
   int start,          // 载入类型, 分别有: Py_eval_input, Py_file_input, Py_single_input
   PyObject *globals,  // 全局对象
   PyObject *locals    // 局部对象
 )
-</code></pre>
+</code></pre></div></div>
 
-<p>上面我们可以知道, <code>PyRun_String</code>和<code>PyRun_SimpleString</code>是相似的功能, 都是运行一段Python代码.</p>
+<p>上面我们可以知道, <code class="highlighter-rouge">PyRun_String</code>和<code class="highlighter-rouge">PyRun_SimpleString</code>是相似的功能, 都是运行一段Python代码.</p>
 
-<p><code>start</code>参数是指执行的这段代码, 到底是怎么导入的, 这里分了三种模式:</p>
+<p><code class="highlighter-rouge">start</code>参数是指执行的这段代码, 到底是怎么导入的, 这里分了三种模式:</p>
 
 <ul>
   <li><a href="https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_eval_input">Py_eval_input</a>, 是执行隔离的表达式用的.</li>
@@ -166,15 +179,15 @@ PyRun_String(         // 函数名
   <li><a href="https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_single_input">Py_single_input</a>, 这种模式, 是表示输入的代码是从交互接口输入的.</li>
 </ul>
 
-<p><code>globals</code>参数是表示Python的<code>globals</code>对象</p>
+<p><code class="highlighter-rouge">globals</code>参数是表示Python的<code class="highlighter-rouge">globals</code>对象</p>
 
-<p><code>locals</code>参数是表示Python的<code>locals</code>对象</p>
+<p><code class="highlighter-rouge">locals</code>参数是表示Python的<code class="highlighter-rouge">locals</code>对象</p>
 
-<p>好了, 了解了<code>PyRun_String</code>函数的各个变量含义后, 我们就来写点代码吧.</p>
+<p>好了, 了解了<code class="highlighter-rouge">PyRun_String</code>函数的各个变量含义后, 我们就来写点代码吧.</p>
 
-<h2 id="section-2">代码解析</h2>
+<h2 id="代码解析">代码解析</h2>
 
-<pre><code>// file: py.c
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// file: py.c
 
 #include &lt;python2.7/Python.h&gt;
 
@@ -224,16 +237,16 @@ int main() {
 
   return 0;
 }
-</code></pre>
+</code></pre></div></div>
 
 <p>编译一下看看结果?</p>
 
-<pre><code>$ gcc -lpython2.7 -o py py.c
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ gcc -lpython2.7 -o py py.c
 $ ./py
 result=9.000000
-</code></pre>
+</code></pre></div></div>
 
-<h2 id="section-3">总结点什么吧</h2>
+<h2 id="总结点什么吧">总结点什么吧</h2>
 
 <p>好吧, 上面的注释应该写得够清楚了, 还有什么不明白的话, 就是我表达能力有问题了…</p>
 
@@ -248,11 +261,13 @@ result=9.000000
 
 
 
+
+
   <div id="disqus_thread"></div>
   <script type="text/javascript">
     var disqus_shortname  = 'peerstudioblog';
     var disqus_identifier = '/2015/08/07/call-python-from-c-II';
-    var disqus_title      = '';
+    var disqus_title      = "在C中调用Python程序(II)";
 
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
@@ -265,6 +280,8 @@ result=9.000000
 
 
 
+
+
       </div>
     </div>
   </div>
@@ -272,27 +289,12 @@ result=9.000000
   <footer class="center">
   <div class="measure">
     <small>
-      Github: <a href="https://github.com/PeerXu">@PeerXu</a>.<br>
-      Weibo: <a href="http://weibo.com/peerstudio">@eerpay</a>.<br>
-      Twitter: <a href="https://twitter.com/PeerXu">@PeerXu</a>.<br>
-    </small>
-    <small>
       Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
-      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">GitHub</a>.
     </small>
   </div>
-  
-  <script>
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-    ga('create', 'UA-52061731-2', 'auto');
-    ga('send', 'pageview');
-  </script>
-  
 </footer>
+
 
 </body>
 </html>
