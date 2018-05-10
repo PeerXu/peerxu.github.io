@@ -1,0 +1,14 @@
+---
+layout: post
+title: 在emacs上使用中文输入法fcitx
+---
+
+p. 在ubuntu 12.04中, 无法在emacs调用fcitx输入法. 所以给出一下解决方案.
+
+p. 1. 在 ~/.emacs 文件中添加一下代码, 屏蔽C-SPC快捷键, 其替代快捷键为: C-@
+
+bc. (global-set-key (kbd "C-SPC") nil)
+
+p. 2. 在 ~/.bashrc 文件中添加一行
+
+bc. alias emacs="LC_CTYPE='zh_CN.UTF-8' emacs"

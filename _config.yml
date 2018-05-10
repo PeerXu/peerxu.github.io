@@ -1,10 +1,10 @@
 # Site settings
-title:       Pixyll
-email:       your_email@example.com
-author:      John Otander
-description: "A simple, beautiful theme for Jekyll that emphasizes content rather than aesthetic fluff."
+title:       PeerStudio
+email:       pppeerxu@gmail.com
+author:      Peer Xu
+description: "Peer的博客"
 baseurl:     ""
-url:         "http://pixyll.com"
+url:         "https://blog.e3rp4y.me"
 date_format: "%b %-d, %Y"
 header_pages:
  - about.md
@@ -14,7 +14,7 @@ header_pages:
 google_verification:
 # Use either direct GA implementation or set up GTM account
 # - using both will skew your data (leave blank to not use at all)
-google_analytics:
+google_analytics: UA-52061731-2
 google_tag_manager:
 # Bing services
 bing_verification:
@@ -38,7 +38,7 @@ fb_page_id:
 
 # Disqus post comments
 # (leave blank to disable Disqus)
-disqus_shortname:
+disqus_shortname: peerstudioblog
 
 # txtpen post comments
 # (leave blank to disable txtpen)
@@ -51,13 +51,13 @@ facebook_appid:
 facebook_comments_number: 10
 
 # Social icons
-github_username:
+github_username: PeerXu
 reddit_username:
 bitbucket_username:
 stackoverflow_id:
-twitter_username:
+twitter_username: PeerXu
 skype_username:
-steam_nickname:
+steam_nickname: peerxu
 google_plus_id:
 linkedin_username:
 angellist_username:
@@ -71,15 +71,15 @@ vk_id:
 # Post sharing icons
 show_sharing_icons: false
 # Change to 'true' to enable individual icons
-share_facebook: false
-share_twitter: false
+share_facebook: true
+share_twitter: true
 share_googleplus: false
 share_linkedin: false
 share_digg: false
 share_tumblr: false
 share_reddit: false
 share_stumbleupon: false
-share_hackernews: false
+share_hackernews: true
 
 text:
   pagination:

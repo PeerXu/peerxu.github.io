@@ -1,0 +1,98 @@
+---
+layout: post
+title: libvirtd使用证书创建连接简介(上)
+---
+
+h2. {{ page.title }}
+
+p. 上集讲的是如何配置证书与证书的存放
+
+p. 先了解一下证书的存放位置和需要注意的一些地方
+
+|=. *位置* |=. *安装机* |=. *描述* |=. *匹配域* |
+|=. /etc/pki/CA/cacert.pem |=. 服务端 _and_ 客户端 |=. CA的证书 |=. n/a |
+|=. /etc/pki/libvirt/private/serverkey.pem |=. 服务端 |=. 服务端的私钥 |=. n/a |
+|=. /etc/pki/libvirt/servercert.pem |=. 服务端 |=. 由CA颁发的服务端签名证书 |=. 服务器的hostname必须在客户端可见,并且与CommonName匹配 |
+|=. /etc/pki/libvirt/private/clientkey.pem |=. 客户端 |=. 客户端私钥 |=. n/a |
+|=. /etc/pki/libvirt/clientcert.pem |=. 客户端 |=. 由CA颁发的客户端签名证书 |=. Distinguished Name(DN)需要在access control list里面(tls_allowed_dn_list) |
+
+* 安装 _gnults-utils_
+
+bc. apt-get install guntls-bin
+
+* 创建CA, SERVER, CLIENT对应的证书与私钥
+
+<ol>
+<li>
+
+p. 先创建三个文件,分别命名为 _ca.info_, _server.info_, _client.info_ 分别填上以下的内容
+
+bc. file: ca.info
+cn = <CA的机构>
+ca
+cert_signing_key
+
+bc. file: server.info
+organization = <CA的cn>
+cn = <server的hostname>
+tls_www_server
+encryption_key
+signing_key
+
+bc. file: client.info
+country = <国家>
+state = <省> 
+locality = <市>
+organization = <CA的cn>
+cn = <client的hostname>
+tls_www_client
+encryption_key
+signing_key
+
+</li>
+
+<li>
+
+p. 创建 _cakey.pem_, _serverkey.pem_, _clientkey.pem_
+
+bc. 创建 cakey.pem
+certtool --generate-privkey > cakey.pem
+
+bc. 创建 server.pem
+certtool --generate-privkey > serverkey.pem
+
+bc. 创建 client.pem
+certtool --generate-privkey > clientkey.pem
+
+</li>
+
+<li>
+
+p. 创建 _cacert.pem_, _servercert.pem_, _clientcert.pem_
+
+bc. 创建 cacert.pem
+certtool --generate-self-signed --load-privkey cakey.pem \
+	 --template ca.info --outfile cacert.pem
+
+bc. 创建 servercert.pem
+certtool --generate-certificate --load-privkey serverkey.pem \
+  --load-ca-certificate cacert.pem --load-ca-privkey cakey.pem \
+  --template server.info --outfile servercert.pem
+
+bc. 创建 client.pem
+certtool --generate-certificate --load-privkey clientkey.pem \
+  --load-ca-certificate cacert.pem --load-ca-privkey cakey.pem \
+  --template client.info --outfile clientcert.pem
+
+</li>
+
+</ol>
+
+* 将产生的私钥跟证书放到对应的主机的对应目录下面.
+* 重启libvirtd进程
+@libvirtd -l -d@
+
+p. 配置就这样完成了,如何连接我将在下一节中描述.
+
+p. 引用 "http://libvirt.org/remote.html":http://libvirt.org/remote.html
+

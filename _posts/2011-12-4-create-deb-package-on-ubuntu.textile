@@ -1,0 +1,110 @@
+---
+layout: post
+title: 在ubuntu下创建deb包
+---
+
+今天跟大家讲解一下如何制造自己的deb包.
+
+制造deb包的过程就是讲已经编译的库跟应用程序放到对应的目录下,之后配置一下描述你的package的文件,最后执行一个打包的命令将它打包成deb包的形式.当然你可以打包成rpm...
+
+以上就是一个制造deb package的思路了.当然还有别的方法,例如使用checkinstall或者用dh_make生成需要的文件之类的.
+
+但是我用一个比较懒人的办法,就是修改已经存在的deb package.
+
+h3. 1. 下载deb package模板
+
+
+bc. $ sudo apt-get install -d hello
+$ mv /var/cache/apt/archives/hello_<version>_<arch>.deb ~/
+$ cd ~
+$ dpkg -X hello_<version>_<arch>.deb myhello
+$ cd myhello
+$ dpkg -e ../hello_<version>_<arch>.deb
+
+# 首先是先把hello的deb package下载下来,但是并不安装
+# 复制并解压文件到myhello的文件夹里面
+# 解压deb package信息到myhello文件夹里面
+
+h3. 2. 熟悉deb包结构
+
+bc. $ cd ~/myhello
+$ tree
+
+myhello的目录树结构
+
+bc. .
+├── DEBIAN
+│   └── control
+└── usr
+    ├── bin
+    │   └── hello
+    └── share
+        ├── doc
+        │   └── hello
+        │       ├── changelog.Debian.gz
+        │       ├── copyright
+        │       └── NEWS
+        ├── info
+        │   └── hello.info.gz
+        └── man
+            └── man1
+                └── hello.1.gz
+
+_._ 就是模拟出来的 _/_ (root)
+
+意思就是安装 _myhello_ 之后, _./usr/bin/hello_ 对应的就是复制到 _/usr/bin/hello_ 中去.
+
+之后需要讲解的就是 _./DEBIAN_目录下面的文件
+
+bc. $ cat ./DEBIAN/control
+
+pre. Package: hello
+Version: 2.7-1
+Architecture: i386
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Original-Maintainer: Santiago Vila <sanvila@debian.org>
+Installed-Size: 100
+Depends: libc6 (>= 2.4), dpkg (>= 1.15.4) | install-info
+Section: devel
+Priority: optional
+Homepage: http://www.gnu.org/software/hello/
+Description: The classic greeting, and a good example
+ The GNU hello program produces a familiar, friendly greeting.  It
+ allows non-programmers to use a classic computer science tool which
+ would otherwise be unavailable to them.
+ .
+ Seriously, though: this is an example of how to do a Debian package.
+ It is the Debian version of the GNU Project's `hello world' program
+ (which is itself an example for the GNU Project).
+
+|=. *名称* |=. *描述* |=. *备注* |
+| _Package_ | 包名 | &nbsp; |
+| _Version_ | 版本号 | &nbsp; |
+| _Architecture_ | 系统架构 | &nbsp; |
+| _Maintainer_ | 维护人员 | &nbsp; |
+| _Depends_ | 依赖 | &nbsp; |
+| _Priority_ | 包优先级 | 一般自制的package设置成optional就可以 |
+| _Description_ | 描述 | 非首行时,需要输入空一个空格 |
+
+*修改成你自己应用程序的信息*
+
+最后还有 _4_ 个文件我们需要关注的, 就就是 _preinst_ , _postinst_ , _prerm_ , _postrm_ 对应的是 _安装前_ , _安装后_ , _删除前_ , _删除后_ 对应的脚本.
+
+h3. 替换你的应用程序到对应的目录下面
+
+例如将我自己编译好的 _myhello_ 到 _./usr/bin/myhello_ 下.
+
+h3. 3. 打包成deb package
+
+bc. $ cd ~
+$ dpkg -b myhello/ myhello_1.0_i386.deb
+
+h3. 4. 总结
+
+总结起来就一下几步:
+
+# 找到模板,并解压
+# 将自己的应用程序放到对应的目录下面
+# 修改 _control_ 文件
+# 按照需求添加 _preinst_ _postinst_ _prerm_ _postrm_ 脚本
+# 打包成自己的deb package!

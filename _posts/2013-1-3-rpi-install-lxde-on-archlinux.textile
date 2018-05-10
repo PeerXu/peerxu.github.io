@@ -1,0 +1,17 @@
+---
+layout: post
+title: 在树莓派的archlinux中安装lxde
+---
+
+p. archlinux是一个很好的linux发行版, 比raspbian好多了. 况且archlinux的yaourt工具实在是太强大了.
+
+p. 好了,废话不多说了, 直接上代码:
+
+bc. # pacman -Syu
+# pacman -S xf86-video-fbdev lxde xorg-xinit dbus
+# cat << EOF > ~/.xinitrc
+exec startlxde
+EOF
+# startx
+
+p. 经过漫长的等待之后就可以启动这个 _丑陋的_ 桌面了.

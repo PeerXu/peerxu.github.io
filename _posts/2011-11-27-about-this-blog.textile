@@ -1,0 +1,14 @@
+---
+layout: post
+title: Peer Studio Blog的来源
+---
+
+p. 创建一个博客的构思在很久之前已经有了,但是以前有鉴于自信,或是过分自信的原因,很多知识都存放在我的个人磁盘中(大脑).但是最近发现年老的缘故,记忆也开始变得不可靠了.所以这个博客就在捣腾中诞生了.
+
+p. 此博客构建的基础是github pages.暂时是存放在 "http://peerxu.github.com/":http://peerxu.github.com/ 上.
+
+p. 使用的模板是根据 "mojombo.github.com":http://mojombo.github.com 的风格而成的.
+
+p. 喜欢的话就fork me吧.
+
+p. 暂时就写这么多吧, 我会努力丰富这个小博客的!

@@ -1,0 +1,18 @@
+---
+layout: post
+title: Clojure笔记 -- namespace操作
+---
+
+bc. (create-ns 'my.ns) ;;; 创建一个命名空间
+
+bc. (require 'clojure.string) ;;; 导入命名空间
+
+bc. (refer 'clojure.string) ;;; 将命名空间中所有的共有的符号导入到当前命名空间中
+
+bc. (use 'clojure.string) ;;; <==> (require 'clojure.string) (refer 'clojure.string)
+
+bc. (remove-ns 'my.ns) ;;; 移除命名空间
+
+bc. (intern 'my.ns 'foo 2) ;;; 在my.ns中绑定一个符号foo
+
+bc. (alias 'str 'clojure.string) ;;; 为clojure.string起个别名 (str/split ...) <==> (clojure.string/split ...)
