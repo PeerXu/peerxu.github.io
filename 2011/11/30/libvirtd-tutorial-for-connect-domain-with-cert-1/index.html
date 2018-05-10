@@ -4,7 +4,7 @@
     
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>PeerStudio</title>
+    <title>libvirtd使用证书创建连接简介(上) &#8211; PeerStudio</title>
     <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
     <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,8 +12,8 @@
     <meta name="robots" content="all">
     <meta name="author" content="Peer Xu">
     
-    
-    <link rel="canonical" href="http://localhost:4000/">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2011/11/30/libvirtd-tutorial-for-connect-domain-with-cert-1/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
@@ -37,9 +37,9 @@
     <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
-    <meta property="og:title" content="PeerStudio">
+    <meta property="og:title" content="libvirtd使用证书创建连接简介(上)">
     <meta property="og:description" content="Peer的博客">
-    <meta property="og:url" content="http://localhost:4000/">
+    <meta property="og:url" content="http://localhost:4000/2011/11/30/libvirtd-tutorial-for-connect-domain-with-cert-1/">
     <meta property="og:site_name" content="PeerStudio">
     
 
@@ -49,9 +49,9 @@
         <meta name="twitter:site" content="@PeerXu" />
         <meta name="twitter:creator" content="@PeerXu" />
     
-    <meta name="twitter:title" content="PeerStudio" />
+    <meta name="twitter:title" content="libvirtd使用证书创建连接简介(上)" />
     <meta name="twitter:description" content="Peer的博客" />
-    <meta name="twitter:url" content="http://localhost:4000/" />
+    <meta name="twitter:url" content="http://localhost:4000/2011/11/30/libvirtd-tutorial-for-connect-domain-with-cert-1/" />
     
 
     <!-- Icons -->
@@ -127,78 +127,140 @@
       <div class="measure">
         
 
-<div class="home">
+
+<div class="post-header mb2">
+  <h1>libvirtd使用证书创建连接简介(上)</h1>
+  <span class="post-meta">Nov 30, 2011</span><br>
   
-    <div class="posts">
-      
-        <div class="post py3">
-          <p class="post-meta">May 10, 2018</p>
-          <a href="/2018/05/10/cross-compile-golang-by-docker-on-macos/" class="post-link"><h3 class="h1 post-title">在macOS下通过Docker交叉编译GO程序</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="前言">前言</h2>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Aug 17, 2016</p>
-          <a href="/2016/08/17/re-read-http-response-body-on-golang/" class="post-link"><h3 class="h1 post-title">使golang中的http response body可重读</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="前言">前言</h2>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Nov 29, 2015</p>
-          <a href="/2015/11/29/docker-source-code-analysis-pull/" class="post-link"><h3 class="h1 post-title">Docker源代码分析 -- pull repository</h3></a>
-          <span class="post-summary">
-            
-              <p>本系列文章是从源代码入手分析Docker部分功能或者模块的具体实现</p>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Aug 12, 2015</p>
-          <a href="/2015/08/12/cross-platform-compile-qemu-ga-with-docker/" class="post-link"><h3 class="h1 post-title">利用Docker跨平台编译Windows平台的qemu-ga.exe</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="介绍">介绍</h2>
-
-
-            
-          </span>
-        </div>
-      
-    </div>
-
-    
-<div class="pagination clearfix mb1 mt4">
-  <div class="left">
-    
-      <span class="pagination-item disabled">Newer</span>
-    
-  </div>
-  <div class="right">
-    
-      <a class="pagination-item" href="/page2">Older</a>
-    
-  </div>
-  <div class="pagination-meta">Page 1 of 12</div>
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
 </div>
 
+<article class="post-content">
+  h2. libvirtd使用证书创建连接简介(上)
 
-  
-</div>
+p. 上集讲的是如何配置证书与证书的存放
+
+p. 先了解一下证书的存放位置和需要注意的一些地方
+
+|=. *位置* |=. *安装机* |=. *描述* |=. *匹配域* |
+|=. /etc/pki/CA/cacert.pem |=. 服务端 _and_ 客户端 |=. CA的证书 |=. n/a |
+|=. /etc/pki/libvirt/private/serverkey.pem |=. 服务端 |=. 服务端的私钥 |=. n/a |
+|=. /etc/pki/libvirt/servercert.pem |=. 服务端 |=. 由CA颁发的服务端签名证书 |=. 服务器的hostname必须在客户端可见,并且与CommonName匹配 |
+|=. /etc/pki/libvirt/private/clientkey.pem |=. 客户端 |=. 客户端私钥 |=. n/a |
+|=. /etc/pki/libvirt/clientcert.pem |=. 客户端 |=. 由CA颁发的客户端签名证书 |=. Distinguished Name(DN)需要在access control list里面(tls_allowed_dn_list) |
+
+* 安装 _gnults-utils_
+
+bc. apt-get install guntls-bin
+
+* 创建CA, SERVER, CLIENT对应的证书与私钥
+
+<ol>
+<li>
+
+p. 先创建三个文件,分别命名为 _ca.info_, _server.info_, _client.info_ 分别填上以下的内容
+
+bc. file: ca.info
+cn = <CA的机构>
+ca
+cert_signing_key
+
+bc. file: server.info
+organization = <CA的cn>
+cn = <server的hostname>
+tls_www_server
+encryption_key
+signing_key
+
+bc. file: client.info
+country = <国家>
+state = <省> 
+locality = <市>
+organization = <CA的cn>
+cn = <client的hostname>
+tls_www_client
+encryption_key
+signing_key
+
+</li>
+
+<li>
+
+p. 创建 _cakey.pem_, _serverkey.pem_, _clientkey.pem_
+
+bc. 创建 cakey.pem
+certtool --generate-privkey > cakey.pem
+
+bc. 创建 server.pem
+certtool --generate-privkey > serverkey.pem
+
+bc. 创建 client.pem
+certtool --generate-privkey > clientkey.pem
+
+</li>
+
+<li>
+
+p. 创建 _cacert.pem_, _servercert.pem_, _clientcert.pem_
+
+bc. 创建 cacert.pem
+certtool --generate-self-signed --load-privkey cakey.pem \
+	 --template ca.info --outfile cacert.pem
+
+bc. 创建 servercert.pem
+certtool --generate-certificate --load-privkey serverkey.pem \
+  --load-ca-certificate cacert.pem --load-ca-privkey cakey.pem \
+  --template server.info --outfile servercert.pem
+
+bc. 创建 client.pem
+certtool --generate-certificate --load-privkey clientkey.pem \
+  --load-ca-certificate cacert.pem --load-ca-privkey cakey.pem \
+  --template client.info --outfile clientcert.pem
+
+</li>
+
+</ol>
+
+* 将产生的私钥跟证书放到对应的主机的对应目录下面.
+* 重启libvirtd进程
+@libvirtd -l -d@
+
+p. 配置就这样完成了,如何连接我将在下一节中描述.
+
+p. 引用 "http://libvirt.org/remote.html":http://libvirt.org/remote.html
+
+
+</article>
+
+
+
+
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'peerstudioblog';
+    var disqus_identifier = '/2011/11/30/libvirtd-tutorial-for-connect-domain-with-cert-1';
+    var disqus_title      = "libvirtd使用证书创建连接简介(上)";
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+
 
       </div>
     </div>

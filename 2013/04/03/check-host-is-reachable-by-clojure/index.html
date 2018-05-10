@@ -4,7 +4,7 @@
     
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>PeerStudio</title>
+    <title>InetAddress类中isReachable方法检测原理 &#8211; PeerStudio</title>
     <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
     <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,8 +12,8 @@
     <meta name="robots" content="all">
     <meta name="author" content="Peer Xu">
     
-    
-    <link rel="canonical" href="http://localhost:4000/">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2013/04/03/check-host-is-reachable-by-clojure/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
@@ -37,9 +37,9 @@
     <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
-    <meta property="og:title" content="PeerStudio">
+    <meta property="og:title" content="InetAddress类中isReachable方法检测原理">
     <meta property="og:description" content="Peer的博客">
-    <meta property="og:url" content="http://localhost:4000/">
+    <meta property="og:url" content="http://localhost:4000/2013/04/03/check-host-is-reachable-by-clojure/">
     <meta property="og:site_name" content="PeerStudio">
     
 
@@ -49,9 +49,9 @@
         <meta name="twitter:site" content="@PeerXu" />
         <meta name="twitter:creator" content="@PeerXu" />
     
-    <meta name="twitter:title" content="PeerStudio" />
+    <meta name="twitter:title" content="InetAddress类中isReachable方法检测原理" />
     <meta name="twitter:description" content="Peer的博客" />
-    <meta name="twitter:url" content="http://localhost:4000/" />
+    <meta name="twitter:url" content="http://localhost:4000/2013/04/03/check-host-is-reachable-by-clojure/" />
     
 
     <!-- Icons -->
@@ -127,78 +127,62 @@
       <div class="measure">
         
 
-<div class="home">
+
+<div class="post-header mb2">
+  <h1>InetAddress类中isReachable方法检测原理</h1>
+  <span class="post-meta">Apr 3, 2013</span><br>
   
-    <div class="posts">
-      
-        <div class="post py3">
-          <p class="post-meta">May 10, 2018</p>
-          <a href="/2018/05/10/cross-compile-golang-by-docker-on-macos/" class="post-link"><h3 class="h1 post-title">在macOS下通过Docker交叉编译GO程序</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="前言">前言</h2>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Aug 17, 2016</p>
-          <a href="/2016/08/17/re-read-http-response-body-on-golang/" class="post-link"><h3 class="h1 post-title">使golang中的http response body可重读</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="前言">前言</h2>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Nov 29, 2015</p>
-          <a href="/2015/11/29/docker-source-code-analysis-pull/" class="post-link"><h3 class="h1 post-title">Docker源代码分析 -- pull repository</h3></a>
-          <span class="post-summary">
-            
-              <p>本系列文章是从源代码入手分析Docker部分功能或者模块的具体实现</p>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Aug 12, 2015</p>
-          <a href="/2015/08/12/cross-platform-compile-qemu-ga-with-docker/" class="post-link"><h3 class="h1 post-title">利用Docker跨平台编译Windows平台的qemu-ga.exe</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="介绍">介绍</h2>
-
-
-            
-          </span>
-        </div>
-      
-    </div>
-
-    
-<div class="pagination clearfix mb1 mt4">
-  <div class="left">
-    
-      <span class="pagination-item disabled">Newer</span>
-    
-  </div>
-  <div class="right">
-    
-      <a class="pagination-item" href="/page2">Older</a>
-    
-  </div>
-  <div class="pagination-meta">Page 1 of 12</div>
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
 </div>
 
+<article class="post-content">
+  <p>今日, 有一同事问我, 为什么我用ping命令可以连通的一台主机, 用java的InetAddress类中的isReachable方法就测试失败呢?</p>
 
-  
-</div>
+<p>当时我就感觉奇怪了, 难道isReachable用的不是ping?</p>
+
+<p>刚刚测试了一下, 果然真不是用ping… 用的是 <a href="http://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers" title="echo">echo</a>协议.</p>
+
+<p>那么不可达的原因就不言而喻了, 因为目的主机没有启动echo服务.</p>
+
+<p>附上clojure的测试代码:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(.. java.net.InetAddress (getByName "192.168.1.1") (isReachable 1000))
+</code></pre></div></div>
+
+<p>吐槽: 如果是java的话要多长才能完成这个简单的测试呢?</p>
+
+
+</article>
+
+
+
+
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'peerstudioblog';
+    var disqus_identifier = '/2013/04/03/check-host-is-reachable-by-clojure';
+    var disqus_title      = "InetAddress类中isReachable方法检测原理";
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+
 
       </div>
     </div>

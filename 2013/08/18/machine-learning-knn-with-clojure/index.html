@@ -4,7 +4,7 @@
     
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>PeerStudio</title>
+    <title>机器学习笔记 -- k-临近算法 &#8211; PeerStudio</title>
     <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
     <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,8 +12,8 @@
     <meta name="robots" content="all">
     <meta name="author" content="Peer Xu">
     
-    
-    <link rel="canonical" href="http://localhost:4000/">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2013/08/18/machine-learning-knn-with-clojure/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
@@ -37,9 +37,9 @@
     <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
-    <meta property="og:title" content="PeerStudio">
+    <meta property="og:title" content="机器学习笔记 -- k-临近算法">
     <meta property="og:description" content="Peer的博客">
-    <meta property="og:url" content="http://localhost:4000/">
+    <meta property="og:url" content="http://localhost:4000/2013/08/18/machine-learning-knn-with-clojure/">
     <meta property="og:site_name" content="PeerStudio">
     
 
@@ -49,9 +49,9 @@
         <meta name="twitter:site" content="@PeerXu" />
         <meta name="twitter:creator" content="@PeerXu" />
     
-    <meta name="twitter:title" content="PeerStudio" />
+    <meta name="twitter:title" content="机器学习笔记 -- k-临近算法" />
     <meta name="twitter:description" content="Peer的博客" />
-    <meta name="twitter:url" content="http://localhost:4000/" />
+    <meta name="twitter:url" content="http://localhost:4000/2013/08/18/machine-learning-knn-with-clojure/" />
     
 
     <!-- Icons -->
@@ -127,78 +127,107 @@
       <div class="measure">
         
 
-<div class="home">
+
+<div class="post-header mb2">
+  <h1>机器学习笔记 -- k-临近算法</h1>
+  <span class="post-meta">Aug 18, 2013</span><br>
   
-    <div class="posts">
-      
-        <div class="post py3">
-          <p class="post-meta">May 10, 2018</p>
-          <a href="/2018/05/10/cross-compile-golang-by-docker-on-macos/" class="post-link"><h3 class="h1 post-title">在macOS下通过Docker交叉编译GO程序</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="前言">前言</h2>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Aug 17, 2016</p>
-          <a href="/2016/08/17/re-read-http-response-body-on-golang/" class="post-link"><h3 class="h1 post-title">使golang中的http response body可重读</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="前言">前言</h2>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Nov 29, 2015</p>
-          <a href="/2015/11/29/docker-source-code-analysis-pull/" class="post-link"><h3 class="h1 post-title">Docker源代码分析 -- pull repository</h3></a>
-          <span class="post-summary">
-            
-              <p>本系列文章是从源代码入手分析Docker部分功能或者模块的具体实现</p>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Aug 12, 2015</p>
-          <a href="/2015/08/12/cross-platform-compile-qemu-ga-with-docker/" class="post-link"><h3 class="h1 post-title">利用Docker跨平台编译Windows平台的qemu-ga.exe</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="介绍">介绍</h2>
-
-
-            
-          </span>
-        </div>
-      
-    </div>
-
-    
-<div class="pagination clearfix mb1 mt4">
-  <div class="left">
-    
-      <span class="pagination-item disabled">Newer</span>
-    
-  </div>
-  <div class="right">
-    
-      <a class="pagination-item" href="/page2">Older</a>
-    
-  </div>
-  <div class="pagination-meta">Page 1 of 12</div>
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
 </div>
 
+<article class="post-content">
+  <p>k-临近算法是一种分类算法, 计算输入值与各个特征值之间距离来进行分类.</p>
 
-  
-</div>
+<p>简单的概括一下算法的思路就是:</p>
+
+<ol>
+  <li>算出输入值与各个特征值之间的距离, 按升序排序.</li>
+  <li>获取前k个分类</li>
+  <li>选择出现次数最高的分类, 就是输入值所属的分类.</li>
+</ol>
+
+<p>k-临近算法优缺点分析</p>
+
+<ul>
+  <li>优点: 精度高, 对异常值不敏感, 无数据输入假定.</li>
+  <li>缺点: 计算复杂度高, 空间复杂度高.</li>
+  <li>适用数据范围: <strong>数值型</strong> 和 <strong>标称型</strong></li>
+</ul>
+
+<p>以下通过clojure来实现kNN算法:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(defn create-test-data []  ; 生成测试数据
+  '(((0.1 0.1)
+     (0.0 0.0)
+	 (0.2 0.2)
+	 (1.1 1.1)
+	 (1.0 1.0))
+	(:a :a :a :b :b)))
+
+(defn distance [xs ys]  ; 计算两个向量之间的距离
+  (. java.lang.Math sqrt (apply + (map #(* % %) (map #(- %1 %2) xs ys)))))
+
+(defn count-list-element [xs]  ; 计算列表中每个元素的出现次数
+  (reduce
+   (fn [cnts x]
+    (let [n (x cnts)]
+     (if (= n nil)
+      (assoc cnts x 1)
+      (assoc cnts x (+ n 1)))))
+   {}
+   xs))
+
+(defn kNN [inX dataSet labels k]
+ (let* [label-groups (map #(concat [%1] %2) labels dataSet)  ; 将分类与特征值合并, 方便后续处理
+        label-groups-sort-by-distance (sort-by  ; 计算输入值与特征值的距离并且排序
+                                       #(distance inX (rest %1)) label-groups)
+        k-labels (take k (map first label-groups-sort-by-distance))  ; 获取前K个分类
+        labels-group-by-count (sort-by first (count-list-element k-labels))]  ; 计算每个分类的出现次数
+       (-&gt; labels-group-by-count  ; 返回出现次数最多的分类
+           reverse
+           first
+           first)))
+
+(defn -main [&amp; args]
+  (let [[groups labels] (create-dataset)]
+    (println (kNN [0.0 0.0] groups labels 3))))
+</code></pre></div></div>
+
+<p>附带上我的<a href="https://github.com/PeerXu/machine-learning-clojure">机器学习笔记</a></p>
+
+<p>感谢阅读</p>
+
+</article>
+
+
+
+
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'peerstudioblog';
+    var disqus_identifier = '/2013/08/18/machine-learning-knn-with-clojure';
+    var disqus_title      = "机器学习笔记 -- k-临近算法";
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+
 
       </div>
     </div>

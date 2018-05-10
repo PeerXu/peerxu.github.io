@@ -4,7 +4,7 @@
     
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>PeerStudio</title>
+    <title>一次无意识的DNS劫持 &#8211; PeerStudio</title>
     <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
     <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,8 +12,8 @@
     <meta name="robots" content="all">
     <meta name="author" content="Peer Xu">
     
-    
-    <link rel="canonical" href="http://localhost:4000/">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2014/11/07/dns-hijack-with-dnsmasq/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
@@ -37,9 +37,9 @@
     <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
-    <meta property="og:title" content="PeerStudio">
+    <meta property="og:title" content="一次无意识的DNS劫持">
     <meta property="og:description" content="Peer的博客">
-    <meta property="og:url" content="http://localhost:4000/">
+    <meta property="og:url" content="http://localhost:4000/2014/11/07/dns-hijack-with-dnsmasq/">
     <meta property="og:site_name" content="PeerStudio">
     
 
@@ -49,9 +49,9 @@
         <meta name="twitter:site" content="@PeerXu" />
         <meta name="twitter:creator" content="@PeerXu" />
     
-    <meta name="twitter:title" content="PeerStudio" />
+    <meta name="twitter:title" content="一次无意识的DNS劫持" />
     <meta name="twitter:description" content="Peer的博客" />
-    <meta name="twitter:url" content="http://localhost:4000/" />
+    <meta name="twitter:url" content="http://localhost:4000/2014/11/07/dns-hijack-with-dnsmasq/" />
     
 
     <!-- Icons -->
@@ -127,78 +127,82 @@
       <div class="measure">
         
 
-<div class="home">
+
+<div class="post-header mb2">
+  <h1>一次无意识的DNS劫持</h1>
+  <span class="post-meta">Nov 7, 2014</span><br>
   
-    <div class="posts">
-      
-        <div class="post py3">
-          <p class="post-meta">May 10, 2018</p>
-          <a href="/2018/05/10/cross-compile-golang-by-docker-on-macos/" class="post-link"><h3 class="h1 post-title">在macOS下通过Docker交叉编译GO程序</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="前言">前言</h2>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Aug 17, 2016</p>
-          <a href="/2016/08/17/re-read-http-response-body-on-golang/" class="post-link"><h3 class="h1 post-title">使golang中的http response body可重读</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="前言">前言</h2>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Nov 29, 2015</p>
-          <a href="/2015/11/29/docker-source-code-analysis-pull/" class="post-link"><h3 class="h1 post-title">Docker源代码分析 -- pull repository</h3></a>
-          <span class="post-summary">
-            
-              <p>本系列文章是从源代码入手分析Docker部分功能或者模块的具体实现</p>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Aug 12, 2015</p>
-          <a href="/2015/08/12/cross-platform-compile-qemu-ga-with-docker/" class="post-link"><h3 class="h1 post-title">利用Docker跨平台编译Windows平台的qemu-ga.exe</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="介绍">介绍</h2>
-
-
-            
-          </span>
-        </div>
-      
-    </div>
-
-    
-<div class="pagination clearfix mb1 mt4">
-  <div class="left">
-    
-      <span class="pagination-item disabled">Newer</span>
-    
-  </div>
-  <div class="right">
-    
-      <a class="pagination-item" href="/page2">Older</a>
-    
-  </div>
-  <div class="pagination-meta">Page 1 of 12</div>
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
 </div>
 
+<article class="post-content">
+  <p>0x00 前言</p>
 
-  
-</div>
+<p>发现DNS劫持的缘由在于部署Dnsmasq的过程中, 同网段内的Windows主机的DNS地址被改变成Dnsmasq服务所在的主机IP地址. 所有就有了这篇分析报告.</p>
+
+<p>0x01 现象</p>
+
+<p>在某个子网下部署dnsmasq服务, 过了一会儿, 其他用Windows的同事就大喊: XXX, 为什么我不能上网!</p>
+
+<p>经过一轮排查, 发现是使用DHCP获取IP地址的Windows用户, DNS地址被改成了部署Dnsmasq服务的服务器IP地址.</p>
+
+<p>以为是Dnsmasq的BUG(其实还真算Dnsmasq的BUG). 那么就添加了<code class="highlighter-rouge">--port=0</code>的启动参数, 表示不提供DNS服务, 然后再添加<code class="highlighter-rouge">--dhcp-option=6,114.114.114.114</code>指定DNS服务器IP地址(离真相已经很近了).</p>
+
+<p>但是因为公司默认的DHCP并非<code class="highlighter-rouge">114.114.114.114</code>, 而是某个不知名的DNS服务器地址. 所以又有人大喊为什么我的DNS变成了<code class="highlighter-rouge">114.114.114.114</code>.</p>
+
+<p>到现在我才意识到, 问题的严重性.</p>
+
+<p>我成功地将DNS劫持了.</p>
+
+<p>别问我劫持了DNS能够做什么.</p>
+
+<p>0x02 分析</p>
+
+<p>发生劫持事件后, 我添加Dnsmasq启动参数<code class="highlighter-rouge">--no-daemon</code>, 表示调试模式.</p>
+
+<p>然后启动通过<code class="highlighter-rouge">tcpdump -n -i eth0 -vvv port 68</code>来捕捉DHCP请求.</p>
+
+<p>经过观察, 发现Windows DHCP 客户端会定时广播<code class="highlighter-rouge">DHCPINFORM</code>, 而Dnsmasq会响应并非在<code class="highlighter-rouge">dhcp-hostsfile</code>列表里面的主机. 响应的结果就是发送<code class="highlighter-rouge">DHCPACK</code>. 而<code class="highlighter-rouge">DHCPACK</code>上又带上了<code class="highlighter-rouge">Domain Name Server Option</code>字段.</p>
+
+<p>所以, Windows DHCP Client会将Dnsmasq返回的DHCPACK包中带上的DNS地址设置为自己的DNS地址.</p>
+
+<p>0x03 结论</p>
+
+<p>你还敢用Windows的DHCP吗?</p>
+
+<p>当你无法保证所在网络绝对安全的情况下, 请手动设置DNS地址.</p>
+
+</article>
+
+
+
+
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'peerstudioblog';
+    var disqus_identifier = '/2014/11/07/dns-hijack-with-dnsmasq';
+    var disqus_title      = "一次无意识的DNS劫持";
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+
 
       </div>
     </div>

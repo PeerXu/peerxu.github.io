@@ -4,7 +4,7 @@
     
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>PeerStudio</title>
+    <title>让你的Docker运行在Open vSwitch上 &#8211; PeerStudio</title>
     <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
     <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,8 +12,8 @@
     <meta name="robots" content="all">
     <meta name="author" content="Peer Xu">
     
-    
-    <link rel="canonical" href="http://localhost:4000/">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2013/12/24/docker-on-openvswitch/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
@@ -37,9 +37,9 @@
     <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
-    <meta property="og:title" content="PeerStudio">
+    <meta property="og:title" content="让你的Docker运行在Open vSwitch上">
     <meta property="og:description" content="Peer的博客">
-    <meta property="og:url" content="http://localhost:4000/">
+    <meta property="og:url" content="http://localhost:4000/2013/12/24/docker-on-openvswitch/">
     <meta property="og:site_name" content="PeerStudio">
     
 
@@ -49,9 +49,9 @@
         <meta name="twitter:site" content="@PeerXu" />
         <meta name="twitter:creator" content="@PeerXu" />
     
-    <meta name="twitter:title" content="PeerStudio" />
+    <meta name="twitter:title" content="让你的Docker运行在Open vSwitch上" />
     <meta name="twitter:description" content="Peer的博客" />
-    <meta name="twitter:url" content="http://localhost:4000/" />
+    <meta name="twitter:url" content="http://localhost:4000/2013/12/24/docker-on-openvswitch/" />
     
 
     <!-- Icons -->
@@ -127,78 +127,72 @@
       <div class="measure">
         
 
-<div class="home">
+
+<div class="post-header mb2">
+  <h1>让你的Docker运行在Open vSwitch上</h1>
+  <span class="post-meta">Dec 24, 2013</span><br>
   
-    <div class="posts">
-      
-        <div class="post py3">
-          <p class="post-meta">May 10, 2018</p>
-          <a href="/2018/05/10/cross-compile-golang-by-docker-on-macos/" class="post-link"><h3 class="h1 post-title">在macOS下通过Docker交叉编译GO程序</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="前言">前言</h2>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Aug 17, 2016</p>
-          <a href="/2016/08/17/re-read-http-response-body-on-golang/" class="post-link"><h3 class="h1 post-title">使golang中的http response body可重读</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="前言">前言</h2>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Nov 29, 2015</p>
-          <a href="/2015/11/29/docker-source-code-analysis-pull/" class="post-link"><h3 class="h1 post-title">Docker源代码分析 -- pull repository</h3></a>
-          <span class="post-summary">
-            
-              <p>本系列文章是从源代码入手分析Docker部分功能或者模块的具体实现</p>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Aug 12, 2015</p>
-          <a href="/2015/08/12/cross-platform-compile-qemu-ga-with-docker/" class="post-link"><h3 class="h1 post-title">利用Docker跨平台编译Windows平台的qemu-ga.exe</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="介绍">介绍</h2>
-
-
-            
-          </span>
-        </div>
-      
-    </div>
-
-    
-<div class="pagination clearfix mb1 mt4">
-  <div class="left">
-    
-      <span class="pagination-item disabled">Newer</span>
-    
-  </div>
-  <div class="right">
-    
-      <a class="pagination-item" href="/page2">Older</a>
-    
-  </div>
-  <div class="pagination-meta">Page 1 of 12</div>
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
 </div>
 
+<article class="post-content">
+  <p>docker创建的container只能运行在docker创建的docker0上(linux bridge).
+所以就有了<a href="https://github.com/PeerXu/pipework">pipework</a>这个项目.</p>
 
-  
-</div>
+<h2 id="pipework范例">pipework范例</h2>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># ovs-vsctl add-br br0
+# ip link set br0 up
+# ip addr add 10.0.0.1/24 dev br0
+# pipework br0 $(docker run -d mysql /usr/sbin/mysqld_safe) 10.0.0.200/24
+</code></pre></div></div>
+
+<p>以上几行脚本的意思是:</p>
+
+<ol>
+  <li>创建一个Open vSwitch的桥br0</li>
+  <li>设置br0的ip地址为10.0.0.1</li>
+  <li>在br0上创建一个docker并绑定IP地址</li>
+</ol>
+
+<h2 id="pipework工作原理">pipework工作原理</h2>
+
+<p>创建一对<a href="http://wangcong.org/blog/archives/1704">veth</a>, 将一头绑定到docker内, 另外一头绑定到Open vSwitch.
+然后通过_iproute_ 绑定IP地址等等操作.</p>
+
+<p>然后, 就没有然后了.</p>
+
+</article>
+
+
+
+
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'peerstudioblog';
+    var disqus_identifier = '/2013/12/24/docker-on-openvswitch';
+    var disqus_title      = "让你的Docker运行在Open vSwitch上";
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+
 
       </div>
     </div>

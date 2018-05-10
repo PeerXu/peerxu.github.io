@@ -13,7 +13,7 @@
     <meta name="author" content="Peer Xu">
     
     
-    <link rel="canonical" href="http://localhost:4000/">
+    <link rel="canonical" href="http://localhost:4000/page8/">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
 
     <!-- Custom CSS -->
@@ -39,7 +39,7 @@
     <meta property="og:type" content="article">
     <meta property="og:title" content="PeerStudio">
     <meta property="og:description" content="Peer的博客">
-    <meta property="og:url" content="http://localhost:4000/">
+    <meta property="og:url" content="http://localhost:4000/page8/">
     <meta property="og:site_name" content="PeerStudio">
     
 
@@ -51,7 +51,7 @@
     
     <meta name="twitter:title" content="PeerStudio" />
     <meta name="twitter:description" content="Peer的博客" />
-    <meta name="twitter:url" content="http://localhost:4000/" />
+    <meta name="twitter:url" content="http://localhost:4000/page8/" />
     
 
     <!-- Icons -->
@@ -132,11 +132,31 @@
     <div class="posts">
       
         <div class="post py3">
-          <p class="post-meta">May 10, 2018</p>
-          <a href="/2018/05/10/cross-compile-golang-by-docker-on-macos/" class="post-link"><h3 class="h1 post-title">在macOS下通过Docker交叉编译GO程序</h3></a>
+          <p class="post-meta">Jan 13, 2013</p>
+          <a href="/2013/01/13/using-rpi-and-github-to-build-your-ddns-server-part-1/" class="post-link"><h3 class="h1 post-title">用树莓派与github构建自己的DDNS服务(上)</h3></a>
           <span class="post-summary">
             
-              <h2 id="前言">前言</h2>
+              <p><em>[DDNS][1]</em> – 动态域名解析服务, 是一种把互联网域名指向可变IP地址的系统.
+这次我们的域名提供商选择了[github][2].</p>
+
+<p>[1]: http://zh.wikipedia.org/wiki/%E5%8B%95%E6%85%8BDNS “动态DNS“
+[2]: https://www.github.com/ “github”
+[3]: https://www.github.com/peerxu/slipper “DDNS服务项目”
+[4]: http://clonn.blogspot.com/2012/03/ssh-agent.html “ssh-agent教程 需翻墙”
+[5]: http://linux.vbird.org/linux_basic/0430cron.php “cron”
+[6]: http://www-cs-students.stanford.edu/~blynn/gitmagic/intl/zh_cn/ “git教程”
+[7]: http://pages.github.com/ “github pages”</p>
+
+            
+          </span>
+        </div>
+      
+        <div class="post py3">
+          <p class="post-meta">Jan 3, 2013</p>
+          <a href="/2013/01/03/rpi-install-lxde-on-archlinux/" class="post-link"><h3 class="h1 post-title">在树莓派的archlinux中安装lxde</h3></a>
+          <span class="post-summary">
+            
+              p. archlinux是一个很好的linux发行版, 比raspbian好多了. 况且archlinux的yaourt工具实在是太强大了.
 
 
             
@@ -144,11 +164,14 @@
         </div>
       
         <div class="post py3">
-          <p class="post-meta">Aug 17, 2016</p>
-          <a href="/2016/08/17/re-read-http-response-body-on-golang/" class="post-link"><h3 class="h1 post-title">使golang中的http response body可重读</h3></a>
+          <p class="post-meta">Nov 27, 2012</p>
+          <a href="/2012/11/27/remote-server-host-for-ssh/" class="post-link"><h3 class="h1 post-title">SSH反向链接配置</h3></a>
           <span class="post-summary">
             
-              <h2 id="前言">前言</h2>
+              p. 应用场景:
+A为公网上的一个SSH服务器, 端口为9944, ip为9.9.9.9, 用户名为a, 本地开放端口为10000,
+B为内网里的一个SSH服务器, 端口为22, 用户为b.
+如今A向B发起SSH请求,实行远程操控.
 
 
             
@@ -156,23 +179,11 @@
         </div>
       
         <div class="post py3">
-          <p class="post-meta">Nov 29, 2015</p>
-          <a href="/2015/11/29/docker-source-code-analysis-pull/" class="post-link"><h3 class="h1 post-title">Docker源代码分析 -- pull repository</h3></a>
+          <p class="post-meta">Oct 11, 2012</p>
+          <a href="/2012/10/11/clojure-py-gevent-wsgi-hello-world/" class="post-link"><h3 class="h1 post-title">clojure-py gevent wsgi hello world</h3></a>
           <span class="post-summary">
             
-              <p>本系列文章是从源代码入手分析Docker部分功能或者模块的具体实现</p>
-
-
-            
-          </span>
-        </div>
-      
-        <div class="post py3">
-          <p class="post-meta">Aug 12, 2015</p>
-          <a href="/2015/08/12/cross-platform-compile-qemu-ga-with-docker/" class="post-link"><h3 class="h1 post-title">利用Docker跨平台编译Windows平台的qemu-ga.exe</h3></a>
-          <span class="post-summary">
-            
-              <h2 id="介绍">介绍</h2>
+              p. clojure-py项目是clojure语言在pure python上的实现. 可以在github上找到该项目或者直接用easy_install安装.
 
 
             
@@ -185,15 +196,17 @@
 <div class="pagination clearfix mb1 mt4">
   <div class="left">
     
-      <span class="pagination-item disabled">Newer</span>
+      
+        <a class="pagination-item" href="/page7">Newer</a>
+      
     
   </div>
   <div class="right">
     
-      <a class="pagination-item" href="/page2">Older</a>
+      <a class="pagination-item" href="/page9">Older</a>
     
   </div>
-  <div class="pagination-meta">Page 1 of 12</div>
+  <div class="pagination-meta">Page 8 of 12</div>
 </div>
 
 

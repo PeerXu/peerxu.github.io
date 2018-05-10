@@ -1,35 +1,3512 @@
----
-layout: null
----
-
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>{{ site.name | xml_escape }}</title>
-    <link>{{ site.url }}</link>
+    <title></title>
+    <link>http://localhost:4000</link>
     <description>
-      {% if site.description %}{{ site.description | xml_escape }}{% endif %}
+      Peer的博客
     </description>
-    {% for post in site.posts %}
-        {% unless post.link %}
+    
+        
             <item>
-                <title>{{ post.title | xml_escape }}</title>
-                <link>{{ site.url }}{{ post.url }}</link>
+                <title>在macOS下通过Docker交叉编译GO程序</title>
+                <link>http://localhost:4000/2018/05/10/cross-compile-golang-by-docker-on-macos/</link>
                 <content:encoded>
                     <![CDATA[
-                    {{ post.content }}
+                    <h2 id="前言">前言</h2>
+
+<p><em>TL;DR</em></p>
+
+<ol>
+  <li>普通情况下, 只需要设置环境变量 <code class="highlighter-rouge">GOOS</code>和 <code class="highlighter-rouge">GOARCH</code>即可编译成目标平台的二进制文件.</li>
+  <li>特殊情况下(需要采用Golang的 <code class="highlighter-rouge">plugin</code>包或其他情况), 因为macOS安装 <code class="highlighter-rouge">arm</code>平台的编译工具链不方便, 所以在Docker里面编译.</li>
+</ol>
+
+<p>Golang对交叉编译的支持是很棒的, 通常情况下, 我们只需要配置 <code class="highlighter-rouge">GOOS</code>和 <code class="highlighter-rouge">GOARCH</code>这两个环境变量, 就能够正常交叉编译了.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">$</span> <span class="n">cat</span> <span class="n">main</span><span class="p">.</span><span class="n">go</span>
+<span class="k">package</span> <span class="n">main</span>
+<span class="n">import</span> <span class="s2">"fmt"</span>
+<span class="n">func</span> <span class="n">main</span><span class="p">()</span> <span class="p">{</span> <span class="n">fmt</span><span class="p">.</span><span class="n">Println</span><span class="p">(</span><span class="s2">"hello, world"</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">$</span> <span class="n">GOOS</span><span class="p">=</span><span class="n">linux</span> <span class="n">GOARCH</span><span class="p">=</span><span class="n">arm</span> <span class="n">GOARM</span><span class="p">=</span><span class="m">6</span> <span class="n">go</span> <span class="n">build</span> <span class="p">-</span><span class="n">o</span> <span class="n">hello</span> <span class="n">main</span><span class="p">.</span><span class="n">go</span>
+<span class="p">$</span> <span class="n">file</span> <span class="n">hello</span>
+<span class="n">hello</span><span class="p">:</span> <span class="n">ELF</span> <span class="m">32</span><span class="p">-</span><span class="n">bit</span> <span class="n">LSB</span> <span class="n">executable</span><span class="p">,</span> <span class="n">ARM</span><span class="p">,</span> <span class="n">EABI5</span> <span class="k">version</span> <span class="m">1</span> <span class="p">(</span><span class="n">SYSV</span><span class="p">),</span> <span class="n">statically</span> <span class="n">linked</span><span class="p">,</span> <span class="k">with</span> <span class="n">debug_info</span><span class="p">,</span> <span class="k">not</span> <span class="n">stripped</span>
+</code></pre></div></div>
+
+<p>把上面的<code class="highlighter-rouge">hello</code>程序复制到Raspberry Pi Zero W(下文都是采用这个平台作为测试)上, 可以运行.</p>
+
+<p>接下来提出这篇文章需要解决的问题.</p>
+
+<p>Golang 1.8中, 添加了一个新的包: <a href="https://golang.org/pkg/plugin/">plugin</a>. 支持Golang代码以插件形式执行.</p>
+
+<p>下面是演示代码.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">//</span> <span class="n">file</span><span class="p">:</span> <span class="n">plugin</span><span class="p">/</span><span class="n">plugin</span><span class="p">.</span><span class="n">go</span>
+<span class="k">package</span> <span class="n">main</span>
+
+<span class="n">import</span> <span class="s2">"fmt"</span>
+
+<span class="n">func</span> <span class="n">Hello</span><span class="p">()</span> <span class="p">{</span> <span class="n">fmt</span><span class="p">.</span><span class="n">Println</span><span class="p">(</span><span class="s2">"hello, world"</span><span class="p">)</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">//</span> <span class="n">file</span><span class="p">:</span> <span class="n">main</span><span class="p">.</span><span class="n">go</span>
+<span class="k">package</span> <span class="n">main</span>
+
+<span class="n">import</span> <span class="s2">"plugin"</span>
+
+<span class="n">func</span> <span class="n">main</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">p</span><span class="p">,</span> <span class="n">err</span> <span class="p">:=</span> <span class="n">plugin</span><span class="p">.</span><span class="n">Open</span><span class="p">(</span><span class="s2">"plugin.so"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">err</span> <span class="c1">!= nil {
+</span>                <span class="n">panic</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="n">HelloFn</span><span class="p">,</span> <span class="n">err</span> <span class="p">:=</span> <span class="n">p</span><span class="p">.</span><span class="n">Lookup</span><span class="p">(</span><span class="s2">"Hello"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">err</span> <span class="c1">!= nil {
+</span>                <span class="n">panic</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="n">HelloFn</span><span class="p">.(</span><span class="n">func</span><span class="p">())()</span>  <span class="p">//</span> <span class="n">prints</span> <span class="s2">"hello, world"</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ go build -o plugin.so -buildmode=plugin plugin/plugin.go
+$ go build -o hello main.go
+$ ./hello
+hello, world
+</code></pre></div></div>
+
+<p>以上是编译成本地可执行二进制文件的流程.</p>
+
+<p>但是, 如果采用交叉编译, 就会出现以下错误.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ GOOS=linux GOARCH=arm GOARM=6 go build -o plugin.so -buildmode=plugin plugin/plugin.go
+# command-line-arguments
+loadinternal: cannot find runtime/cgo
+/usr/local/opt/go/libexec/pkg/tool/darwin_amd64/link: running clang failed: exit status 1
+clang: error: invalid linker name in argument '-fuse-ld=gold'
+</code></pre></div></div>
+
+<h2 id="解决问题">解决问题</h2>
+
+<p>前言有点多, 后面就长话短说.</p>
+
+<p>因为没有在网上找到太多的解决方案, 决定在linux环境下编译试试. 得到如下结果.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ GOOS=linux GOARCH=arm GOARM=6 go build -o plugin.so -buildmode=plugin plugin/plugin.go
+# command-line-arguments
+loadinternal: cannot find runtime/cgo
+/usr/local/go/pkg/tool/linux_amd64/link: running gcc failed: exit status 1
+gcc: error: unrecognized command line option '-marm'; did you mean '-mabm'?
+</code></pre></div></div>
+
+<p>然后通过搜索得到<a href="https://github.com/golang/go/issues/16801">结果</a></p>
+
+<p>需要指定 <code class="highlighter-rouge">CC</code>环境变量, 指向 <code class="highlighter-rouge">arm-linux-gnueabihf-gcc</code>.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ CC=arm-linux-gnueabihf-gcc GOOS=linux GOARCH=arm GOARM=6 go build -o hello main.go
+$ CC=arm-linux-gnueabihf-gcc GOOS=linux GOARCH=arm GOARM=6 go build -o plugin.so -buildmode=plugin plugin/plugin.go
+$ file hello plugin.so
+hello:     ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-armhf.so.3, for GNU/Linux 2.6.32, not stripped
+plugin.so: ELF 32-bit LSB shared object, ARM, EABI5 version 1 (SYSV), dynamically linked, not stripped
+</code></pre></div></div>
+<p>编译成功</p>
+
+<h2 id="总结">总结</h2>
+
+<p>如果觉得上面都太复杂了的话, 可以试试这个<a href="https://hub.docker.com/r/e3rp4y/rpi-cross-compiler-platform/">docker镜像</a>.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ docker run -it --rm e3rp4y/rpi-cross-compiler-platform /bin/bash
+</code></pre></div></div>
+
+<p>已经配置好 <code class="highlighter-rouge">GOOS</code>, <code class="highlighter-rouge">GOARCH</code>, <code class="highlighter-rouge">GOARM</code>, <code class="highlighter-rouge">CC</code>和 <code class="highlighter-rouge">CGO_ENABLED</code>几个环境变量.</p>
+
+<h2 id="备注">备注</h2>
+
+<ol>
+  <li>RPi有自己的<a href="git://github.com/raspberrypi/tools.git">编译工具</a></li>
+</ol>
+
                     ]]>
                 </content:encoded>
-                <guid isPermaLink="false">{{ post.url }}</guid>
+                <guid isPermaLink="false">/2018/05/10/cross-compile-golang-by-docker-on-macos/</guid>
                 <description>
-                    {% if post.summary %}
-                    {{ post.summary | xml_escape }}
-                    {% endif %}
+                    
                 </description>
-                <pubDate>{{ post.date | date: "%a, %d %b %Y %H:%M:%S %z" }}</pubDate>
-                <author>{{ site.author }}</author>
+                <pubDate>Thu, 10 May 2018 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
             </item>
-        {% endunless %}
-    {% endfor %}
+        
+    
+        
+            <item>
+                <title>使golang中的http response body可重读</title>
+                <link>http://localhost:4000/2016/08/17/re-read-http-response-body-on-golang/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <h2 id="前言">前言</h2>
+
+<p>首先来介绍一下今天遇到的问题: 在读取<code class="highlighter-rouge">net/http.Response.Body</code>时, 发现只能用<code class="highlighter-rouge">ioutil.ReadAll</code>读取一遍, 然后再读取就会失败了.</p>
+
+<p>这就相当的尴尬了, 因为我读了一遍, 只是<code class="highlighter-rouge">Middleware</code>做检查, 后面还需要将<code class="highlighter-rouge">Response</code>对象传递到下个使用者上.</p>
+
+<h2 id="问题分析">问题分析</h2>
+
+<p>当我分析<code class="highlighter-rouge">net/http/response.go</code>文件时, 发现<code class="highlighter-rouge">Response</code>对象的<code class="highlighter-rouge">Body</code>属性定义如下:</p>
+
+<pre>
+type Response struct {
+...
+	// Body represents the response body.
+	//
+	// The http Client and Transport guarantee that Body is always
+	// non-nil, even on responses without a body or responses with
+	// a zero-length body. It is the caller's responsibility to
+	// close Body. The default HTTP client's Transport does not
+	// attempt to reuse HTTP/1.0 or HTTP/1.1 TCP connections
+	// ("keep-alive") unless the Body is read to completion and is
+	// closed.
+	//
+	// The Body is automatically dechunked if the server replied
+	// with a "chunked" Transfer-Encoding.
+	Body io.ReadCloser
+...
+}
+</pre>
+
+<p>上面我们能看见, <code class="highlighter-rouge">Body</code>是一个<code class="highlighter-rouge">ReadCloser</code>对象, 那么意味着, 不能采用<code class="highlighter-rouge">Seek</code>方法将<code class="highlighter-rouge">Body</code>锚定到目标位置.</p>
+
+<p>那么, 唯有采取更加极端的方式了.</p>
+
+<h2 id="解决方案">解决方案</h2>
+
+<p>上面也说过了, 因为<code class="highlighter-rouge">Body</code>是<code class="highlighter-rouge">ReadCloser</code>, 不能<code class="highlighter-rouge">Seek</code>, 所以, 只能把<code class="highlighter-rouge">Body</code>读出来, 保存到<code class="highlighter-rouge">buffer</code>里面, 然后再将<code class="highlighter-rouge">buffer</code>包装成<code class="highlighter-rouge">io.ReadCloser</code>, 然后再绑定到<code class="highlighter-rouge">Response.Body</code>上.</p>
+
+<p>直接上代码吧.</p>
+
+<pre>
+import (
+	"bytes"
+	"io"
+	"io/ioutil"
+	"net/http"
+)
+
+func ReadAndAssignResponseBody(res *http.Response) (io.Reader, error) {
+	buf, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	res.Body = ioutil.NopCloser(bytes.NewReader(buf))
+	return bytes.NewReader(buf), nil
+}
+</pre>
+
+<p>enjoy it~</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2016/08/17/re-read-http-response-body-on-golang/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Wed, 17 Aug 2016 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>Docker源代码分析 -- pull repository</title>
+                <link>http://localhost:4000/2015/11/29/docker-source-code-analysis-pull/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>本系列文章是从源代码入手分析Docker部分功能或者模块的具体实现</p>
+
+<p>今天我们就先来看看在我们输入了<code class="highlighter-rouge">docker pull debian</code>之后到底发生了些什么事情</p>
+
+<p>注意: 本文是基于docker v0.5.1版本分析</p>
+
+<h2 id="切入点">切入点</h2>
+
+<p>熟悉docker的同学都知道, 我们在运行一个container之前是需要下载container的image的.</p>
+
+<p>我们可以通过以下的命令实现下载镜像的功能:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker pull debian
+</code></pre></div></div>
+
+<p>然后我们就可以运行基于<code class="highlighter-rouge">debian</code>的容器:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run -i -t --rm --name debian debian /bin/bash
+</code></pre></div></div>
+
+<p>那么现在我们就看看, 到底在<code class="highlighter-rouge">pull</code>后面发生了多少不为人知的秘密.</p>
+
+<p>我们知道, <code class="highlighter-rouge">commands.go</code>是命令行参数的入口:</p>
+
+<h2 id="commandsgo">commands.go:</h2>
+
+<p><code class="highlighter-rouge">CmdPull</code>作为客户端的入口, 调用<code class="highlighter-rouge">utils.ParseRepositoryTag</code>处理参数, 分离出<code class="highlighter-rouge">fromImage</code>和<code class="highlighter-rouge">tag</code>两个参数, 然后调用服务端的<code class="highlighter-rouge">/images/create</code>接口.</p>
+
+<h2 id="apigo">api.go:</h2>
+
+<p><code class="highlighter-rouge">api.go</code>作为服务端路由解析器, 将<code class="highlighter-rouge">/images/create</code>转发到<code class="highlighter-rouge">PostImagesCreate</code>函数上.</p>
+
+<p><code class="highlighter-rouge">PostImagesCreate</code>进行一些参数处理, 之后开始调用获取镜像函数<code class="highlighter-rouge">server.go/ImagePull</code>.</p>
+
+<h2 id="servergo">server.go:</h2>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>func (srv *Server) ImagePull(localName string, tag string, out io.Writer, sf *utils.StreamFormatter, authConfig *auth.AuthConfig) error
+</code></pre></div></div>
+
+<p>这是<code class="highlighter-rouge">ImagePull</code>的方法声明.</p>
+
+<p><code class="highlighter-rouge">ImagePull</code>方法的重要步骤:</p>
+
+<ol>
+  <li>通过<code class="highlighter-rouge">registry.NewRegistry</code>创建<code class="highlighter-rouge">Registry</code>对象<code class="highlighter-rouge">r</code>.</li>
+  <li>为获取镜像这个行为上锁(<code class="highlighter-rouge">srv.poolAdd</code>)并且在结束时释放锁(<code class="highlighter-rouge">srv.poolRemove</code>).</li>
+  <li>通过<code class="highlighter-rouge">registry.ResolveRepositoryName</code>解析出仓库(<code class="highlighter-rouge">repository</code>)结构.</li>
+  <li>通过<code class="highlighter-rouge">srv.pullRepository</code>获取仓库结构.</li>
+  <li>如果失败了, 则通过<code class="highlighter-rouge">srv.pullImage</code>下载镜像.</li>
+</ol>
+
+<p>下面我们继续来分析<code class="highlighter-rouge">srv.pullRepository</code>和<code class="highlighter-rouge">srv.pullImage</code>方法.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>func (srv *Server) pullRepository(r *registry.Registry, out io.Writer, localName, remoteName, askedTag, indexEp string, sf *utils.StreamFormatter) error
+</code></pre></div></div>
+
+<p>这是<code class="highlighter-rouge">pullRepository</code>的方法声明.</p>
+
+<p><code class="highlighter-rouge">pullRepository</code>方法的重要步骤:</p>
+
+<ol>
+  <li>通过上面创建的<code class="highlighter-rouge">Registry</code>对象<code class="highlighter-rouge">r</code>的方法<code class="highlighter-rouge">GetRepositoryData</code>获取仓库的数据<code class="highlighter-rouge">repoData</code>.</li>
+  <li>这时候通过<code class="highlighter-rouge">graph</code>对象的<code class="highlighter-rouge">UpdateChecksums</code>方法更新仓库上所有镜像的校验码.</li>
+  <li>接下来是通过r的方法<code class="highlighter-rouge">GetRemoteTags</code>获取<code class="highlighter-rouge">repoData</code>的仓库列表上, 每个仓库的<code class="highlighter-rouge">tag</code>.</li>
+  <li>接下来会判断一下在<code class="highlighter-rouge">CmdPull</code>解析到的<code class="highlighter-rouge">tag</code>是否在上面的<code class="highlighter-rouge">tags</code>列表上, 如果存在则下载该<code class="highlighter-rouge">tag</code>和相关联的<code class="highlighter-rouge">images</code>, 否则就下载所有<code class="highlighter-rouge">tag</code>.</li>
+  <li>接下来就是通过<code class="highlighter-rouge">srv.pullImage</code>方法来下载由步骤4中指定的<code class="highlighter-rouge">tag</code>.</li>
+</ol>
+
+<p>接下来我们分析一下<code class="highlighter-rouge">pullImage</code>函数</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>func (srv *Server) pullImage(r *registry.Registry, out io.Writer, imgID, endpoint string, token []string, sf *utils.StreamFormatter) error
+</code></pre></div></div>
+
+<p>这是<code class="highlighter-rouge">pullImage</code>的函数声明</p>
+
+<p><code class="highlighter-rouge">pullImage</code>方法的重要步骤:</p>
+
+<ol>
+  <li>通过<code class="highlighter-rouge">r.GetRemoteHistory</code>获取镜像的父节点<code class="highlighter-rouge">history</code>对象, <em>注意: 这里的父节点是包含自己的</em>.</li>
+  <li>然后就是遍历<code class="highlighter-rouge">history</code>对象, 逐个下载镜像相关内容.
+    <blockquote>
+      <ol>
+        <li>通过<code class="highlighter-rouge">r.GetRemoteImageJSON</code>获取镜像的<code class="highlighter-rouge">json</code>内容<code class="highlighter-rouge">imgJSON</code>, 还有镜像大小<code class="highlighter-rouge">imgSize</code></li>
+        <li>由<code class="highlighter-rouge">imgJSON</code>通过<code class="highlighter-rouge">NewImgJSON</code>方法创建<code class="highlighter-rouge">Image</code>对象<code class="highlighter-rouge">img</code></li>
+        <li>通过<code class="highlighter-rouge">img</code>获取到镜像<code class="highlighter-rouge">layer结构</code></li>
+        <li>最后通过<code class="highlighter-rouge">graph.Register</code>下载并保存整个镜像的内容及其相关的上下文.</li>
+      </ol>
+    </blockquote>
+  </li>
+</ol>
+
+<p>最后, 我们来分析一下<code class="highlighter-rouge">graph.Register</code>方法.</p>
+
+<h2 id="graphgo">graph.go</h2>
+
+<p>这是<code class="highlighter-rouge">Register</code>的方法声明.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>func (graph *Graph) Register(layerData Archive, store bool, img *Image) error
+</code></pre></div></div>
+
+<p>这是<code class="highlighter-rouge">Register</code>方法的重要步骤:</p>
+
+<ol>
+  <li>先通过<code class="highlighter-rouge">ValidateID</code>验证一下<code class="highlighter-rouge">镜像ID</code>的有效性.</li>
+  <li>通过<code class="highlighter-rouge">StoreImage</code>保存下载的镜像在临时目录.</li>
+  <li>然后将下载完成的镜像保存在对应的镜像目录.</li>
+  <li>最后再添加镜像到<code class="highlighter-rouge">graph</code>的缓存里面.</li>
+</ol>
+
+<p>that’s all</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2015/11/29/docker-source-code-analysis-pull/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sun, 29 Nov 2015 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>利用Docker跨平台编译Windows平台的qemu-ga.exe</title>
+                <link>http://localhost:4000/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <h2 id="介绍">介绍</h2>
+
+<p>今天, 我们介绍一下怎么在Linux环境下编译Windows的可执行文件.</p>
+
+<p>首先, 我们要先熟悉一下<a href="https://zh.wikipedia.org/wiki/MinGW">mingw</a>. <del>基本上就是一个能够编译出windows可执行文件的gcc吧.</del></p>
+
+<p>其次, 我们用一个已经搭好mingw环境的docker容器来做今天的展示.</p>
+
+<p><a href="https://hub.docker.com/r/e3rp4y/centos-mingw-base/">centos-mingw-base</a>是在<a href="https://hub.docker.com/_/centos/">Centos</a>上构建的mingw编译环境.</p>
+
+<p><a href="https://hub.docker.com/r/e3rp4y/centos-mingw-base/~/dockerfile/">Dockerfile</a> (<a href="https://github.com/PeerXu/centos-mingw-base">github</a>) 可以自己添加组件.</p>
+
+<h2 id="glance">Glance</h2>
+
+<p>我们先运行一下<code class="highlighter-rouge">centos-mingw-base</code>容器看看.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ docker run --rm -t -i e3rp4y/centos-mingw-base /bin/bash
+
+[root@4ad795647521 /]# rpm -qa|grep mingw
+mingw-binutils-generic-2.25-1.el7.x86_64
+mingw64-filesystem-100-1.el7.noarch
+mingw32-crt-4.0.2-1.el7.noarch
+mingw64-crt-4.0.2-1.el7.noarch
+mingw64-headers-4.0.2-1.el7.noarch
+mingw32-cpp-4.9.1-3.el7.x86_64
+mingw32-gcc-4.9.1-3.el7.x86_64
+mingw64-binutils-2.25-1.el7.x86_64
+mingw32-pkg-config-0.28-2.el7.x86_64
+mingw32-zlib-1.2.8-2.el7.noarch
+mingw64-zlib-static-1.2.8-2.el7.noarch
+mingw32-win-iconv-0.0.6-1.el7.noarch
+mingw32-gcc-c++-4.9.1-3.el7.x86_64
+mingw64-gcc-c++-4.9.1-3.el7.x86_64
+mingw64-gettext-0.18.3.2-1.el7.noarch
+mingw64-glib2-2.40.0-3.el7.noarch
+mingw32-termcap-1.3.1-15.el7.noarch
+mingw32-glib2-2.40.0-3.el7.noarch
+mingw32-glib2-static-2.40.0-3.el7.noarch
+mingw-filesystem-base-100-1.el7.noarch
+mingw32-filesystem-100-1.el7.noarch
+mingw32-winpthreads-4.0.2-1.el7.noarch
+mingw64-winpthreads-4.0.2-1.el7.noarch
+mingw32-headers-4.0.2-1.el7.noarch
+mingw32-binutils-2.25-1.el7.x86_64
+mingw64-cpp-4.9.1-3.el7.x86_64
+mingw64-gcc-4.9.1-3.el7.x86_64
+mingw64-pkg-config-0.28-2.el7.x86_64
+mingw64-zlib-1.2.8-2.el7.noarch
+mingw32-zlib-static-1.2.8-2.el7.noarch
+mingw64-termcap-1.3.1-15.el7.noarch
+mingw64-libffi-3.0.13-4.el7.noarch
+mingw64-win-iconv-0.0.6-1.el7.noarch
+mingw64-gettext-static-0.18.3.2-1.el7.noarch
+mingw32-libffi-3.0.13-4.el7.noarch
+mingw32-gettext-0.18.3.2-1.el7.noarch
+mingw32-gettext-static-0.18.3.2-1.el7.noarch
+mingw64-glib2-static-2.40.0-3.el7.noarch
+[root@4ad795647521 /]#
+</code></pre></div></div>
+
+<p>我们能够直观的看见, 安装了mingw环境的相关组件.</p>
+
+<p>下面我们先来简单的编译一个Windows平台的”Hello World”.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[root@4ad795647521 /]# cd /tmp
+[root@4ad795647521 tmp]# cat hello.c
+#include &lt;stdio.h&gt;
+int main(void) {
+    printf("hello world\n");
+    return 0;
+}
+[root@4ad795647521 tmp]# i686-w64-mingw32-gcc -o hello.exe hello.c
+[root@4ad795647521 tmp]# ls -lh hello.exe
+-rwxr-xr-x 1 root root 54K Aug 12 10:53 hello.exe
+[root@4ad795647521 tmp]# file hello.exe
+hello.exe: PE32 executable (console) Intel 80386, for MS Windows
+</code></pre></div></div>
+
+<p>这样我们就成功地编译出一个windows平台 32位系统的<code class="highlighter-rouge">hello.exe</code>.</p>
+
+<p>备注: 如果想要编译64位的话, 将编译器换成<code class="highlighter-rouge">x86_64-w64-mingw32-gcc</code>即可.</p>
+
+<h2 id="编译qemu-gaexe">编译qemu-ga.exe</h2>
+
+<p>下面, 我们来编译一下qemu-ga.exe</p>
+
+<p>首先, 我们需要将源代码放置到容器里面.</p>
+
+<p>我们可以采用docker的<code class="highlighter-rouge">--volume</code>参数.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run --rm --volume=/Users/peer/tmp/qemu-2.3.0/:/tmp/qemu -t -i e3rp4y/centos-mingw-base
+</code></pre></div></div>
+
+<p>这里, 我们用<code class="highlighter-rouge">--volume</code>参数, 将本机的<code class="highlighter-rouge">/Users/peer/tmp/qemu-2.3.0/</code>目录映射到容器的<code class="highlighter-rouge">/tmp/qemu/</code>目录上.</p>
+
+<p>然后我们可以开始编译了.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[root@035df45036cc /]# cd /tmp/qemu
+[root@035df45036cc qemu]# mkdir build
+[root@035df45036cc qemu]# cd build
+[root@035df45036cc build]# ../confug --target-list=x86_64-softmmu --cross-prefix=i686-w64-mingw32-
+[root@035df45036cc build]# make V=1 VL_LDFLAGS=-Wl,--build-id qemu-ga.exe
+</code></pre></div></div>
+
+<p>拷贝走你的<code class="highlighter-rouge">qemu-ga.exe</code> happy去吧.</p>
+
+<p>enjoy it.</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2015/08/12/cross-platform-compile-qemu-ga-with-docker/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Wed, 12 Aug 2015 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>在C中调用Python程序(II)</title>
+                <link>http://localhost:4000/2015/08/07/call-python-from-c-II/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <h2 id="承上启下的段落">承上启下的段落</h2>
+
+<p><a href="http://blog.e3rp4y.me/2015/08/07/call-python-from-c-I/">上一节</a>我们已经介绍了, 怎么在C语言中, 采用Python API调用Python程序.</p>
+
+<p>上一节采用的是<code class="highlighter-rouge">PyRun_SimpleString</code>这个API函数.</p>
+
+<p>这个函数的优点就是方便, 不用初始化环境变量就能够正常运行了.</p>
+
+<p>缺点也是相当明显, 便利带来的就是灵活性不够高. 最简单的C-Python交互都无法正常完成.</p>
+
+<h2 id="摊开你的双手-来迎接新挑战吧">摊开你的双手, 来迎接新挑战吧!</h2>
+
+<p>首先, 我们还是得先看看文档.</p>
+
+<p><a href="https://docs.python.org/2/c-api/veryhigh.html">The Very High Level Layer</a>告诉我们, 除了<code class="highlighter-rouge">PyRun_SimpleString</code>之外, 还有<code class="highlighter-rouge">PyRun_String</code>, <code class="highlighter-rouge">PyRun_File</code>, etc.</p>
+
+<p>我们今天就来介绍一下<code class="highlighter-rouge">PyRun_String</code>的用法.</p>
+
+<p>这个是<code class="highlighter-rouge">PyRun_String</code>的函数签名:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PyObject*             // PyRun_String的返回值类型
+PyRun_String(         // 函数名
+  const char *str,    // 执行的Python代码
+  int start,          // 载入类型, 分别有: Py_eval_input, Py_file_input, Py_single_input
+  PyObject *globals,  // 全局对象
+  PyObject *locals    // 局部对象
+)
+</code></pre></div></div>
+
+<p>上面我们可以知道, <code class="highlighter-rouge">PyRun_String</code>和<code class="highlighter-rouge">PyRun_SimpleString</code>是相似的功能, 都是运行一段Python代码.</p>
+
+<p><code class="highlighter-rouge">start</code>参数是指执行的这段代码, 到底是怎么导入的, 这里分了三种模式:</p>
+
+<ul>
+  <li><a href="https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_eval_input">Py_eval_input</a>, 是执行隔离的表达式用的.</li>
+  <li><a href="https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_file_input">Py_file_input</a>, 是最常用的模式, 表示表达式</li>
+  <li><a href="https://docs.python.org/2/c-api/veryhigh.html?highlight=py_single_input#c.Py_single_input">Py_single_input</a>, 这种模式, 是表示输入的代码是从交互接口输入的.</li>
+</ul>
+
+<p><code class="highlighter-rouge">globals</code>参数是表示Python的<code class="highlighter-rouge">globals</code>对象</p>
+
+<p><code class="highlighter-rouge">locals</code>参数是表示Python的<code class="highlighter-rouge">locals</code>对象</p>
+
+<p>好了, 了解了<code class="highlighter-rouge">PyRun_String</code>函数的各个变量含义后, 我们就来写点代码吧.</p>
+
+<h2 id="代码解析">代码解析</h2>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// file: py.c
+
+#include &lt;python2.7/Python.h&gt;
+
+int main() {
+  // 这里声明了三个环境变量和一个返回值.
+  PyObject *pMainModule,   // __main__模块的指针对象, 等下会初始化为__main__模块.
+      *pGlobalDict,        // globals对象指针
+      *pLocalDict,         // locals对象指针
+      *pResult;            // 用来获取返回值
+
+  // 这是一段Python代码          
+  char *cmd = ""
+    "import math\n"
+    "x = 3\n"
+    "y = 2\n"
+    "result = math.pow(x, y)";
+
+  // 用来接受返回值
+  double result;
+
+  Py_Initialize();
+
+  // 初始化__main__模块
+  pMainModule = PyImport_AddModule("__main__");
+  // 在__main__模块中获取globals对象
+  pGlobalDict = PyModule_GetDict(pMainModule);
+  // 初始化一个空的locals对象
+  pLocalDict = PyDict_New();
+
+  // !! 这里是整个程序的核心, 就在这里执行了cmd的Python程序
+  PyRun_String(cmd, Py_file_input, pGlobalDict, pLocalDict);
+
+  // 获取locals对象上面的result变量
+  pResult = PyDict_GetItemString(pLocalDict, "result");
+  // 讲PyFloat类型转换成C语言的double类型
+  result = PyFloat_AsDouble(pResult);
+
+  // 释放引用计数
+  Py_DECREF(pResult);
+  Py_DECREF(pLocalDict);
+  Py_DECREF(pGlobalDict);
+
+  // 打印计算得出来的值
+  printf("result=%lf\n", result);
+
+  Py_Finalize();
+
+  return 0;
+}
+</code></pre></div></div>
+
+<p>编译一下看看结果?</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ gcc -lpython2.7 -o py py.c
+$ ./py
+result=9.000000
+</code></pre></div></div>
+
+<h2 id="总结点什么吧">总结点什么吧</h2>
+
+<p>好吧, 上面的注释应该写得够清楚了, 还有什么不明白的话, 就是我表达能力有问题了…</p>
+
+<p>实在不行就回去多看看文档吧.</p>
+
+<p>enjoy it~</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2015/08/07/call-python-from-c-II/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Fri, 07 Aug 2015 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>在C中调用Python程序(I)</title>
+                <link>http://localhost:4000/2015/08/07/call-python-from-c-I/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <h2 id="废话">废话</h2>
+
+<p>通常, 我们会在终端上启动Python程序.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ python -c 'print "Hello, World"'
+Hello, World
+$ python hello.py
+Hello, World
+</code></pre></div></div>
+
+<p>但是我们今天来介绍一下, 怎么在C语言中调用Python程序.</p>
+
+<p><del>我们当然不是在C中调用<code class="highlighter-rouge">system</code>这么low的方法啦</del></p>
+
+<h2 id="文档导读">文档导读</h2>
+
+<p>首先, 先把我们的<a href="https://docs.python.org/2/c-api/index.html">官方文档</a>祭出来. 让大家膜拜一下.</p>
+
+<p>我们先来个文档导读.</p>
+
+<p><a href="https://docs.python.org/2/c-api/intro.html">Introduction</a>是介绍Python的C语言API接口的. 大概有什么接口啦, 要怎么调用啦, 需要define什么头文件啦, etc.</p>
+
+<p><a href="https://docs.python.org/2/c-api/veryhigh.html">he Very High Level Layer</a>是我们今天的重头戏, 介绍Python的执行表达式API.</p>
+
+<p><a href="https://docs.python.org/2/c-api/concrete.html">Concrete Objects Layer</a>是介绍每种Python原生对象C API接口, 基本上就是怎么创建对象, 修改对象, 读取对象, etc.</p>
+
+<p>其他文档重要吗? 当然重要啊, 回去读10遍回来比看我这篇破文章靠谱多了.</p>
+
+<h2 id="当然我们是从最简单的开始">当然我们是从最简单的开始</h2>
+
+<p>我们先来看看这个介绍<a href="https://docs.python.org/2/c-api/intro.html#embedding-python">Embedding Python</a>.</p>
+
+<p>里面详细介绍了Python初始化环境的流程, 我们先看一个最简单的环境.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// file: py.c
+
+// 导入Python的头文件, 这里我采用的是Python2.7版本
+#include &lt;python2.7/Python.h&gt;
+
+int main() {
+  // 初始化Python环境
+  Py_Initialize();
+  // 完了
+  return 0;
+}
+</code></pre></div></div>
+
+<p>写完上面惊为天人的代码以后, 我们就来编译它.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ gcc -lpython2.7 -o py py.c
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">-lpython2.7</code>意思是告诉gcc编译器采用<code class="highlighter-rouge">python2.7</code>的代码库.</p>
+
+<p>注意: 在编译之前请安装相应平台的python开发库.</p>
+
+<p>例如: ubuntu就安装<code class="highlighter-rouge">python-dev</code>, centos就安装<code class="highlighter-rouge">python-devel</code>, osx貌似直接<code class="highlighter-rouge">brew install python</code>就可以了.</p>
+
+<p>编译完成后, 会生成一个<code class="highlighter-rouge">py</code>的可执行文件.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> $ ./py  // 当然什么都没有显示啊笨蛋!
+</code></pre></div></div>
+
+<h2 id="别bb了-快入正题">别bb了, 快入正题</h2>
+
+<p>我们上面的程序写了那么长, 然而并没有什么卵用.</p>
+
+<p>我们下面来点实际点的, 调用python的print来输出点什么东西.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// file: py.c
+
+// 导入Python的头文件, 这里我采用的是Python2.7版本
+#include &lt;python2.7/Python.h&gt;
+
+int main() {
+  // 初始化Python环境
+  Py_Initialize();
+  
+  // 执行Python代码, 调用Python的print
+  PyRun_SimpleString("print \"Hello, C! -- from Python\"");
+  
+  // 清理Python环境
+  Py_Finalize();
+  return 0;
+}
+</code></pre></div></div>
+
+<p>再编译后执行试试?</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ gcc -lpython2.7 -o py py.c
+$ ./py
+Hello, C! -- from Python
+</code></pre></div></div>
+
+<h2 id="bb完要总结点东西吧">bb完要总结点东西吧</h2>
+
+<p>现在我们已经能够在C里面通过Python API来创建Python运行环境和执行Python代码了.</p>
+
+<p>是不是如此的激动人心?</p>
+
+<p>但是还有一些问题我们是需要解决的, 例如, 我怎么获取Python的变量和返回值, 我怎么调用Python的函数, etc.</p>
+
+<p>那句话怎么说来着的?</p>
+
+<p>欲知后事如何, 请听下回分解!</p>
+
+<p>enjoy it~</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2015/08/07/call-python-from-c-I/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Fri, 07 Aug 2015 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>在Emacs上预览graphviz图</title>
+                <link>http://localhost:4000/2015/07/19/preview-graphviz-on-emacs/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p><a href="http://www.graphviz.org/">graphviz</a>是AT&amp;T发明的一个结构化图片描述语言.</p>
+
+<p>接下来就是介绍如何在Emacs上编辑Graphviz文件并且预览.</p>
+
+<h3 id="安装graphviz">安装Graphviz</h3>
+
+<p>安装Graphviz, 这里安装的是带GUI的, 不用Emacs预览的使用也能用Graphviz.app 预览.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>brew install Caskroom/cask/graphviz
+</code></pre></div></div>
+
+<h3 id="下载graphviz-dot-modeel">下载graphviz-dot-mode.el</h3>
+
+<p><a href="https://raw.githubusercontent.com/ppareit/graphviz-dot-mode/master/graphviz-dot-mode.el">graphviz-dot-mode.el</a>是Emacs的graphviz插件, 能够编译和预览graphviz图片.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cd ~/.emacs.d/  // 放置在Emacs配置目录下, 你可以放在别的地方, 下面的地址跟着修改就可以了.
+$ wget https://raw.githubusercontent.com/ppareit/graphviz-dot-mode/master/graphviz-dot-mode.el
+</code></pre></div></div>
+
+<h3 id="在initel中载入插件">在init.el中载入插件</h3>
+
+<p>打开<code class="highlighter-rouge">init.el</code>, 在最后载入<code class="highlighter-rouge">graphviz-dot-mode.el</code>插件.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat ~/.emacs.d/init.el
+
+...
+;; Graphviz Mode
+;; 如果之前保存插件地址更改了, 这里也需要作出相应的修改.
+(load-file "~/.emacs.d/graphviz-dot-mode.el")
+</code></pre></div></div>
+
+<p>添加后, 每次启动Emacs都会自动载入<code class="highlighter-rouge">graphviz-dot-mode.el</code>这个插件了.</p>
+
+<p>如果不想重启Emacs的话, 可以在句末按下, <code class="highlighter-rouge">&lt;C-x&gt; &lt;C-e&gt;</code> 这样就会动态载入<code class="highlighter-rouge">graphviz-dot-mode.el</code>插件了.</p>
+
+<h3 id="品尝成功的果实">品尝成功的果实</h3>
+
+<p>好了, 现在万事俱备, 只欠<code class="highlighter-rouge">graphviz</code>了.</p>
+
+<p>我们随便编辑个<code class="highlighter-rouge">graphviz</code>文件.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat /tmp/test.dot
+
+digraph structs {
+    node [shape=record];
+    struct1 [label="&lt;f0&gt; left|&lt;f1&gt; middle|&lt;f2&gt; right"];
+    struct2 [label="&lt;f0&gt; one|&lt;f2&gt; two"];
+    struct3 [label="hello\nworld |{ b |{ c|&lt;here&gt; d|e}| f}| g | h"];
+    struct1: f1 -&gt; struct2:f0;
+    struct1: f2 -&gt; struct3:here;
+}
+</code></pre></div></div>
+
+<p>用Emacs打开, 然后按下 <code class="highlighter-rouge">&lt;C-c c&gt;</code>, 这样就成功编译<code class="highlighter-rouge">test.dot</code>文件.</p>
+
+<p>之后只需要按下 <code class="highlighter-rouge">&lt;C-c p&gt;</code>, 就能够预览<code class="highlighter-rouge">test.dot</code>编译成png的文件.</p>
+
+<p>enjoy it~</p>
+
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2015/07/19/preview-graphviz-on-emacs/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sun, 19 Jul 2015 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>Announcing Version 2.0</title>
+                <link>http://localhost:4000/jekyll/pixyll/2015/07/11/announcing-pixyll-version-2/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>In an effort to make Pixyll easier to customize and more aesthetically pleasing, we’ve released version <code class="highlighter-rouge">2.0</code>.</p>
+
+<p>Pixyll now features:</p>
+
+<ul>
+  <li>Line anchors in code blocks and new syntax highlighting</li>
+  <li>A customizable variables file</li>
+  <li>Modular, and lighter weight CSS</li>
+  <li>No more <code class="highlighter-rouge">max-width</code> media queries</li>
+</ul>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/jekyll/pixyll/2015/07/11/announcing-pixyll-version-2/</guid>
+                <description>
+                    
+                    Now, Pixyll is lighter weight and more customizable than before.
+                    
+                </description>
+                <pubDate>Sat, 11 Jul 2015 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>一次无意识的DNS劫持</title>
+                <link>http://localhost:4000/2014/11/07/dns-hijack-with-dnsmasq/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>0x00 前言</p>
+
+<p>发现DNS劫持的缘由在于部署Dnsmasq的过程中, 同网段内的Windows主机的DNS地址被改变成Dnsmasq服务所在的主机IP地址. 所有就有了这篇分析报告.</p>
+
+<p>0x01 现象</p>
+
+<p>在某个子网下部署dnsmasq服务, 过了一会儿, 其他用Windows的同事就大喊: XXX, 为什么我不能上网!</p>
+
+<p>经过一轮排查, 发现是使用DHCP获取IP地址的Windows用户, DNS地址被改成了部署Dnsmasq服务的服务器IP地址.</p>
+
+<p>以为是Dnsmasq的BUG(其实还真算Dnsmasq的BUG). 那么就添加了<code class="highlighter-rouge">--port=0</code>的启动参数, 表示不提供DNS服务, 然后再添加<code class="highlighter-rouge">--dhcp-option=6,114.114.114.114</code>指定DNS服务器IP地址(离真相已经很近了).</p>
+
+<p>但是因为公司默认的DHCP并非<code class="highlighter-rouge">114.114.114.114</code>, 而是某个不知名的DNS服务器地址. 所以又有人大喊为什么我的DNS变成了<code class="highlighter-rouge">114.114.114.114</code>.</p>
+
+<p>到现在我才意识到, 问题的严重性.</p>
+
+<p>我成功地将DNS劫持了.</p>
+
+<p>别问我劫持了DNS能够做什么.</p>
+
+<p>0x02 分析</p>
+
+<p>发生劫持事件后, 我添加Dnsmasq启动参数<code class="highlighter-rouge">--no-daemon</code>, 表示调试模式.</p>
+
+<p>然后启动通过<code class="highlighter-rouge">tcpdump -n -i eth0 -vvv port 68</code>来捕捉DHCP请求.</p>
+
+<p>经过观察, 发现Windows DHCP 客户端会定时广播<code class="highlighter-rouge">DHCPINFORM</code>, 而Dnsmasq会响应并非在<code class="highlighter-rouge">dhcp-hostsfile</code>列表里面的主机. 响应的结果就是发送<code class="highlighter-rouge">DHCPACK</code>. 而<code class="highlighter-rouge">DHCPACK</code>上又带上了<code class="highlighter-rouge">Domain Name Server Option</code>字段.</p>
+
+<p>所以, Windows DHCP Client会将Dnsmasq返回的DHCPACK包中带上的DNS地址设置为自己的DNS地址.</p>
+
+<p>0x03 结论</p>
+
+<p>你还敢用Windows的DHCP吗?</p>
+
+<p>当你无法保证所在网络绝对安全的情况下, 请手动设置DNS地址.</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2014/11/07/dns-hijack-with-dnsmasq/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Fri, 07 Nov 2014 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>SQLAlchemy多对多关系使用方法</title>
+                <link>http://localhost:4000/2014/08/21/sqlalchemy-many-to-many-relationship/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>SQLAlchemy是一个Python的数据库ORM框架.</p>
+
+<p>多对多数据模型是比较常用的数据关系.</p>
+
+<p>下面采用文章(<code class="highlighter-rouge">Page</code>)和标签(<code class="highlighter-rouge">Tag</code>)的关系来作为介绍范例.</p>
+
+<ol>
+  <li>一篇文章可以通过多个标签来描述概要信息.</li>
+  <li>一个标签可以对应多篇文章.</li>
+</ol>
+
+<p>首先我们先创建两个Sqlalchemy的模型类:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>class Page(Base):
+    __tablename__ = 'page'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    
+class Tag(Base):
+    __tablename__ = 'tag'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+</code></pre></div></div>
+
+<p>这里创建了两个模型, 分别是<code class="highlighter-rouge">Page</code>和<code class="highlighter-rouge">Tag</code>.</p>
+
+<p>添加一个需求: 我们能够在<code class="highlighter-rouge">Page</code>对象中直接获取关联的<code class="highlighter-rouge">Tag</code>列表</p>
+
+<p>那么我们就需要在<code class="highlighter-rouge">Page</code>模型中添加:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>class Page(Base):
+...
+    tags = relationship('Tag', secondary=association_table)
+...
+</code></pre></div></div>
+
+<p>这里就通过指定<code class="highlighter-rouge">relationship</code>来指定<code class="highlighter-rouge">tags</code>属性是指向<code class="highlighter-rouge">Tag</code>对象的, 关联规则是通过<code class="highlighter-rouge">association_table</code>的关联关系.</p>
+
+<p>然后就是需要创建关联规则表<code class="highlighter-rouge">association_table</code>.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>association_table = Table(
+    'association', Base.metadata,
+    Column('page_id', Integer, ForeignKey('page.id')),
+    Column('tag_id', Integer, ForeignKey('tag.id'))
+)
+</code></pre></div></div>
+
+<p>这里就创建一个<code class="highlighter-rouge">Page-Tag</code>关联表, 通过将<code class="highlighter-rouge">page_id</code>作为<code class="highlighter-rouge">Page</code>对象的外键. 同理<code class="highlighter-rouge">tag_id</code>作为<code class="highlighter-rouge">Tag</code>对象的外键.</p>
+
+<p>至此, 我们已经完成多对多模型的创建.</p>
+
+<p>接下来就是多对多模型的CRUD了.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>page = Page(name='Python API Page')
+api_tag = Tag(name='api')
+python_tag = Tag(name='python')
+
+# append tag to page
+page.tags.append(api_tag)
+page.tags.append(python_tag)
+
+# read tag from page
+print [tag.name for tag in page.tags]
+
+# remove tag from page
+page.tags.remove(python_tag)
+</code></pre></div></div>
+
+<p>以上就是Sqlalchemy关于多对多模型操作方式~</p>
+
+<p>下面贴上完整的代码:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import sqlalchemy as sqla
+import sqlalchemy.orm as sqlorm
+from sqlalchemy.ext.declarative import declarative_base as sqla_declarative_base
+
+Base = sqla_declarative_base()
+engine = sqla.create_engine('sqlite:///test.db', echo=True)
+
+association_table = sqla.Table(
+    'association', Base.metadata,
+    sqla.Column('page_id', sqla.Integer, sqla.ForeignKey('page.id')),
+    sqla.Column('tag_id', sqla.Integer, sqla.ForeignKey('tag.id'))
+)
+
+class Page(Base):
+    __tablename__ = 'page'
+    id = sqla.Column(sqla.Integer, primary_key=True)
+    name = sqla.Column(sqla.String)
+    tags = sqlorm.relationship('Tag', secondary=association_table)
+
+class Tag(Base):
+    __tablename__ = 'tag'
+    id = sqla.Column(sqla.Integer, primary_key=True)
+    name = sqla.Column(sqla.String)
+    pages = sqlorm.relationship('Page', secondary=association_table)
+
+Base.metadata.bind = engine
+Base.metadata.create_all()
+
+Session = sqlorm.scoped_session(sqlorm.sessionmaker(bind=engine))
+
+def save_page():
+    sess = Session()
+    try:
+        page = Page(name='Python API Page')
+        sess.add(page)
+
+        sess.flush()
+        sess.commit()
+    finally:
+        sess.close()
+
+def add_tag():
+   sess = Session()
+   try:
+       python_tag = Tag(name='python')
+       api_tag = Tag(name='api')
+       sess.add(python_tag)
+       sess.add(api_tag)
+       page = sess.query(Page).first()
+       page.tags.append(python_tag)
+       page.tags.append(api_tag)
+
+       sess.flush()
+       sess.commit()
+   finally:
+       sess.close()
+
+def remove_tag():
+    sess = Session()
+    try:
+        page = sess.query(Page).first()
+        api_tag = sess.query(Tag).filter(Tag.name=='api').first()
+        page.tags.remove(api_tag)
+        sess.flush()
+        sess.commit()
+    finally:
+        sess.close()
+
+if __name__ == '__main__':
+    save_page()
+    add_tag()
+    remove_tag()
+</code></pre></div></div>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2014/08/21/sqlalchemy-many-to-many-relationship/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Thu, 21 Aug 2014 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>老板, 要挑个号码么?</title>
+                <link>http://localhost:4000/2014/07/08/choose-your-favorite-number-from-alibaba/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>0x00</p>
+
+<p>注意: 本文仅仅探讨技术, 读者任何行为与本文无关</p>
+
+<p>注意: 本文探讨技术已经通过正规渠道报告</p>
+
+<p>0x01</p>
+
+<p>本文讲的是如何在阿里移动中随意挑选喜好的号码</p>
+
+<p>0x02</p>
+
+<p>挑选的几个条件:</p>
+
+<ol>
+  <li>号码必须存在阿里移动后台</li>
+  <li>号码必须没有被别的用户购买</li>
+</ol>
+
+<p>0x03</p>
+
+<p>改dom大法</p>
+
+<p>0x04</p>
+
+<p>enjoy yourself.</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2014/07/08/choose-your-favorite-number-from-alibaba/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Tue, 08 Jul 2014 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>Google IP Explorer使用教程</title>
+                <link>http://localhost:4000/2014/07/03/google-ip-explorer-tutorial/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <h2 id="教程">教程</h2>
+
+<p><a href="https://github.com/PeerXu/google-ip-explorer">Google IP Explorer</a>是一个查找Google IP列表的工具. 可以单独使用, 也可以配合Goagent使用.</p>
+
+<p>如果已经安装了gevent库, 那么可以大大地增加查找速度.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ git clone https://github.com/PeerXu/google-ip-explorer.git
+$ cd google-ip-explorer
+$ python google.py input.txt
+</code></pre></div></div>
+
+<p>Google IP列表就在output.txt文件中.</p>
+
+<p>如果你需要直接使用, 那么就挑一个IP直接在浏览器里面就能使用了.</p>
+
+<p>如果你需要和Goagent配合使用的话, 那么就将<code class="highlighter-rouge">proxy.ini</code> 下的<code class="highlighter-rouge">[iplist]</code> 下的<code class="highlighter-rouge">google_cn</code> 和 <code class="highlighter-rouge">google_hk</code> 替换为output.txt的内容就可以了~</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2014/07/03/google-ip-explorer-tutorial/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Thu, 03 Jul 2014 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>在浏览器中调用RESTful API Service</title>
+                <link>http://localhost:4000/2014/06/12/send-request-to-restful-api-service-from-browser/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p><strong>以下内容请自备梯子</strong></p>
+
+<p><a href="http://zh.wikipedia.org/wiki/REST">RESTful</a> API Service是以REST风格提供的API Service.</p>
+
+<p>通常情况下会采用到HTTP的GET, POST, DELETE, PUT等方法.</p>
+
+<p>因为浏览器的正常访问手段(直接通过连接访问或Form提交), 无法向Service发起DELETE, PUT等方法的请求.</p>
+
+<p>所以只能通过<a href="https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest"><code class="highlighter-rouge">XMLHttpRequest</code></a>对象来提供完整交互操作.</p>
+
+<p>那么最后的问题就回归到, 如果使用<code class="highlighter-rouge">XMLHttpRequest</code>对象上了.</p>
+
+<p>参考上面给出的<a href="https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest"><code class="highlighter-rouge">XMLHttpRequest</code></a>的链接, 我们学习到使用方法.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// javascript
+var xhr = new XMLHttpRequest();
+xhr.open("DELETE", "http://localhost:8888/messages/1");
+xhr.send();
+</code></pre></div></div>
+
+<p>上面就是<code class="highlighter-rouge">XMLHttpRequest</code>的简单使用方法. 当然, 这里只是发送了, 并完成后续的处理. 我们现在只关心发送.</p>
+
+<p>那么在这里也奉上Server端的源代码.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#! /usr/bin/env python2.7</span>
+<span class="c"># filename: app.py</span>
+
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">make_response</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+
+<span class="nd">@app.route</span><span class="p">(</span><span class="s">'/messages/&lt;int:msg_id&gt;'</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'DELETE'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">delete_message</span><span class="p">(</span><span class="n">msg_id</span><span class="p">):</span>
+  <span class="k">return</span> <span class="s">'delete message #</span><span class="si">%</span><span class="s">s'</span> <span class="o">%</span> <span class="n">msg_id</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8888</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>上面就是服务端的代码.</p>
+
+<p>但是通过浏览器console发起请求的时候, 我们可以观察到一下错误提示:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>OPTIONS http://localhost:8888/messages/1 No 'Access-Control-Allow-Origin' header is present on the requested resource. Origin 'https://developer.mozilla.org' is therefore not allowed access.
+XMLHttpRequest cannot load http://localhost:8888/messages/1. No 'Access-Control-Allow-Origin' header is present on the requested resource. Origin 'https://developer.mozilla.org' is therefore not allowed access.
+</code></pre></div></div>
+
+<p>这两行错误提示表明, 我们需要在服务端上, 在返回<code class="highlighter-rouge">Response</code>对象时候, 在<code class="highlighter-rouge">Response Header</code>上提供<code class="highlighter-rouge">Access-Control-Allow-Origin</code>字段.</p>
+
+<p>并且通过Chrome Developer Tools的Network中观察到, <code class="highlighter-rouge">XMLHttpRequest</code>会发送HTTP的<code class="highlighter-rouge">OPTIONS</code> Request到服务端上. 通过这次Request的Response的<code class="highlighter-rouge">Access-Control-Allow-Origin</code>和<code class="highlighter-rouge">Access-Control-Allow-Methods</code>这两个字段来决定, xhr是否有对该域发起请求的权限.</p>
+
+<p>其中, <code class="highlighter-rouge">Access-Control-Allow-Origin</code>字段代表的是, 是否允许本域向API Service发起请求. <code class="highlighter-rouge">*</code>代表所有域都能发起请求.</p>
+
+<p>而<code class="highlighter-rouge">Access-Control-Allow-Methods</code>则代表的允许请求的方法有那些.</p>
+
+<p>那么这时我们就<strong>将就地</strong>添加<code class="highlighter-rouge">Access-Control-Allow-Origin</code>字段为<code class="highlighter-rouge">*</code> **(注意: 请在生产环境中谨慎添加允许跨域的主机), 添加<code class="highlighter-rouge">Access-Control-Allow-Methods</code>字段为<code class="highlighter-rouge">POST,DELETE,PUT,GET</code>.</p>
+
+<p>再次修改服务端代码:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#! /usr/bin/env python2.7</span>
+<span class="c"># filename: app.py</span>
+
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">make_response</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+
+<span class="nd">@app.route</span><span class="p">(</span><span class="s">'/messages/&lt;int:msg_id&gt;'</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'OPTIONS'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">options_message</span><span class="p">(</span><span class="n">msg_id</span><span class="p">):</span>
+  <span class="n">resp</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="s">''</span><span class="p">)</span>
+  <span class="n">resp</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">extend</span><span class="p">({</span>
+      <span class="s">'Access-Control-Allow-Origin'</span><span class="p">:</span> <span class="s">'*'</span><span class="p">,</span>
+      <span class="s">'Access-Control-Allow-Methods'</span><span class="p">:</span> <span class="s">'POST,DELETE,PUT,GET'</span>
+  <span class="p">})</span>
+  <span class="k">return</span> <span class="n">resp</span>
+
+<span class="nd">@app.route</span><span class="p">(</span><span class="s">'/messages/&lt;int:msg_id&gt;'</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'DELETE'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">delete_message</span><span class="p">(</span><span class="n">msg_id</span><span class="p">):</span>
+  <span class="n">resp</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="s">'delete message #</span><span class="si">%</span><span class="s">s'</span> <span class="o">%</span> <span class="n">msg_id</span><span class="p">)</span>
+  <span class="n">resp</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">'Access-Control-Allow-Origin'</span><span class="p">]</span> <span class="o">=</span> <span class="s">'*'</span>
+  <span class="k">return</span> <span class="n">resp</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8888</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>在<code class="highlighter-rouge">OPTIONS</code>处理函数中, 添加Response Header的<code class="highlighter-rouge">Access-Control-Allow-Origin</code>和<code class="highlighter-rouge">Access-Control-Allow-Methods</code>字段. 来声明权限和允许的方法.</p>
+
+<p>在<code class="highlighter-rouge">DELETE</code>处理函数中, 添加<code class="highlighter-rouge">Access-Control-Allow-Origin</code>字段来声明权限.</p>
+
+<p>that’s all.</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2014/06/12/send-request-to-restful-api-service-from-browser/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Thu, 12 Jun 2014 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>Hello, Pixyll</title>
+                <link>http://localhost:4000/jekyll/pixyll/2014/06/11/welcome-to-pixyll/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>Hello.</p>
+
+<p>Pixyll is a simple, beautiful theme for Jekyll that emphasizes content rather than aesthetic fluff. It’s mobile <em>first</em>, fluidly responsive, and delightfully lightweight.</p>
+
+<p>It’s pretty minimal, but leverages large type and drastic contrast to make a statement, on all devices.</p>
+
+<blockquote>
+  <p>
+    Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away.
+  </p>
+  <footer><cite title="Antoine de Saint-Exupéry">Antoine de Saint-Exupéry</cite></footer>
+</blockquote>
+
+<h2 id="where-is-it">Where is it?</h2>
+
+<p>Checkout the <a href="https://github.com/johnotander/pixyll">Github repository</a> to download it, request a feature, or report a bug.</p>
+
+<p>It’s free, and open source (<a href="http://opensource.org/licenses/MIT">MIT</a>).</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/jekyll/pixyll/2014/06/11/welcome-to-pixyll/</guid>
+                <description>
+                    
+                    Pixyll is a simple, beautiful theme for Jekyll that emphasizes content rather than aesthetic fluff.
+                    
+                </description>
+                <pubDate>Wed, 11 Jun 2014 23:31:19 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>Pixyll in Action</title>
+                <link>http://localhost:4000/jekyll/pixyll/2014/06/10/see-pixyll-in-action/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>There is a significant amount of subtle, yet precisely calibrated, styling to ensure
+that your content is emphasized while still looking aesthetically pleasing.</p>
+
+<p>All links are easy to <a href="#">locate and discern</a>, yet don’t detract from the <a href="#">harmony
+of a paragraph</a>. The <em>same</em> goes for italics and <strong>bold</strong> elements. Even the the strikeout
+works if <del>for some reason you need to update your post</del>. For consistency’s sake,
+<ins>The same goes for insertions</ins>, of course.</p>
+
+<h3 id="code-with-syntax-highlighting">Code, with syntax highlighting</h3>
+
+<p>Here’s an example of some ruby code with line anchors.</p>
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="c1"># The most awesome of classes</span>
+<span class="k">class</span> <span class="nc">Awesome</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Base</span>
+  <span class="kp">include</span> <span class="no">EvenMoreAwesome</span>
+
+  <span class="n">validates_presence_of</span> <span class="ss">:something</span>
+  <span class="n">validates</span> <span class="ss">:email</span><span class="p">,</span> <span class="ss">email_format: </span><span class="kp">true</span>
+
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="nb">name</span> <span class="o">=</span> <span class="kp">nil</span><span class="p">)</span>
+    <span class="nb">self</span><span class="p">.</span><span class="nf">email</span> <span class="o">=</span> <span class="n">email</span>
+    <span class="nb">self</span><span class="p">.</span><span class="nf">name</span> <span class="o">=</span> <span class="nb">name</span>
+    <span class="nb">self</span><span class="p">.</span><span class="nf">favorite_number</span> <span class="o">=</span> <span class="mi">12</span>
+    <span class="nb">puts</span> <span class="s1">'created awesomeness'</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">email_format</span>
+    <span class="n">email</span> <span class="o">=~</span> <span class="sr">/\S+@\S+\.\S+/</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre></figure>
+
+<p>Here’s some CSS:</p>
+
+<figure class="highlight"><pre><code class="language-css" data-lang="css"><span class="nc">.foobar</span> <span class="p">{</span>
+  <span class="c">/* Named colors rule */</span>
+  <span class="nl">color</span><span class="p">:</span> <span class="no">tomato</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>Here’s some JavaScript:</p>
+
+<figure class="highlight"><pre><code class="language-js" data-lang="js"><span class="kd">var</span> <span class="nx">isPresent</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'is-present'</span><span class="p">)</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">doStuff</span><span class="p">(</span><span class="nx">things</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">isPresent</span><span class="p">(</span><span class="nx">things</span><span class="p">))</span> <span class="p">{</span>
+    <span class="nx">doOtherStuff</span><span class="p">(</span><span class="nx">things</span><span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>Here’s some HTML:</p>
+
+<figure class="highlight"><pre><code class="language-html" data-lang="html"><span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"m0 p0 bg-blue white"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;h3</span> <span class="na">class=</span><span class="s">"h1"</span><span class="nt">&gt;</span>Hello, world!<span class="nt">&lt;/h3&gt;</span>
+<span class="nt">&lt;/div&gt;</span></code></pre></figure>
+
+<h1 id="headings">Headings!</h1>
+
+<p>They’re responsive, and well-proportioned (in <code class="highlighter-rouge">padding</code>, <code class="highlighter-rouge">line-height</code>, <code class="highlighter-rouge">margin</code>, and <code class="highlighter-rouge">font-size</code>).
+They also heavily rely on the awesome utility, <a href="http://www.basscss.com/">BASSCSS</a>.</p>
+
+<h5 id="they-draw-the-perfect-amount-of-attention">They draw the perfect amount of attention</h5>
+
+<p>This allows your content to have the proper informational and contextual hierarchy. Yay.</p>
+
+<h3 id="there-are-lists-too">There are lists, too</h3>
+
+<ul>
+  <li>Apples</li>
+  <li>Oranges</li>
+  <li>Potatoes</li>
+  <li>Milk</li>
+</ul>
+
+<ol>
+  <li>Mow the lawn</li>
+  <li>Feed the dog</li>
+  <li>Dance</li>
+</ol>
+
+<h3 id="images-look-great-too">Images look great, too</h3>
+
+<p><img src="https://cloud.githubusercontent.com/assets/1424573/3378137/abac6d7c-fbe6-11e3-8e09-55745b6a8176.png" alt="desk" /></p>
+
+<p><em><img src="https://cloud.githubusercontent.com/assets/1424573/3378137/abac6d7c-fbe6-11e3-8e09-55745b6a8176.png" alt="desk" /></em></p>
+
+<h3 id="there-are-also-pretty-colors">There are also pretty colors</h3>
+
+<p>Also the result of <a href="http://www.basscss.com/">BASSCSS</a>, you can <span class="bg-dark-gray white">highlight</span> certain components
+of a <span class="red">post</span> <span class="mid-gray">with</span> <span class="green">CSS</span> <span class="orange">classes</span>.</p>
+
+<p>I don’t recommend using blue, though. It looks like a <span class="blue">link</span>.</p>
+
+<h3 id="footnotes">Footnotes!</h3>
+
+<p>Markdown footnotes are supported, and they look great! Simply put e.g. <code class="highlighter-rouge">[^1]</code> where you want the footnote to appear,<sup id="fnref:1"><a href="#fn:1" class="footnote">1</a></sup> and then add
+the reference at the end of your markdown.</p>
+
+<h3 id="stylish-blockquotes-included">Stylish blockquotes included</h3>
+
+<p>You can use the markdown quote syntax, <code class="highlighter-rouge">&gt;</code> for simple quotes.</p>
+
+<blockquote>
+  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse quis porta mauris.</p>
+</blockquote>
+
+<p>However, you need to inject html if you’d like a citation footer. I will be working on a way to
+hopefully sidestep this inconvenience.</p>
+
+<blockquote>
+  <p>
+    Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away.
+  </p>
+  <footer><cite title="Antoine de Saint-Exupéry">Antoine de Saint-Exupéry</cite></footer>
+</blockquote>
+
+<h3 id="theres-more-being-added-all-the-time">There’s more being added all the time</h3>
+
+<p>Checkout the <a href="https://github.com/johnotander/pixyll">Github repository</a> to request,
+or add, features.</p>
+
+<p>Happy writing.</p>
+
+<hr />
+
+<div class="footnotes">
+  <ol>
+    <li id="fn:1">
+      <p>Important information that may distract from the main text can go in footnotes. <a href="#fnref:1" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/jekyll/pixyll/2014/06/10/see-pixyll-in-action/</guid>
+                <description>
+                    
+                    See what the different elements looks like. Your markdown has never looked better. I promise.
+                    
+                </description>
+                <pubDate>Tue, 10 Jun 2014 20:31:19 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>So, What is Jekyll?</title>
+                <link>http://localhost:4000/jekyll/pixyll/2014/06/09/so-what-is-jekyll/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>Jekyll is a tool for transforming your plain text into static websites and 
+blogs. It is simple, static, and blog-aware. Jekyll uses the 
+<a href="http://docs.shopify.com/themes/liquid-basics">Liquid</a> templating
+language and has builtin <a href="http://daringfireball.net/projects/markdown/">Markdown</a>
+and <a href="http://en.wikipedia.org/wiki/Textile_(markup_language)">Textile</a> support.</p>
+
+<p>It also ties in nicely to <a href="https://pages.github.com/">Github Pages</a>.</p>
+
+<p>Learn more about Jekyll on their <a href="http://jekyllrb.com/">website</a>.</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/jekyll/pixyll/2014/06/09/so-what-is-jekyll/</guid>
+                <description>
+                    
+                    Transform your plain text into static websites and blogs. Simple, static, and blog-aware.
+                    
+                </description>
+                <pubDate>Mon, 09 Jun 2014 20:32:18 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>采用Flask-Restful插件返回Javascript脚本的两种方法</title>
+                <link>http://localhost:4000/2014/06/09/response-javascript-with-flask-restful-api/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p><a href="https://github.com/mitsuhiko/flask">Flask</a> 是Python的一个轻量级的Web框架.</p>
+
+<p><a href="https://github.com/twilio/flask-restful">Flask-Restful</a> 是将Flask应用构建为Restful API的一个插件.</p>
+
+<p>一个Flask-Restful插件的demo:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat app.py
+#! /usr/bin/env python2.7
+# filename: app.py
+
+from flask import Flask
+from flask.ext.restful import Api, Resource
+
+app = Flask(__name__)
+api = Api(app)
+
+class User(Resource):
+  def get(self, user_id):
+    return {'user_id': user_id}
+
+api.add_resource(User, '/users/&lt;int:user_id&gt;')
+
+if __name__ == '__main__':
+  app.run(port=8888, debug=True)
+
+$ python app.py
+ * Running on http://127.0.0.1:8888/
+ * Restarting with reloader
+</code></pre></div></div>
+
+<p>这里我们可以看见Flask Demo已经成功运行.</p>
+
+<p>我们可以通过<code class="highlighter-rouge">curl</code>这个工具来进行简单测试.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ curl -v http://localhost:8888/users/1
+* Adding handle: conn: 0x22f5a40
+* Adding handle: send: 0
+* Adding handle: recv: 0
+* Curl_addHandleToPipeline: length: 1
+* - Conn 0 (0x22f5a40) send_pipe: 1, recv_pipe: 0
+* About to connect() to localhost port 8888 (#0)
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 8888 (#0)
+&gt; GET /users/1 HTTP/1.1
+&gt; User-Agent: curl/7.32.0
+&gt; Host: localhost:8888
+&gt; Accept: */*
+&gt;
+* HTTP 1.0, assume close after body
+&lt; HTTP/1.0 200 OK
+&lt; Content-Type: application/json
+&lt; Content-Length: 21
+&lt; Server: Werkzeug/0.9.4 Python/2.7.5+
+&lt; Date: Mon, 09 Jun 2014 15:25:42 GMT
+&lt;
+{
+    "user_id": 1
+}
+* Closing connection 0
+</code></pre></div></div>
+
+<p>curl的Response部分, 包含了一些信息.</p>
+
+<p>其中Content-Type字段表示的是, 返回的内容是json格式的.</p>
+
+<p>如果我们需要返回的值是javascript脚本的话, 那么我们就需要对demo进行一些改造.</p>
+
+<p>有两种办法:</p>
+
+<h3 id="1-通过flask的make_response函数">1. 通过Flask的make_response函数</h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat app.py
+#! /usr/bin/env python2.7
+# filename: app.py
+
+import simplejson as json
+from flask import Flask, make_response
+from flask.ext.restful import Api, Resource
+
+app = Flask(__name__)
+api = Api(app)
+
+class User(Resource):
+  def get(self, user_id):
+    user = {'user_id': user_id}
+    data = json.dumps(user)
+    response = make_response(data)
+    response.headers.extend({
+      'Content-Type': 'application/javascript'
+    })
+    return response
+
+api.add_resource(User, '/users/&lt;int:user_id&gt;')
+
+if __name__ == '__main__':
+  app.run(port=8888, debug=True)
+</code></pre></div></div>
+
+<p>添加Content-Type字段到response的headers中, 可以将返回的内容类型设置为javascript.</p>
+
+<h3 id="2-通过request-headers限制response类型">2. 通过Request Headers限制Response类型</h3>
+
+<p>HTTP协议中规定, 在Request Header中指定Accept字段, 可以指定客户端接受的Response类型.</p>
+
+<p>例如在curl中指定Accept字段:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ curl -H 'Accept: application/javascript' http://localhost:8888/users/1
+</code></pre></div></div>
+
+<p>但是在Flask-Restful插件中, 貌似是不支持javascript作为返回值类型.</p>
+
+<p>所以我们需要做一些patch.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#! /usr/bin/env python2.7</span>
+<span class="c"># filename: app.py</span>
+
+<span class="kn">import</span> <span class="nn">simplejson</span> <span class="k">as</span> <span class="n">json</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">make_response</span>
+<span class="kn">from</span> <span class="nn">flask.ext.restful</span> <span class="kn">import</span> <span class="n">Api</span><span class="p">,</span> <span class="n">Resource</span>
+
+<span class="c"># monkey patch: application/javascript mimetype</span>
+
+<span class="kn">from</span> <span class="nn">flask.ext</span> <span class="kn">import</span> <span class="n">restful</span>
+<span class="k">def</span> <span class="nf">output_javascript</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+  <span class="n">response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span>
+  <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">headers</span> <span class="ow">or</span> <span class="p">{})</span>
+  <span class="k">return</span> <span class="n">response</span>
+
+<span class="n">restful</span><span class="o">.</span><span class="n">DEFAULT_REPRESENTATIONS</span><span class="p">[</span><span class="s">'application/javascript'</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_javascript</span>
+
+<span class="c"># end monkey patch</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+<span class="n">api</span> <span class="o">=</span> <span class="n">Api</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">User</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s">'user_id'</span><span class="p">:</span> <span class="n">user_id</span><span class="p">}</span>
+
+<span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="s">'/users/&lt;int:user_id&gt;'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>这种方式显得更加优雅.</p>
+
+<p>但是需要在发起Request的时候设置Request Header的<code class="highlighter-rouge">Accept</code>字段为<code class="highlighter-rouge">application/javascript</code>.</p>
+
+<p>the end.</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2014/06/09/response-javascript-with-flask-restful-api/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Mon, 09 Jun 2014 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>Pixyll has Pagination</title>
+                <link>http://localhost:4000/jekyll/pixyll/2014/06/08/pixyll-has-pagination/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>This is an empty post to illustrate the pagination component with Pixyll.</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/jekyll/pixyll/2014/06/08/pixyll-has-pagination/</guid>
+                <description>
+                    
+                    This is an empty post to illustrate the pagination component with Pixyll.
+                    
+                </description>
+                <pubDate>Sun, 08 Jun 2014 19:21:29 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>从主机复制文件到Docker的几种方法</title>
+                <link>http://localhost:4000/2014/05/23/copy-file-from-host-to-docker/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p><a href="https://www.docker.io">Docker</a>是个Linux Container管理软件.</p>
+
+<p>今天我们来讲解一下从主机复制文件到Docker的几种方法.</p>
+
+<p>在分享之前, 我们看看Docker社区对这个<a href="https://github.com/dotcloud/docker/issues/905">问题</a>的需求是有多么强(ju)烈(jin).</p>
+
+<p>下面开始今天高(tu)大(yuan)上(fei)的分享.</p>
+
+<h3 id="1-通过build-docker-image添加文件">1. 通过Build Docker Image添加文件</h3>
+
+<p>Docker Image是通过Dockerfile来创建的. 具体的创建过程可以参考<a href="https://www.docker.io/learn/dockerfile/">这里</a>.</p>
+
+<p>我们可以在编写Dockerfile的时候, 将需要的文件通过 <code class="highlighter-rouge">ADD</code> 关键字添加文件到Docker Image里面.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>FROM 3scale/openresty
+
+## add your supervisor openresty config
+ADD openresty.conf /etc/supervisor/conf.d/
+
+# Add your app
+ADD . /var/www
+
+CMD ["supervisor"]
+</code></pre></div></div>
+
+<p>引用自 <a href="https://index.docker.io/u/3scale/openresty/">3scale/openresty</a></p>
+
+<p>这个Dockerfile中的<code class="highlighter-rouge">ADD</code> 关键字是将本机添加到Docker Image中的<code class="highlighter-rouge">/var/www</code> 文件夹中.</p>
+
+<h3 id="2-通过docker-run命令的-vvolume参数">2. 通过docker run命令的-v/–volume参数</h3>
+
+<p>假设我们需要将本机的/data 目录分享到Docker的/mnt 目录下, 我们可以通过这样的命令:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ touch /data/bilibala
+$ docker run -v /data:/mnt -i -t ubuntu bash
+root@c039a83c35d0:/# ls /mnt
+bilibala
+</code></pre></div></div>
+
+<p>这个命令可以在启动container中绑定文件夹.</p>
+
+<h3 id="3-通过api绑定目录">3. 通过API绑定目录</h3>
+
+<p>其实这个方法本质上跟2是一样的, 但是唯一不同的就是, API将<code class="highlighter-rouge">docker run</code> 这个命令分成两步了, 分别是: <code class="highlighter-rouge">create_container</code> 和 <code class="highlighter-rouge">start</code>
+在<code class="highlighter-rouge">create_container</code> 中, 通过<code class="highlighter-rouge">volumes</code> 参数定义需要挂载的目录.
+在<code class="highlighter-rouge">start</code> 中, <code class="highlighter-rouge">binds</code> 参数绑定.</p>
+
+<p>下面是一个简单的example:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python2.7</span>
+<span class="kn">import</span> <span class="nn">docker</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">docker</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+
+<span class="n">container</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">create_container</span><span class="p">(</span><span class="s">'ubunt'</span><span class="p">,</span>
+                               <span class="n">command</span><span class="o">=</span><span class="s">'bash'</span><span class="p">,</span> <span class="n">volumes</span><span class="o">=</span><span class="p">[</span><span class="s">'/mnt'</span><span class="p">],</span>
+                               <span class="n">tty</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">stdin_open</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="n">c</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">container</span><span class="p">[</span><span class="s">'Id'</span><span class="p">],</span> <span class="n">binds</span><span class="o">=</span><span class="p">{</span><span class="s">'/data'</span><span class="p">:</span><span class="s">'/mnt'</span><span class="p">})</span>
+</code></pre></div></div>
+
+<p>这里就创建了一个挂载了<code class="highlighter-rouge">/data</code>目录的container.</p>
+
+<h3 id="4-通过环境变量传递文件">4. 通过环境变量传递文件</h3>
+
+<p>这个是我自己发明的小技巧, 因为在利用<code class="highlighter-rouge">volumes</code> 参数的时候, 发现docker有些不稳定. 经常无法删除. 所以就通过创建的时候通过环境变量传输文件.</p>
+
+<p>先将文件通过<code class="highlighter-rouge">base64</code>编码, 然后通过<code class="highlighter-rouge">create_container</code> 方法的 <code class="highlighter-rouge">environment</code>参数传递变量到container中, 在container中再解码放入到合适的路径下即可.</p>
+
+<h3 id="5-总结">5. 总结</h3>
+
+<p>总的来说, 有三种不同的方式, 将host中的文件传递到container.</p>
+
+<p>分别是:</p>
+
+<ol>
+  <li>创建Image时, 添加文件到Image</li>
+  <li>创建Container时, 通过volumes参数传递文件</li>
+  <li>创建Container时, 通过environment参数传递文件</li>
+</ol>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2014/05/23/copy-file-from-host-to-docker/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Fri, 23 May 2014 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>pipework -- docker网络增强工具</title>
+                <link>http://localhost:4000/2014/04/07/docker-with-openvswitch/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p><a href="https://github.com/jpetazzo/pipework">pipework</a>是<a href="https://www.docker.io/">Docker</a>的一个网络增强功能插件.</p>
+
+<p>Docker创建的时候, 默认是接入docker0(linux bridge)的. 所以只能单主机工作, 不能多台主机联动工作. 这时候, pipework应运而生.</p>
+
+<p>我们先来介绍一下pipework的简单用法, 之后再深入探讨关于pipework与ovs的结合. 最后基于一个案例分析来结束.</p>
+
+<h3 id="pipework入门">pipework入门</h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># brctl addbr br0
+# ip link set dev br0 up
+# ip addr add 192.168.2.1/24 dev br0
+# MYSQL=$(docker run -d -p 3306:3306 -e MYSQL_PASS=admin tutum/mysql)
+# pipework br0 $MYSQL 192.168.2.100/24
+</code></pre></div></div>
+
+<ol>
+  <li>创建一个br0(linux bridge).</li>
+  <li>配置IP地址给br0.</li>
+  <li>启动一个mysql docker.</li>
+  <li>使用<code class="highlighter-rouge">pipework</code>为docker添加IP地址.</li>
+</ol>
+
+<p>经过这几个步骤后, 创建的docker就有一个设置指定的IP地址了.
+pipework的具体工作原理就不在这里详细分析, 有兴趣的同学可以自己去读源代码.</p>
+
+<h3 id="pipework进阶">pipework进阶</h3>
+
+<p>上面入门介绍中, 我们使用pipework工具, 通过linux bridge的模式指定IP地址给docker容器.
+其实, 除了linux bridge, pipework还支持现在流行的虚拟交换机(Open vSwitch).
+下面简单的示范一下如何将docker与Open vSwitch(下称ovs)连通.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># ovs-vsctl add-br ovsbr0
+# ip link set dev ovsbr0 up
+# ip addr add 192.168.3.1/24 dev ovsbr0
+# MYSQL=$(docker run -d -p 3306:3306 -e MYSQL_PASS=admin tutum/mysql)
+# pipework ovsbr0 $MYSQL 192.168.3.100/24
+</code></pre></div></div>
+
+<p>对于pipework来说, 底层使用什么虚拟网络设备是透明的.
+pipework会智能地判断使用的是linux bridge还是ovs.
+所以除了创建桥的方式不同, 其他并没有改变.</p>
+
+<h3 id="pipework案例分析">pipework案例分析</h3>
+
+<p>下面就具体分析一个pipework的应用场景.</p>
+
+<h4 id="docker容器与vlan">docker容器与VLAN</h4>
+
+<p>docker容器启动时, 默认是接入到docker0网桥上的. 这样就容易给大家造成一个假象, docker容器只能运行在单机的情况下.
+<em>但是显示并非如此.</em>
+我们可以通过pipework扩展docker的网络功能.</p>
+
+<p>我们假设现在有2台服务器A和B, 交换机S.
+现在我们同时在A,B上创建虚拟网桥ovsbr0. 并且在服务器A上, 将网桥启用和配置IP地址.
+那么我们现在如果在A,B上,分别启动一个docker.
+同时通过pipework将docker接入到ovsbr0上, 并且配置与A服务器上ovs相同网段的IP地址.
+那么<em>两个docker互相之间就能够通信</em>了.
+很神奇有木有!!!</p>
+
+<p>但是万恶的需求是不断进化的(呵呵). 不会都让你们的docker运行在一个网络环境下, 有的应用是需要互相隔离的.
+那么就有可能需要VLAN的划分. 这里多说点, 其实在现今的情况下, 除了划分VLAN还有其他的方式达到二层网络隔离的效果, 如VXLAN, NVGRE等技术.
+但是我们现在还是只谈论VLAN隔离吧.</p>
+
+<p>我们先在服务器A上做一下操作:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># D1V10=$(docker run -i -t learn/ping /bin/bash)
+# pipework ovsbr0 -i d1v10 $D1V10 10.1.1.10/24
+# D2V10=$(docker run -i -t learn/ping /bin/bash)
+# pipework ovsbr0 -i d2v10 $D2V10 10.1.1.11/24
+# D3V20=$(docker run -i -t learn/ping /bin/bash)
+# pipework ovsbr0 -i d3v20 $D3V20 10.1.1.20/24
+</code></pre></div></div>
+
+<p>这里定义了3个Docker容器, 并且将其添加到ovsbr0这个桥上.
+下面开始将不同的网卡设置vlan id.
+我们将 D1V10 和 D2V10 设置vlan id为10. 将D3V20 设置vlan id为20.</p>
+
+<p>我们可以通过<code class="highlighter-rouge">ovs-vsctl list-ports &lt;BRIDGE&gt;</code>找出桥设备下面的所有端口.
+但是刚刚我们一口气连续创建了3个docker, 会看见3个对应的虚拟网卡.</p>
+
+<p>然后我们需要做的是, 找出与Docker容器想对应的虚拟网卡.
+刚刚在pipework执行时, 添加了参数<code class="highlighter-rouge">-i</code>, 意思是创建的虚拟网卡结尾对应的字符串.</p>
+
+<p>比如:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># pipework ovsbr0 -i d1v10 $D1V10 10.1.1.10/24
+</code></pre></div></div>
+
+<p>这命令执行后, ovsbr0设备会添加一个port, port的名字应该是<code class="highlighter-rouge">plxxxxd1v10</code>.
+当中的xxxx是docker容器的pid.</p>
+
+<p>这时我们就可以通过<code class="highlighter-rouge">ovs-vsctl set port &lt;port&gt; tag=&lt;vlan id&gt;</code>的方式设置vlan id了.</p>
+
+<p>下面是范例:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># ovs-vsctl list-ports ovsbr0
+pl23016d1v10
+pl23124d2v10
+pl23654d3v20
+# ovs-vsctl set port pl23016d1v10 tag=10
+# ovs-vsctl set port pl23124d2v10 tag=10
+# ovs-vsctl set port pl23654d3v20 tag=20
+</code></pre></div></div>
+
+<p>这样就完成了设置VLAN的步骤了.
+下面我们通过简单的ping命令来验证一下vlan隔离的效果.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># docker attach $D1V10
+root@f94dc85c44b1:/# ping 10.1.1.11  # reachable
+root@f94dc85c44b1:/# ping 10.1.1.20  # unreachable
+</code></pre></div></div>
+
+<h4 id="多服务器的vlan划分">多服务器的vlan划分</h4>
+
+<p>可能有同学以为, docker只能在单机上工作(docker与docker之间通信只能在本机进行).
+但是使用pipework增强插件后, 我们可以通过Linux Bridge或Open vSwitch来进行数据交换.
+这样就可以不仅仅局限于Docker默认的隔离桥(原谅我的破翻译, 我真不知道怎么形容这货 –&gt; docker0)</p>
+
+<h3 id="总结">总结</h3>
+
+<p>pipework是个强大的docker网络管理工具. 具体的实现也比较简单. 可以配合ovs来实现强大的功能.
+剩下就是发挥想象力的时间了…</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2014/04/07/docker-with-openvswitch/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Mon, 07 Apr 2014 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>让你的Docker运行在Open vSwitch上</title>
+                <link>http://localhost:4000/2013/12/24/docker-on-openvswitch/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>docker创建的container只能运行在docker创建的docker0上(linux bridge).
+所以就有了<a href="https://github.com/PeerXu/pipework">pipework</a>这个项目.</p>
+
+<h2 id="pipework范例">pipework范例</h2>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># ovs-vsctl add-br br0
+# ip link set br0 up
+# ip addr add 10.0.0.1/24 dev br0
+# pipework br0 $(docker run -d mysql /usr/sbin/mysqld_safe) 10.0.0.200/24
+</code></pre></div></div>
+
+<p>以上几行脚本的意思是:</p>
+
+<ol>
+  <li>创建一个Open vSwitch的桥br0</li>
+  <li>设置br0的ip地址为10.0.0.1</li>
+  <li>在br0上创建一个docker并绑定IP地址</li>
+</ol>
+
+<h2 id="pipework工作原理">pipework工作原理</h2>
+
+<p>创建一对<a href="http://wangcong.org/blog/archives/1704">veth</a>, 将一头绑定到docker内, 另外一头绑定到Open vSwitch.
+然后通过_iproute_ 绑定IP地址等等操作.</p>
+
+<p>然后, 就没有然后了.</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2013/12/24/docker-on-openvswitch/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Tue, 24 Dec 2013 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>Git Patch简单教程</title>
+                <link>http://localhost:4000/2013/11/21/patch-with-git-tutorial/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>今天我们来学习一下关于git怎么创建与应用patch.</p>
+
+<h3 id="预备资料">预备资料</h3>
+
+<p><a href="http://zh.wikipedia.org/zh-cn/Patch">patch</a>是用来对现有的源代码进行更新的一种手段.</p>
+
+<p>patch可以通过diff, git, svn, hg等工具生成.</p>
+
+<p>diff与git产成的patch文件有点差异(下面会简单的介绍patch文档的结构).</p>
+
+<p>下面我们就来介绍怎么创建一个patch.</p>
+
+<h3 id="前戏">前戏</h3>
+
+<p>首先, 你得有一个好环(ji)境(you), 才能开展patch的工作.</p>
+
+<p>所以我在这里简单的创(ji)建(you)一个环境给大家使用. :P</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ mkdir Hello
+$ cd hello
+$ git init
+$ cat &lt;&lt; EOF &gt; hello.py
+#!/usr/bin/env python2.7
+print "hello, world"
+EOF
+$ git add .
+$ git commit -m "initial commit" -a
+</code></pre></div></div>
+
+<p>至此, 大家已经有一个可以使用的好环(ji)境(you).(怎么感觉节奏不对)</p>
+
+<h3 id="动作片播放ing">动作片播放ing…</h3>
+
+<p>好了, 我们已经创建好了一个可以用的基友, 那么就开始干吧!</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ git checkout -b my-feature
+$ vi hello.py
+$ cat hello.py
+#!/usr/bin/env python2.7
+def hello(name):
+    print "hello, %s" % name
+
+hello("world")
+$ git commit -m "add feature" -a
+$ git format-patch master
+$ ls
+0001-add-feature.patch  hello.py
+</code></pre></div></div>
+
+<p>下面来为大家讲解一下上面的_动作_要领.</p>
+
+<p>首先我们很大众的开局, 先创建一个my-feature.</p>
+
+<p>然后啪啪啪地编辑了一下文档, 添加了一个相当犀利的特性.</p>
+
+<p>然后按照正常套路去commit咱们牛逼的特性.</p>
+
+<p>当全世界都以为我们要merge到master的时候, 我只能说你们, 图样图森普.</p>
+
+<p>我们的目标是没有蛀牙. 咳咳, 是创建patch.</p>
+
+<p>所以我们最后使用 <code class="highlighter-rouge">git format-patch master</code> 创建一个patch.</p>
+
+<p>好了, 通常动作片的中场都是要休息一下的.</p>
+
+<h3 id="动作片继续播放ing">动作片继续播放ing…</h3>
+
+<p>我们既然已经生成了patch文件, 咱们就看看这文件到底是什么样子的.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>From a9706e72ba4976f69d1c3ca5e93ab9a00757c9fd Mon Sep 17 00:00:00 2001
+From: Peer Xu &lt;pppeerxu@gmail.com&gt;
+Date: Thu, 21 Nov 2013 23:37:41 +0800
+Subject: [PATCH] add feature
+
+---
+ hello.py | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/hello.py b/hello.py
+index 6635083..c314e13 100644
+--- a/hello.py
++++ b/hello.py
+@@ -1,2 +1,5 @@
+ #!/usr/bin/env python2.7
+-print "hello,world"
++def hello(name):
++    print "hello, %s" % name
++
++hello("world")
+--
+1.8.3.2
+</code></pre></div></div>
+
+<p>以我阅片无数的经验, 这是一封邮件.</p>
+
+<p>嗯, 剩下的就留给各位看官自己去YY吧.</p>
+
+<h3 id="动作片通常都是分开三部播放的">动作片通常都是分开三部播放的…</h3>
+
+<p>这里, 我传授大家怎么将git生成的patch应用到项目中去.</p>
+
+<p>还是咱们的好环境.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cp 0001-add-feature.patch /dev/shm/
+$ rm 0001-add-feature.patch # 删除生成的patch, 保证环境干净 (这是你洁癖的证据!)
+$ git checkout master
+$ git am /dev/shm/0001-add-feature.patch
+$ cat hello.py
+#!/usr/bin/env python2.7
+def hello(name):
+    print "hello, %s" % name
+
+hello("world")
+$ git log # 这里可以看到应用patch的日志
+</code></pre></div></div>
+
+<p>我们先将patch复制到另外一个地方(假装是从很远的地方下载下来的)</p>
+
+<p>然后checkout到master(假装在别的环境中…)</p>
+
+<p>然后使用 <code class="highlighter-rouge">git am</code> 这命令使patch应用到环境中去.</p>
+
+<p>然后, 就没有然后了…</p>
+
+<h3 id="动作片再好-也不能经常看">动作片再好, 也不能经常看…</h3>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2013/11/21/patch-with-git-tutorial/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Thu, 21 Nov 2013 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>kombu 入门教程(上)</title>
+                <link>http://localhost:4000/2013/10/05/kombu-tutorial_I/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <h2 id="前言">前言</h2>
+
+<p>本文是<a href="https://github.com/celery/kombu">kombu框架</a>(一个基于python的消息队列框架)的入门教程. 文章会简单介绍消息队列中的基本概念和kombu框架的简单使用方法.</p>
+
+<h2 id="hello-world">Hello World</h2>
+
+<p>我们来了解一下, 一个简单的消息队列里面, 应该包含以下的对象.</p>
+
+<ol>
+  <li><strong>Producer</strong> – 负责消息的发送</li>
+  <li><strong>Consumer</strong> – 负责消息的接收</li>
+  <li><strong>Queue</strong> – 负责消息的传输</li>
+  <li><strong>Exchange</strong> – 负责消息的分发</li>
+</ol>
+
+<p>在我们的<strong>Hello World</strong>中, 我们只看到了创建<strong>Queue</strong>的过程, 其实一个完整消息队列应用程序是会包含上面所说的所有实体的.</p>
+
+<p>但是kombu很贴心的为我们封装了一个便于使用的<strong>SimpleQueue</strong>类, 让我们能够快速地开发.</p>
+
+<p>下面我们就围绕着这个<strong>SimpleQueue</strong>类来进行简单的试验:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import kombu
+conn = kombu.Connection('redis://localhost')
+</code></pre></div></div>
+
+<p>导入kombu模块, 并且创建一个连接, 连接到本地的Redis服务上(本文的介绍都是基于Redis作为消息队列后端)</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def message_process(body, message):
+    print "[x] %s" body
+    message.ack()
+queue = conn.SimpleQueue('demo')
+queue.consumer.callbacks = [message_process]
+</code></pre></div></div>
+
+<p>这里定义了一个<strong>message_process</strong>函数, 用于处理消息.
+需要注意的是, 当消息处理完之后, 要发送调用message对象的ack方法来确保消息已经被正确处理.
+如果没有确认的话, 那么消息依然放置在队列当中, 当作没有被处理.</p>
+
+<p>之后创建了一个消息队列, 命名为<strong>demo</strong>. 并且给队列的consumer绑定了一个消息处理函数.</p>
+
+<p>以上就是关于消息接收的一些过程, 下面继续介绍一下消息发送的过程.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>queue.put('hello,world')
+</code></pre></div></div>
+
+<p>创建消息队列的过程与消息接收的相同, 要注意的就是不需要为消息队列指定consumer的处理函数.
+直接调用queue的put方法就可以发送消息了.</p>
+
+<p>完整的代码如下:</p>
+
+<p><em>receiver.py</em></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import kombu
+
+def message_process(body, message):
+    print "[x] %s" % body
+    message.ack()
+
+conn = kombu.Connection('redis://localhost')
+queue = conn.SimpleQueue('demo')
+queue.consumer.callbacks = [message_process]
+
+queue.get()
+</code></pre></div></div>
+
+<p><em>sender.py</em></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import kombu
+
+conn = kombu.Connection('redis://localhost')
+queue = conn.SimpleQueue('demo')
+queue.put('hello, world')
+</code></pre></div></div>
+
+<p>启动receiver:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ python receiver.py
+</code></pre></div></div>
+
+<p>发送消息:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ python sender.py
+</code></pre></div></div>
+
+<p>之后会在receiver的终端上看见:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ python receiver.py
+[x] hello world
+</code></pre></div></div>
+
+<p>简单的消息队列应用就这样.</p>
+
+<p>感谢阅读~</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2013/10/05/kombu-tutorial_I/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sat, 05 Oct 2013 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>机器学习笔记 -- k-临近算法</title>
+                <link>http://localhost:4000/2013/08/18/machine-learning-knn-with-clojure/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>k-临近算法是一种分类算法, 计算输入值与各个特征值之间距离来进行分类.</p>
+
+<p>简单的概括一下算法的思路就是:</p>
+
+<ol>
+  <li>算出输入值与各个特征值之间的距离, 按升序排序.</li>
+  <li>获取前k个分类</li>
+  <li>选择出现次数最高的分类, 就是输入值所属的分类.</li>
+</ol>
+
+<p>k-临近算法优缺点分析</p>
+
+<ul>
+  <li>优点: 精度高, 对异常值不敏感, 无数据输入假定.</li>
+  <li>缺点: 计算复杂度高, 空间复杂度高.</li>
+  <li>适用数据范围: <strong>数值型</strong> 和 <strong>标称型</strong></li>
+</ul>
+
+<p>以下通过clojure来实现kNN算法:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(defn create-test-data []  ; 生成测试数据
+  '(((0.1 0.1)
+     (0.0 0.0)
+	 (0.2 0.2)
+	 (1.1 1.1)
+	 (1.0 1.0))
+	(:a :a :a :b :b)))
+
+(defn distance [xs ys]  ; 计算两个向量之间的距离
+  (. java.lang.Math sqrt (apply + (map #(* % %) (map #(- %1 %2) xs ys)))))
+
+(defn count-list-element [xs]  ; 计算列表中每个元素的出现次数
+  (reduce
+   (fn [cnts x]
+    (let [n (x cnts)]
+     (if (= n nil)
+      (assoc cnts x 1)
+      (assoc cnts x (+ n 1)))))
+   {}
+   xs))
+
+(defn kNN [inX dataSet labels k]
+ (let* [label-groups (map #(concat [%1] %2) labels dataSet)  ; 将分类与特征值合并, 方便后续处理
+        label-groups-sort-by-distance (sort-by  ; 计算输入值与特征值的距离并且排序
+                                       #(distance inX (rest %1)) label-groups)
+        k-labels (take k (map first label-groups-sort-by-distance))  ; 获取前K个分类
+        labels-group-by-count (sort-by first (count-list-element k-labels))]  ; 计算每个分类的出现次数
+       (-&gt; labels-group-by-count  ; 返回出现次数最多的分类
+           reverse
+           first
+           first)))
+
+(defn -main [&amp; args]
+  (let [[groups labels] (create-dataset)]
+    (println (kNN [0.0 0.0] groups labels 3))))
+</code></pre></div></div>
+
+<p>附带上我的<a href="https://github.com/PeerXu/machine-learning-clojure">机器学习笔记</a></p>
+
+<p>感谢阅读</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2013/08/18/machine-learning-knn-with-clojure/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sun, 18 Aug 2013 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>InetAddress类中isReachable方法检测原理</title>
+                <link>http://localhost:4000/2013/04/03/check-host-is-reachable-by-clojure/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>今日, 有一同事问我, 为什么我用ping命令可以连通的一台主机, 用java的InetAddress类中的isReachable方法就测试失败呢?</p>
+
+<p>当时我就感觉奇怪了, 难道isReachable用的不是ping?</p>
+
+<p>刚刚测试了一下, 果然真不是用ping… 用的是 <a href="http://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers" title="echo">echo</a>协议.</p>
+
+<p>那么不可达的原因就不言而喻了, 因为目的主机没有启动echo服务.</p>
+
+<p>附上clojure的测试代码:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(.. java.net.InetAddress (getByName "192.168.1.1") (isReachable 1000))
+</code></pre></div></div>
+
+<p>吐槽: 如果是java的话要多长才能完成这个简单的测试呢?</p>
+
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2013/04/03/check-host-is-reachable-by-clojure/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Wed, 03 Apr 2013 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>利用cscope阅读python代码</title>
+                <link>http://localhost:4000/2013/02/14/read-python-code-with-cscope-on-emacs/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>本文是教你怎么使用 cscope+emacs来阅读 python代码, 网上已经有很多使用 cscope+emacs阅读 c/c++代码的教程. 但是没有找到python的, 故有了本文.</p>
+
+<p>最近在阅读 quantum的代码, 必须有一个能够使用的代码阅读器. 正所谓工欲善其事,必先利其器.</p>
+
+<p><a href="http://en.wikipedia.org/wiki/Cscope" title="cscope wiki">cscope</a>是一个代码索引数据库.</p>
+
+<p><a href="http://linux.die.net/man/1/xcscope" title="xcscope 介绍">xcscope</a>是 cscope在 emacs上面的一个插件, 提供构建 cscope数据库到代码跳转一条龙服务.</p>
+
+<p>安装 cscope<br /></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ sudo apt-get install cscope
+</code></pre></div></div>
+
+<p>修改 xcscope.el, 以提供 python-mode支持(我的xcscope.el在/usr/share/emacs/site-lisp/下)</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>...
+(add-hook 'c-mode-hook (function cscope:hook))
+(add-hook 'c++-mode-hook (function cscope:hook))
+(add-hook 'dired-mode-hook (function cscope:hook))
+*(add-hook 'python-mode-hook (function cscope:hook))* ; 添加 xcscope的 python-mode 支持
+(provide 'xcscope)
+...
+</code></pre></div></div>
+
+<p>启用 xcscope</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat ~/.emacs
+...
+;;; xcscope plugin
+(load-file "/usr/share/emacs/site-lisp/xcscope.el")
+(require 'xcscope)
+</code></pre></div></div>
+
+<p>生成 cscope数据库</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cd ~/opt/openstack/quantum/ # quantum路径
+$ find . -name "*.py" | cscope -Rbq -i - # 生成 python文件的 cscope数据库
+</code></pre></div></div>
+
+<p>打开 emacs, enjoy it.</p>
+
+<p>下面是一些常用的 cscope快捷键</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C-c s s         Find symbol.
+C-c s d         Find global definition.
+C-c s g         Find global definition (alternate binding).
+C-c s G         Find global definition without prompting.
+C-c s c         Find functions calling a function.
+C-c s C         Find called functions (list functions called from a function).
+C-c s t         Find text string.
+C-c s e         Find egrep pattern.
+C-c s f         Find a file.
+C-c s i         Find files #including a file.
+
+C-c s b         Display *cscope* buffer.
+C-c s B         Auto display *cscope* buffer toggle.
+C-c s n         Next symbol.
+C-c s N         Next file.
+C-c s p         Previous symbol.
+C-c s P         Previous file.
+C-c s u         Pop mark.
+</code></pre></div></div>
+
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2013/02/14/read-python-code-with-cscope-on-emacs/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Thu, 14 Feb 2013 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>git备忘录</title>
+                <link>http://localhost:4000/2013/01/28/git-notes/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <ol>
+  <li>
+    <p><em>删除远程分支</em></p>
+
+    <p><code class="highlighter-rouge">git push &lt;remote&gt; :&lt;branch&gt;</code></p>
+  </li>
+</ol>
+
+<p>example: 删除origin仓库上的backup分支 <code class="highlighter-rouge">git push origin :backup</code></p>
+
+<ol>
+  <li>
+    <p><em>通过指定ssh端口号添加远程仓库</em></p>
+
+    <p><code class="highlighter-rouge">git remote add ssh://&lt;username&gt;@&lt;hostname&gt;:&lt;port&gt;/&lt;project_path&gt;</code></p>
+  </li>
+</ol>
+
+<p>example: 添加用户名为pi, 端口为15002, 主机名为raspi.me, 项目路径为 /home/pi/project.git</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>`git remote add ssh://pi@raspi.me:15002/home/pi/project.git`
+</code></pre></div></div>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2013/01/28/git-notes/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Mon, 28 Jan 2013 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>OpenvSwitch gre隧道配置</title>
+                <link>http://localhost:4000/2013/01/15/open-vswitch-gre-tunnel-configuration/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>本文是讲述如何在OpenvSwitch交换机上配置gre隧道的. 不废话, 马上开始吧.</p>
+
+<p>本文要求读者对Openvswitch, Mininet, Openflow, Pox有一定了解.</p>
+
+<p>实验环境如下:</p>
+
+<ol>
+  <li>Host * 2
+    <ul>
+      <li>主机上安装了OpenvSwitch与mininet</li>
+      <li>分别命名2台主机为H0和H1(程序员都是从0开始计数的)</li>
+      <li>H0: ip地址: 192.168.122.150 eth0绑定到br1上 (绑定过程参考实验过程)</li>
+      <li>H1: ip地址: 192.168.122.151 eth0绑定到br1上</li>
+    </ul>
+  </li>
+  <li>Openflow 控制器主机 (可以是上面其中一台)
+    <ul>
+      <li>命名为C0</li>
+      <li>选用pox控制器</li>
+    </ul>
+  </li>
+</ol>
+
+<p>实验目的: 通过构建gre隧道, 让2个隔离的datapath(fake bridge)虚拟机通信</p>
+
+<p>实验简介:</p>
+
+<ol>
+  <li>在C0上启动pox控制器</li>
+  <li>在H0上创建br1, 将eth0绑定到br1上, 完成相关配置.</li>
+  <li>在H0上以对应参数启动mininet, 并且配置dp0, 与设置mininet的虚拟机h2, h3.</li>
+  <li>为H0上创建gre通道</li>
+  <li>H1同理</li>
+  <li>在H0的miminet控制台中, 使用h2 pingH1上的h2.</li>
+</ol>
+
+<p>实验过程:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># 启动pox控制器
+C0 $ ./pox.py forwarding.l2_learning
+
+# 配置H0
+# 配置br1
+H0 # ovs-vsctl add-br br1
+H0 # ovs-vsctl add-port br1 eth0
+H0 # ip addr add 192.168.122.150/24 dev br1
+H0 # ip route add default via 192.168.122.1 dev br1
+# 启动mininet, 选择远程控制器, 连接到192.168.122.1的控制器上.
+H0 # mn --switch=ovsk --controller=remote --ip=192.168.122.1
+# 添加gre隧道, 连接到192.168.122.151
+H0 # ovs-vsctl add-port dp0 gre0 -- set interface gre0 type=gre options:remote_ip=192.168.122.151
+
+# 配置H1
+# 配置br1
+H1 # ovs-vsctl add-br br1
+H1 # ovs-vsctl add-port br1 eth0
+H1 # ip addr add 192.168.122.151/24 dev br1
+H # ip route add default via 192.168.122.1 dev br1
+# 启动mininet, 选择远程控制器, 连接到192.168.122.1的控制器上.
+H1 # mn --switch=ovsk --controller=remote --ip=192.168.122.1
+# 添加gre隧道, 连接到192.168.122.150
+H1 # ovs-vsctl add-port dp0 gre0 -- set interface gre0 type=gre options:remote_ip=192.168.122.150
+# H1的mininet控制台
+mininet&gt; h2 ip addr replace 10.0.0.4/24 dev h2-eth0
+mininet&gt; h3 ip addr replace 10.0.0.5/24 dev h3-eth0
+
+# H0的mininet控制台
+mininet&gt; h2 ping -c 2 10.0.0.4
+PING 10.0.0.4 (10.0.0.4) 56(84) bytes of data.
+64 bytes from 10.0.0.4: icmp_req=1 ttl=64 time=54.5 ms
+64 bytes from 10.0.0.4: icmp_req=2 ttl=64 time=0.499 ms
+--- 10.0.0.4 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1002ms
+rtt min/avg/max/mdev = 0.499/27.526/54.554/27.028 ms
+</code></pre></div></div>
+
+<p>参考文章: <a href="http://networkstatic.net/open-vswitch-gre-tunnel-configuration/">http://networkstatic.net/open-vswitch-gre-tunnel-configuration/</a></p>
+
+<p>enjoy it.</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2013/01/15/open-vswitch-gre-tunnel-configuration/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Tue, 15 Jan 2013 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>用树莓派与github构建自己的DDNS服务(上)</title>
+                <link>http://localhost:4000/2013/01/13/using-rpi-and-github-to-build-your-ddns-server-part-1/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p><em>[DDNS][1]</em> – 动态域名解析服务, 是一种把互联网域名指向可变IP地址的系统.
+这次我们的域名提供商选择了[github][2].</p>
+
+<p>github上提供了一个静态页面服务[gh-pages][7], 我们就是利用这个服务来达到DDNS的目的的.</p>
+
+<p>你需要一下几样东西:</p>
+
+<ul>
+  <li>Raspberry Pi</li>
+  <li>有基础的[git][6]使用经验</li>
+  <li>github 帐号</li>
+  <li>在Raspbeery Pi上设定github的SSH keys, 并提交代码时不需要输入密码. <strong>如果你的SSH key有密码的话,可以使用[ssh-agent][4]配置免密码提交</strong></li>
+</ul>
+
+<p>开始我们的旅程吧!</p>
+
+<h3 id="server端配置">server端配置</h3>
+
+<ol>
+  <li>登录github, fork [slipper][3]</li>
+  <li>clone该项目到 <code class="highlighter-rouge">~/.slipper</code> 目录, <code class="highlighter-rouge">git clone git@github.com/&lt;你的github帐号&gt;/slipper.git ~/.slipper</code>.</li>
+  <li>进入到 <code class="highlighter-rouge">.slipper</code> 目录. <code class="highlighter-rouge">cd ~/.slipper</code>.</li>
+  <li>创建一个名为<em>gh-pages</em>的分支, <code class="highlighter-rouge">git checkout -b gh-pages</code></li>
+  <li>复制<code class="highlighter-rouge">server/update.sh</code>到当前目录<code class="highlighter-rouge">~/.slipper</code>. <code class="highlighter-rouge">cp server/update.sh .</code></li>
+  <li>进入[cron][5]定时任务配置, <code class="highlighter-rouge">crontab -e</code></li>
+  <li>将update.sh脚本配置到定时执行中 <code class="highlighter-rouge">*/5 * * * * ~/.slipper/update.sh</code>, 保存退出</li>
+</ol>
+
+<p>server端配置已经完毕, 过几分钟, 你用curl获取你的Rpi运行IP <code class="highlighter-rouge">curl http://&lt;你的github帐号&gt;.github.com/slipper/addr</code></p>
+
+<p>下一篇将会为大家介绍client端的设置和应用场景. 如自建博客域名解析, ssh反向连接等.</p>
+
+<p>[1]: http://zh.wikipedia.org/wiki/%E5%8B%95%E6%85%8BDNS “动态DNS“
+[2]: https://www.github.com/ “github”
+[3]: https://www.github.com/peerxu/slipper “DDNS服务项目”
+[4]: http://clonn.blogspot.com/2012/03/ssh-agent.html “ssh-agent教程 需翻墙”
+[5]: http://linux.vbird.org/linux_basic/0430cron.php “cron”
+[6]: http://www-cs-students.stanford.edu/~blynn/gitmagic/intl/zh_cn/ “git教程”
+[7]: http://pages.github.com/ “github pages”</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2013/01/13/using-rpi-and-github-to-build-your-ddns-server-part-1/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sun, 13 Jan 2013 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>在树莓派的archlinux中安装lxde</title>
+                <link>http://localhost:4000/2013/01/03/rpi-install-lxde-on-archlinux/</link>
+                <content:encoded>
+                    <![CDATA[
+                    p. archlinux是一个很好的linux发行版, 比raspbian好多了. 况且archlinux的yaourt工具实在是太强大了.
+
+p. 好了,废话不多说了, 直接上代码:
+
+bc. # pacman -Syu
+# pacman -S xf86-video-fbdev lxde xorg-xinit dbus
+# cat << EOF > ~/.xinitrc
+exec startlxde
+EOF
+# startx
+
+p. 经过漫长的等待之后就可以启动这个 _丑陋的_ 桌面了.
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2013/01/03/rpi-install-lxde-on-archlinux/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Thu, 03 Jan 2013 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>SSH反向链接配置</title>
+                <link>http://localhost:4000/2012/11/27/remote-server-host-for-ssh/</link>
+                <content:encoded>
+                    <![CDATA[
+                    p. 应用场景:
+A为公网上的一个SSH服务器, 端口为9944, ip为9.9.9.9, 用户名为a, 本地开放端口为10000,
+B为内网里的一个SSH服务器, 端口为22, 用户为b.
+如今A向B发起SSH请求,实行远程操控.
+
+p. A的SSH服务端口为9944.
+B的SSH服务端口为22.
+
+* 先在B上执行: <code>B $ ssh -R 10000:localhost:22 a@9.9.9.9 -p 9944</code>
+* 之后就可以在A上执行: <code>A $ ssh b@localhost -p 10000</code>
+
+p. enjoy it.
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2012/11/27/remote-server-host-for-ssh/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Tue, 27 Nov 2012 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>clojure-py gevent wsgi hello world</title>
+                <link>http://localhost:4000/2012/10/11/clojure-py-gevent-wsgi-hello-world/</link>
+                <content:encoded>
+                    <![CDATA[
+                    p. clojure-py项目是clojure语言在pure python上的实现. 可以在github上找到该项目或者直接用easy_install安装.
+
+p. server.clj
+
+<pre>
+(require 'gevent.wsgi)
+
+(defn hello-handler [env res]
+    (res "200 OK" (list '("Content-Type" "text/html")))
+    ["hello, world"])
+
+(def httpd (gevent.wsgi/WSGIServer (py/tuple '("localhost" 8080))
+                                   hello-handler))
+
+(println "listen on localhost:8080")
+(.serve_forever httpd)
+</pre>
+
+p. 保存好之后, 执行: @clojurepy server.clj@
+
+p. enjoy it.
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2012/10/11/clojure-py-gevent-wsgi-hello-world/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Thu, 11 Oct 2012 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>在ubuntu12.04中编译newlisp</title>
+                <link>http://localhost:4000/2012/08/30/compile-newlisp-on-ubuntu-12.04/</link>
+                <content:encoded>
+                    <![CDATA[
+                    bc. $ wget http://www.newlisp.org/downloads/newlisp-10.4.3.tgz
+$ tar zxvf newlisp-10.4.3.tgz
+$ cd newlisp-10.4.3
+$ make
+
+p. 提示 fatal error: readline/readline.h: No such file or directory
+通过apt-file工具查找到对应的依赖包 libreadline6-dev
+
+bc. $ apt-file search readline/readline.h
+guile-1.6-dev: /usr/include/guile-readline/readline.h
+libreadline-gplv2-dev: /usr/include/readline/readline.h
+libreadline6-dev: /usr/include/readline/readline.h
+
+p. 所以首先安装 libreadline6-dev
+
+<pre>$ sudo apt-get install libreadline6-dev
+$ make
+$ sudo make install
+$ newlisp
+newLISP v.10.4.3 64-bit on Linux IPv4/6 UTF-8 libffi, execute 'newlisp -h' for more info.
+
+> "hello, newlisp"
+"hello, newlisp"
+</pre>
+
+p. enjoy it!
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2012/08/30/compile-newlisp-on-ubuntu-12.04/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Thu, 30 Aug 2012 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>sqlite中的连接操作符</title>
+                <link>http://localhost:4000/2012/08/28/sqlite-on-left-join/</link>
+                <content:encoded>
+                    <![CDATA[
+                    p. sqlite中, 要使用join连接符的话, 后面的where要改成on! 例如:
+
+bc. select * from t1 left join t2 where t1.id == t2.id;
+
+p. 上面的是一个错误的例子, 应该写成如下:
+
+bc. select * from t1 left join t2 on t1.id == t2.id;
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2012/08/28/sqlite-on-left-join/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Tue, 28 Aug 2012 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>Zombie进程的几种解决方法</title>
+                <link>http://localhost:4000/2012/08/17/zombie-process-solution/</link>
+                <content:encoded>
+                    <![CDATA[
+                    p. 在unix和类unix系统中, 僵尸进程是指已经完成工作但是依然存有进程实例存在于进程表中的进程. 这个实例仍然需要父进程去读取它的退出状态(exit status). 通常来说, 僵尸进程并不像普通进程那样, 能够被kill命令所杀死.  --- 渣翻译, 出自 <a herf='http://en.wikipedia.org/wiki/Zombie_process'>http://en.wikipedia.org/wiki/Zombie_process</a>
+
+p. 既然我们要处理僵尸进程, 那么我们就首先写一个僵尸进程的程序:
+
+<pre>#!/usr/bin/env python
+
+import os
+import time
+
+if __name__ == '__main__':
+   while True:
+      pid = os.fork()
+      if pid == 0:
+      	 // do smth.
+      	 exit(0)
+      time.sleep(1)</pre>
+
+p. 通过上面的程序, 可以稳定地, 每秒产生1个僵尸进程.(别担心, 它们不会咬人)
+
+p. 上面的程序中, 在fork了之后, 子进程退出, 而父进程依然他的工作. 但是父进程并没有对子进程的退出状态作处理, 最后导致的是子进程无法退出.
+
+p. 下面来讲解一下几个解决方案:
+
+h3. 1. 父进程中调用wait等待子进程退出.
+
+<pre>#!/usr/bin/env python
+
+import os
+import time
+
+if __name__ == '__main__':
+   while True:
+      pid = os.fork()
+      if pid == 0:
+      	 // do smth.
+      	 exit(0)
+      os.wait()
+      // os.waitpid(pid, 0)
+      time.sleep(1)</pre>
+
+p. 这种方法虽然是可行的,但是他会阻塞了父进程的工作.
+
+h3. 2.
+
+<pre>#!/usr/bin/env python
+
+import os
+import time
+import signal
+
+if __name__ == '__main__':
+   signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+   while True:
+      pid = os.fork()
+      if pid == 0:
+      	 // do smth.
+      	 exit(0)
+      time.sleep(1)</pre>
+
+p. 在父进程忽略了子进程发出的SIGCHLD信号.
+或者也可以自己定义一个信号处理的函数
+
+h3. 3.
+
+<pre>#!/usr/bin/env python
+
+import os
+import time
+import signal
+
+if __name__ == '__main__':
+   while True:
+      pid = os.fork()
+      if pid != 0:
+      	 // do smth.
+      	 exit(0)
+      time.sleep(1)</pre>
+
+p. 这种方法是我自创的. =m=
+既然子进程要做完事要通知父进程,这么麻烦,那么我就干脆让父进程做事.子进程负责fork算了.
+
+p. 好吧, 讲完了.
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2012/08/17/zombie-process-solution/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Fri, 17 Aug 2012 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>Clojure笔记 -- namespace操作</title>
+                <link>http://localhost:4000/2012/08/12/study-clojure-namespace/</link>
+                <content:encoded>
+                    <![CDATA[
+                    bc. (create-ns 'my.ns) ;;; 创建一个命名空间
+
+bc. (require 'clojure.string) ;;; 导入命名空间
+
+bc. (refer 'clojure.string) ;;; 将命名空间中所有的共有的符号导入到当前命名空间中
+
+bc. (use 'clojure.string) ;;; <==> (require 'clojure.string) (refer 'clojure.string)
+
+bc. (remove-ns 'my.ns) ;;; 移除命名空间
+
+bc. (intern 'my.ns 'foo 2) ;;; 在my.ns中绑定一个符号foo
+
+bc. (alias 'str 'clojure.string) ;;; 为clojure.string起个别名 (str/split ...) <==> (clojure.string/split ...)
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2012/08/12/study-clojure-namespace/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sun, 12 Aug 2012 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>在ubuntu12.04上传goagent server端到GAE</title>
+                <link>http://localhost:4000/2012/08/11/upload-goagent-on-ubuntu12.04/</link>
+                <content:encoded>
+                    <![CDATA[
+                    p. 到 <a href='https://developers.google.com/appengine/downloads'>这里</a>下载 google_appengine_*.zip.
+
+p. 我下载的版本是 google_appengine_1.7.0.zip
+
+p. 下载完解压到 goagent 根目录下.
+
+p. 执行下面的命令
+
+bc. python google_appengine/appcfg.py update server/python
+
+p. enjoy!
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2012/08/11/upload-goagent-on-ubuntu12.04/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sat, 11 Aug 2012 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>在emacs上使用中文输入法fcitx</title>
+                <link>http://localhost:4000/2012/07/21/emacs-with-fcitx-on-linux/</link>
+                <content:encoded>
+                    <![CDATA[
+                    p. 在ubuntu 12.04中, 无法在emacs调用fcitx输入法. 所以给出一下解决方案.
+
+p. 1. 在 ~/.emacs 文件中添加一下代码, 屏蔽C-SPC快捷键, 其替代快捷键为: C-@
+
+bc. (global-set-key (kbd "C-SPC") nil)
+
+p. 2. 在 ~/.bashrc 文件中添加一行
+
+bc. alias emacs="LC_CTYPE='zh_CN.UTF-8' emacs"
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2012/07/21/emacs-with-fcitx-on-linux/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sat, 21 Jul 2012 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>通过openvswitch划分vlan</title>
+                <link>http://localhost:4000/2012/07/17/create-vlan-on-openvswitch-with-libvirt/</link>
+                <content:encoded>
+                    <![CDATA[
+                    p. 目的: 在ubuntu12.04上通过openvswitch为vm划分vlan. 其中vm的管理是通过libvirt实现.
+
+p. 首先说明一下为什么要选择libvirt的版本是0.9.13, 因为ubuntu 12.04的源中, 支持的libvirt版本是0.9.8, 但是支持openvswitch的libvirt版本是从0.9.11开始. 所以最后我选择的libvirt版本是目前最新的libvirt 0.9.13.
+
+p. 教程会分为一下几步:
+
+# 编译, 安装libvirt 0.9.13
+# 编译, 安装openvswitch 1.6.1
+# 启动openvswitch
+# 创建openvswitch网桥, 划分子网
+# 启动vm到指定网桥
+
+h3. 1. 编译, 安装libvirt 0.9.13
+
+bc. $ ./autogen.sh --system
+$ make
+$ sudo make install
+
+p. *注意1*: 在执行 @autogen.sh@ 脚本是时候, 添加上的 @--system@ , 是为了让编译时候指定到对应的系统文件夹.
+可以发现其实是执行了一下的命令 @./configure with --prefix=/usr --sysconfdir=/etc --localstatedir=/var --libdir=/usr/lib@ , 上面的参数是有用的. 各位请记下来.
+
+p. *注意2*: 在执行autogen.sh的时候, 会提示缺少什么包, 有些名字是比较诡异的. google + apt-get.
+
+p. *注意3*: 由于libvirt是编译安装的, 所以在系统启动的时候不会自启动. 请手动启动libvirtd进程(root权限).
+
+h3. 2. 编译,安装openvswitch 1.6.1
+
+bc. $ sudo apt-get install linux-headers-`uname -r`
+$ ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --libdir=/usr/lib --with-linux=/lib/modules/`unam -r`/build
+$ make
+$ sudo make install
+
+p. *注意1*: 在linux kernel 3.3或以上, 在执行configure时, 不需要加入 --with-linux 参数.
+
+h3. 3. 启动openvswitch
+
+p. 在linux kernel 3.3版本以前, 需要先将bridge模块卸载, 再载入刚刚编译的openvswitch模块.
+
+bc. lsmod | grep bridge > /dev/null && sudo rmmod bridge
+insmod datapath/linux/openvswitch_mod.ko
+insmod datapath/linux/brcompat_mod.ko
+
+p. 在初次启动openvswitch需要初始化一下数据库:
+
+bc. $ sudo mkdir -p /usr/local/etc/openvswitch
+$ ovsdb-tool create /usr/local/etc/openvswitch/conf.db vswitchd/vswitch.ovsschema
+
+p. 之后就是启动openvswitch的服务进程
+
+bc. $ sudo ovsdb-server --remote=punix:/usr/local/var/run/openvswitch/db.sock --remote=db:Open_vSwitch,manager_options --pidfile --detach
+$ sudo ovs-vsctl --no-wait init
+$ sudo ovs-vswitchd --pidfile --detach
+$ sudo ovs-brcompated --pidfile --detach
+
+p. 到此, 服务应该启动完毕. 我们可以用 @ovs-vsctl show@ 来验证一下是否启动成功了.
+
+h3. 4. 创建openvswitch网桥,划分子网
+
+p. 先划分好网络: 存在PC1, PC2. 在PC1上启动VMa, VMb, 在PC2上启动 VMc, VMd.
+VMa, VMc 划分到VLAN 1. VMb, VMd划分到VLAN 2.
+
+p. 在PC1上
+
+bc. $ sudo brctl addbr br0
+$ sudo brctl addif br0 eth0
+$ sudo ifconfig eth0 0.0.0.0
+$ sudo ifconfig br0 192.168.1.100/24 up
+
+p. 在PC2上
+
+bc. $ sudo brctl addbr br0
+$ sudo brctl addif br0 eth0
+$ sudo ifconfig eth0 0.0.0.0
+$ sudo ifconfig br0 192.168.1.101/24 up
+
+h3. 5. 启动vm到指定网桥
+
+将启动VM的xml文件中的网络配置改为使用bridge, 指向br0.
+之后启动虚拟机, 将VMa, VMb, VMc, VMd的ip对应改为192.168.1.2/24, 192.168.1.3/24, 192.168.1.4/24, 192.168.1.5/24.
+用简单的ping命令就可以测试VLAN了.
+VMa与VMc之间能够互通.
+VMb与VMd之间能够互通.
+但是VMa与VMb之间不能互通.
+这样就实现了简单的VLAN..
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2012/07/17/create-vlan-on-openvswitch-with-libvirt/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Tue, 17 Jul 2012 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>linux, out of memory</title>
+                <link>http://localhost:4000/2011/12/11/linux-out-of-memory/</link>
+                <content:encoded>
+                    <![CDATA[
+                    加班归来, 由于纠结了一天, 所以必须把这个给记录下来.
+
+问题是这样的, libvirt启动domain, 大概启动了20台左右, 就会发现domain们会自杀. 我就无比郁闷了, domain你们到底肿么了.
+
+经过多番查看各种log, 没有发现问题. 最后一同事发现了, 在 _/var/log/syslog_ 里面有一条关于 _kvm: out of memory_ 的log.
+
+经过各种搜索后发现, 发现在大内存的工作环境下(>4G), 32位的linux会产生这个错误. 但是我们觉得, 我们平常的机器都是安装64位的OS, 就没有管这个问题了. 但是问题偏偏就出现在这个OS的32位上. 所以阿, 买来的服务器还是要自己安装一次OS才行阿...
+
+最后bs一下卖服务器的厂商...肿么能这么装系统呢, 32位最大才索引4G内存, 一台服务器都40多G内存了.还装32位, 这不坑爹嘛!
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2011/12/11/linux-out-of-memory/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sun, 11 Dec 2011 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>在ubuntu下创建deb包</title>
+                <link>http://localhost:4000/2011/12/04/create-deb-package-on-ubuntu/</link>
+                <content:encoded>
+                    <![CDATA[
+                    今天跟大家讲解一下如何制造自己的deb包.
+
+制造deb包的过程就是讲已经编译的库跟应用程序放到对应的目录下,之后配置一下描述你的package的文件,最后执行一个打包的命令将它打包成deb包的形式.当然你可以打包成rpm...
+
+以上就是一个制造deb package的思路了.当然还有别的方法,例如使用checkinstall或者用dh_make生成需要的文件之类的.
+
+但是我用一个比较懒人的办法,就是修改已经存在的deb package.
+
+h3. 1. 下载deb package模板
+
+
+bc. $ sudo apt-get install -d hello
+$ mv /var/cache/apt/archives/hello_<version>_<arch>.deb ~/
+$ cd ~
+$ dpkg -X hello_<version>_<arch>.deb myhello
+$ cd myhello
+$ dpkg -e ../hello_<version>_<arch>.deb
+
+# 首先是先把hello的deb package下载下来,但是并不安装
+# 复制并解压文件到myhello的文件夹里面
+# 解压deb package信息到myhello文件夹里面
+
+h3. 2. 熟悉deb包结构
+
+bc. $ cd ~/myhello
+$ tree
+
+myhello的目录树结构
+
+bc. .
+├── DEBIAN
+│   └── control
+└── usr
+    ├── bin
+    │   └── hello
+    └── share
+        ├── doc
+        │   └── hello
+        │       ├── changelog.Debian.gz
+        │       ├── copyright
+        │       └── NEWS
+        ├── info
+        │   └── hello.info.gz
+        └── man
+            └── man1
+                └── hello.1.gz
+
+_._ 就是模拟出来的 _/_ (root)
+
+意思就是安装 _myhello_ 之后, _./usr/bin/hello_ 对应的就是复制到 _/usr/bin/hello_ 中去.
+
+之后需要讲解的就是 _./DEBIAN_目录下面的文件
+
+bc. $ cat ./DEBIAN/control
+
+pre. Package: hello
+Version: 2.7-1
+Architecture: i386
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Original-Maintainer: Santiago Vila <sanvila@debian.org>
+Installed-Size: 100
+Depends: libc6 (>= 2.4), dpkg (>= 1.15.4) | install-info
+Section: devel
+Priority: optional
+Homepage: http://www.gnu.org/software/hello/
+Description: The classic greeting, and a good example
+ The GNU hello program produces a familiar, friendly greeting.  It
+ allows non-programmers to use a classic computer science tool which
+ would otherwise be unavailable to them.
+ .
+ Seriously, though: this is an example of how to do a Debian package.
+ It is the Debian version of the GNU Project's `hello world' program
+ (which is itself an example for the GNU Project).
+
+|=. *名称* |=. *描述* |=. *备注* |
+| _Package_ | 包名 | &nbsp; |
+| _Version_ | 版本号 | &nbsp; |
+| _Architecture_ | 系统架构 | &nbsp; |
+| _Maintainer_ | 维护人员 | &nbsp; |
+| _Depends_ | 依赖 | &nbsp; |
+| _Priority_ | 包优先级 | 一般自制的package设置成optional就可以 |
+| _Description_ | 描述 | 非首行时,需要输入空一个空格 |
+
+*修改成你自己应用程序的信息*
+
+最后还有 _4_ 个文件我们需要关注的, 就就是 _preinst_ , _postinst_ , _prerm_ , _postrm_ 对应的是 _安装前_ , _安装后_ , _删除前_ , _删除后_ 对应的脚本.
+
+h3. 替换你的应用程序到对应的目录下面
+
+例如将我自己编译好的 _myhello_ 到 _./usr/bin/myhello_ 下.
+
+h3. 3. 打包成deb package
+
+bc. $ cd ~
+$ dpkg -b myhello/ myhello_1.0_i386.deb
+
+h3. 4. 总结
+
+总结起来就一下几步:
+
+# 找到模板,并解压
+# 将自己的应用程序放到对应的目录下面
+# 修改 _control_ 文件
+# 按照需求添加 _preinst_ _postinst_ _prerm_ _postrm_ 脚本
+# 打包成自己的deb package!
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2011/12/04/create-deb-package-on-ubuntu/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sun, 04 Dec 2011 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>libvirtd使用证书创建连接简介(下)</title>
+                <link>http://localhost:4000/2011/12/01/libvirtd-tutorial-for-connect-domain-with-cert-2/</link>
+                <content:encoded>
+                    <![CDATA[
+                    p. *事例程序:*
+
+bc. import libvirt
+conn = libvirt.open('qemu+tls://hostname/system')
+for id in conn.listDomainsID():
+    dom = conn.lookupByID(id)
+    print "Dom %s State %s" % (dom.name(), dom.info()[0])
+    dom.suspend()
+    print "Dom %s State %s (after suspend)" % (dom.name(), dom.info()[0])
+    dom.resume()
+    print "Dom %s State %s (after resume)" % (dom.name(), dom.info()[0])
+    dom.destory()
+
+p. 程序简单解析: 这段代码演示了如何用tls的方式连接到远程的虚拟机中,并且能够对改连接上的虚拟机操作
+
+p. 用tls的方式创建连接的简介就这么多了,有什么不明白的可以通过以下的邮件地址跟我联系学习交流.
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2011/12/01/libvirtd-tutorial-for-connect-domain-with-cert-2/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Thu, 01 Dec 2011 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>libvirtd使用证书创建连接简介(上)</title>
+                <link>http://localhost:4000/2011/11/30/libvirtd-tutorial-for-connect-domain-with-cert-1/</link>
+                <content:encoded>
+                    <![CDATA[
+                    h2. libvirtd使用证书创建连接简介(上)
+
+p. 上集讲的是如何配置证书与证书的存放
+
+p. 先了解一下证书的存放位置和需要注意的一些地方
+
+|=. *位置* |=. *安装机* |=. *描述* |=. *匹配域* |
+|=. /etc/pki/CA/cacert.pem |=. 服务端 _and_ 客户端 |=. CA的证书 |=. n/a |
+|=. /etc/pki/libvirt/private/serverkey.pem |=. 服务端 |=. 服务端的私钥 |=. n/a |
+|=. /etc/pki/libvirt/servercert.pem |=. 服务端 |=. 由CA颁发的服务端签名证书 |=. 服务器的hostname必须在客户端可见,并且与CommonName匹配 |
+|=. /etc/pki/libvirt/private/clientkey.pem |=. 客户端 |=. 客户端私钥 |=. n/a |
+|=. /etc/pki/libvirt/clientcert.pem |=. 客户端 |=. 由CA颁发的客户端签名证书 |=. Distinguished Name(DN)需要在access control list里面(tls_allowed_dn_list) |
+
+* 安装 _gnults-utils_
+
+bc. apt-get install guntls-bin
+
+* 创建CA, SERVER, CLIENT对应的证书与私钥
+
+<ol>
+<li>
+
+p. 先创建三个文件,分别命名为 _ca.info_, _server.info_, _client.info_ 分别填上以下的内容
+
+bc. file: ca.info
+cn = <CA的机构>
+ca
+cert_signing_key
+
+bc. file: server.info
+organization = <CA的cn>
+cn = <server的hostname>
+tls_www_server
+encryption_key
+signing_key
+
+bc. file: client.info
+country = <国家>
+state = <省> 
+locality = <市>
+organization = <CA的cn>
+cn = <client的hostname>
+tls_www_client
+encryption_key
+signing_key
+
+</li>
+
+<li>
+
+p. 创建 _cakey.pem_, _serverkey.pem_, _clientkey.pem_
+
+bc. 创建 cakey.pem
+certtool --generate-privkey > cakey.pem
+
+bc. 创建 server.pem
+certtool --generate-privkey > serverkey.pem
+
+bc. 创建 client.pem
+certtool --generate-privkey > clientkey.pem
+
+</li>
+
+<li>
+
+p. 创建 _cacert.pem_, _servercert.pem_, _clientcert.pem_
+
+bc. 创建 cacert.pem
+certtool --generate-self-signed --load-privkey cakey.pem \
+	 --template ca.info --outfile cacert.pem
+
+bc. 创建 servercert.pem
+certtool --generate-certificate --load-privkey serverkey.pem \
+  --load-ca-certificate cacert.pem --load-ca-privkey cakey.pem \
+  --template server.info --outfile servercert.pem
+
+bc. 创建 client.pem
+certtool --generate-certificate --load-privkey clientkey.pem \
+  --load-ca-certificate cacert.pem --load-ca-privkey cakey.pem \
+  --template client.info --outfile clientcert.pem
+
+</li>
+
+</ol>
+
+* 将产生的私钥跟证书放到对应的主机的对应目录下面.
+* 重启libvirtd进程
+@libvirtd -l -d@
+
+p. 配置就这样完成了,如何连接我将在下一节中描述.
+
+p. 引用 "http://libvirt.org/remote.html":http://libvirt.org/remote.html
+
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2011/11/30/libvirtd-tutorial-for-connect-domain-with-cert-1/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Wed, 30 Nov 2011 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>Textile Demo</title>
+                <link>http://localhost:4000/2011/11/27/textile-demo/</link>
+                <content:encoded>
+                    <![CDATA[
+                    code with:
+
+bc. _emphasized_
+
+_emphasized_
+
+<br />
+
+code with:
+
+bc. *strongly emphasized*
+
+*strongly emphasized*
+
+<br />
+
+code with:
+
+bc. * An item in a bulleted (unordered) list
+* Another item in a bulleted list
+** Second Level
+** Second Level Items
+*** Third level
+
+* An item in a bulleted (unordered) list
+* Another item in a bulleted list
+** Second Level
+** Second Level Items
+*** Third level
+
+<br />
+
+code with:
+
+bc. # An item in an enumerated (ordered) list xxxxxxx
+# Another item in an enumerated list yyyyyy
+## Another level in an enumerated list vvvvvvvv
+
+# An item in an enumerated (ordered) list xxxxxxx
+# Another item in an enumerated list yyyyyy
+## Another level in an enumerated list vvvvvvvv
+
+<br />
+
+code with:
+
+bc. |_. Header |_. Header |_. Header |
+| Cell 1 | Cell 2 | Cell 3 |
+| Cell 1 | Cell 2 | Cell 3 |
+
+|_. Header |_. Header |_. Header |
+| Cell 1 | Cell 2 | Cell 3 |
+| Cell 1 | Cell 2 | Cell 3 |
+
+<br />
+
+code with:
+
+bc. @your code here@
+
+@your code here@
+
+<br />
+
+code with:
+
+bc. bc. # print "I love Python"
+say = "I love Python"
+print say
+
+bc. # print "I love Python"
+say = "I love Python"
+print say
+
+<br />
+
+code with:
+
+bc. p. <input type="submit" value="Check me" />
+
+p. <input type="submit" value="Check me" />
+
+<br />
+
+code with:
+
+bc. h1(#id). An HTML first-level heading
+h2. An HTML second-level heading
+h3. An HTML third-level heading
+h4. An HTML fourth-level heading
+h5. An HTML fifth-level heading
+h6. An HTML sixth-level heading
+
+h1(#id). An HTML first-level heading
+h2. An HTML second-level heading
+h3. An HTML third-level heading
+h4. An HTML fourth-level heading
+h5. An HTML fifth-level heading
+h6. An HTML sixth-level heading
+
+<br />
+
+code with:
+
+bc.bq. This text will be enclosed in an HTML blockquote element.
+
+bq. This text will be enclosed in an HTML blockquote element.
+
+<br />
+
+code with:
+
+bc. "(classname)link text(title tooltip)":link_address
+
+"(cgassname)link text(title tooltip)":link_address
+
+<br />
+
+code with:
+
+bc. "(classname)link text(title tooltip)":mailto:someone@example.com
+
+"(classname)link text(title tooltip)":mailto:someone@example.com
+
+<br />
+
+code with:
+
+bc. !imageurl(alt text)!
+
+!imageurl(alt text)!
+
+<br />
+
+p. Textile Reference
+
+"Textile Quick Reference":http://redcloth.org/hobix.com/textile/quick.html
+
+"Textile Reference Manual":http://redcloth.org/textile/html-integration-and-escapement/
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2011/11/27/textile-demo/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sun, 27 Nov 2011 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>Hello World</title>
+                <link>http://localhost:4000/2011/11/27/hello-world/</link>
+                <content:encoded>
+                    <![CDATA[
+                    <p>My first page, Hello World.</p>
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2011/11/27/hello-world/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sun, 27 Nov 2011 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
+        
+            <item>
+                <title>Peer Studio Blog的来源</title>
+                <link>http://localhost:4000/2011/11/27/about-this-blog/</link>
+                <content:encoded>
+                    <![CDATA[
+                    p. 创建一个博客的构思在很久之前已经有了,但是以前有鉴于自信,或是过分自信的原因,很多知识都存放在我的个人磁盘中(大脑).但是最近发现年老的缘故,记忆也开始变得不可靠了.所以这个博客就在捣腾中诞生了.
+
+p. 此博客构建的基础是github pages.暂时是存放在 "http://peerxu.github.com/":http://peerxu.github.com/ 上.
+
+p. 使用的模板是根据 "mojombo.github.com":http://mojombo.github.com 的风格而成的.
+
+p. 喜欢的话就fork me吧.
+
+p. 暂时就写这么多吧, 我会努力丰富这个小博客的!
+
+                    ]]>
+                </content:encoded>
+                <guid isPermaLink="false">/2011/11/27/about-this-blog/</guid>
+                <description>
+                    
+                </description>
+                <pubDate>Sun, 27 Nov 2011 00:00:00 +0800</pubDate>
+                <author>Peer Xu</author>
+            </item>
+        
+    
   </channel>
 </rss>
