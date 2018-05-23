@@ -7,6 +7,143 @@
     <atom:link href="https://blog.e3rp4y.me/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
+        <title>通过IP组播发送WIFI配置到未联网设备上</title>
+        <description>&lt;h2 id=&quot;前言&quot;&gt;前言&lt;/h2&gt;
+
+&lt;p&gt;物联网设备, 顾名思义, 是需要设备连接到网络当中去. 但是, 怎么使设备连接到网络当中去, 是一件极其复杂的事情.&lt;/p&gt;
+
+&lt;p&gt;有输入设备的设备, 比较好办. 例如可以通过摄像头扫描二维码, 通过麦克风监听带配置信息的音频, 或者直接通过蓝牙发送配置信息都可以.&lt;/p&gt;
+
+&lt;p&gt;但是, 以上的设备都是带有某种输入设备的, 但是很多物联网设备, 除了WIFI网卡就没有别的联网设备了.&lt;/p&gt;
+
+&lt;p&gt;有人会说, 很简单啊, 设备设置成AP模式, 手机连接过去, OJBK.&lt;/p&gt;
+
+&lt;p&gt;这当然也是可以的, 但是, 需要手机连接进去设备的AP啊, 这这这, 这手机就会断网啊, 你能忍? 反正我不能忍了.&lt;/p&gt;
+
+&lt;p&gt;那么有没有办法, 手机已经连接WIFI的情况下, 把WIFI配置发送给设备呢?&lt;/p&gt;
+
+&lt;p&gt;答案当然是肯定的, 有同事在微博中发现, 这个&lt;a href=&quot;https://weibo.com/1829606830/GffX2osBk?type=comment#_rnd1527069968397&quot;&gt;trick&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;下面就来分析一下这个trick的原理.&lt;/p&gt;
+
+&lt;h2 id=&quot;ip组播ip-multicast&quot;&gt;IP组播(IP Multicast)&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/IP_multicast&quot;&gt;IP组播&lt;/a&gt;是TCP/IP协议中, 由IP层提供的特性. 目的是提供一对多, 多对多的基于IP网络的实时通信特性.&lt;/p&gt;
+
+&lt;p&gt;IP组播有特定的地址段, 从 &lt;code class=&quot;highlighter-rouge&quot;&gt;224.0.0.0&lt;/code&gt; 到 &lt;code class=&quot;highlighter-rouge&quot;&gt;239.255.255.255&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;当然, IP组播有很多技术特性. 我们今天就使用其中的一个&lt;a href=&quot;http://www.cloudstructured.com/network/multicast/multicast-part-ii-ip-multicast/&quot;&gt;IP多播地址到MAC地址映射&lt;/a&gt;来实现我们的目的.&lt;/p&gt;
+
+&lt;p&gt;关于这个特性, 有个有趣的&lt;a href=&quot;https://showipprotocols-tw.blogspot.sg/2009/05/ip-multicast-mac-address-23.html&quot;&gt;小插曲&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;我们继续看这个映射到底是怎么回事.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;                     224  .   128  .   0    .   0
+
+                  11100000 10000000 00000000 00000000    IP地址
+                            ||||||| |||||||| ||||||||
+                            VVVVVVV VVVVVVVV VVVVVVVV
+00000001 00000000 01011110 00000000 00000000 00000000    MAC地址
+
+   01   -   00   -   5E   -   00   -   00   -   00
+
+                          图1
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;我们先看看上面的&lt;em&gt;图1&lt;/em&gt;. 箭头指向的, 就是会从IP地址映射成MAC地址的位.&lt;/p&gt;
+
+&lt;p&gt;所以, 如果我们现在有一个 &lt;code class=&quot;highlighter-rouge&quot;&gt;224.232.55.231&lt;/code&gt;的IP地址, 会映射成 &lt;code class=&quot;highlighter-rouge&quot;&gt;01:00:5E:68:37:E7&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;                     224  .   232  .   55   .   231
+
+                  11100000 11101000 00110111 11100111    IP地址
+                            ||||||| |||||||| ||||||||
+                            VVVVVVV VVVVVVVV VVVVVVVV
+00000001 00000000 01011110 01101000 00110111 11100111    MAC地址
+
+   01   -   00   -   5E   -   68   -   37   -   E7
+
+                          图2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;当我们熟练掌握了这个技巧以后, 我们就有一种传输数据的手段.&lt;/p&gt;
+
+&lt;p&gt;虽然只能一次传输23bits. 但是, 这也是质的飞跃啊.&lt;/p&gt;
+
+&lt;p&gt;但是说了这么多, 到底这个特性有什么用啊?&lt;/p&gt;
+
+&lt;p&gt;别急别急, 让我慢慢说.&lt;/p&gt;
+
+&lt;h2 id=&quot;加密的80211和未加密的mac地址&quot;&gt;加密的80211和未加密的MAC地址&lt;/h2&gt;
+
+&lt;p&gt;通常情况下, 我们连接的WIFI都是加密的, 那么我们连接到WIFI的设备发送的数据, 也是经过加密的. 我们可以捕获到加密的数据包, 但是无法解密.&lt;/p&gt;
+
+&lt;p&gt;所以就没有办法用正常的手段发送数据给物联网设备了.&lt;/p&gt;
+
+&lt;p&gt;(这不废话吗? 如果可以我还写这么一大段po文做甚?&lt;/p&gt;
+
+&lt;p&gt;但是, 凡事总有但是.&lt;/p&gt;
+
+&lt;p&gt;我们会发现, 捕捉到的数据包, 802.11层的MAC地址, 是以明文的形式发送的. 这就给了我们足够的想象空间了.&lt;/p&gt;
+
+&lt;p&gt;我们可以采用刚刚的&lt;em&gt;IP多播: IP地址映射MAC地址&lt;/em&gt;特性, 来传输消息, 就是我们需要传递的WIFI配置信息.&lt;/p&gt;
+
+&lt;h2 id=&quot;poc&quot;&gt;POC&lt;/h2&gt;
+
+&lt;p&gt;我们先在设备上打开一个监听程序(tcpdump).&lt;/p&gt;
+
+&lt;p&gt;这里需要把网卡设置成监听模式, 因为我采用的是 &lt;code class=&quot;highlighter-rouge&quot;&gt;Raspberry Pi Zero W&lt;/code&gt;, 所以需要用&lt;a href=&quot;https://github.com/seemoo-lab/nexmon&quot;&gt;nexmon&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;暂时我们先假设读者已经知道怎么启用监听模式.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Pi Zero W Terminal
+
+$ sudo tcpdump -i mon0 ether dst 01:00:5E:68:37:E7
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Sender&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Terminal&lt;/span&gt;
+
+&lt;span class=&quot;p&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cat&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;go&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+	&lt;span class=&quot;s2&quot;&gt;&quot;net&quot;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;addr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;net&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ResolveUDPAddr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;udp&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;224.232.55.231:240&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;cli&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;net&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;DialUDP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;udp&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;addr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;cli&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;go&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;run&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;go&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Pi Zero W Terminal
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on mon0, link-type IEEE802_11_RADIO (802.11 plus radiotap header), capture size 262144 bytes
+15:12:58.633212 44578627us tsft 2427 MHz 0dBm signal Data IV:5e9e Pad 20 KeyID 0
+15:12:58.703203 44652100us tsft 2427 MHz -54dBm signal Data IV:d7b1 Pad 20 KeyID 1
+
+2 packets captured
+3 packets received by filter
+0 packets dropped by kernel
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
+
+&lt;p&gt;剩下的事情, 就是如何把WIFI配置塞进去那23bits的问题了.&lt;/p&gt;
+
+&lt;p&gt;那么这个问题, 我们下集再说~&lt;/p&gt;
+
+&lt;p&gt;enjoy it~&lt;/p&gt;
+</description>
+        <pubDate>Wed, 23 May 2018 00:00:00 +0800</pubDate>
+        <link>https://blog.e3rp4y.me/2018/05/23/connect-to-wifi-by-ip-multicast/</link>
+        <guid isPermaLink="true">https://blog.e3rp4y.me/2018/05/23/connect-to-wifi-by-ip-multicast/</guid>
+      </item>
+    
+      <item>
         <title>在macOS下通过Docker交叉编译GO程序</title>
         <description>&lt;h2 id=&quot;前言&quot;&gt;前言&lt;/h2&gt;
 
@@ -789,159 +926,6 @@ digraph structs {
         <pubDate>Fri, 07 Nov 2014 00:00:00 +0800</pubDate>
         <link>https://blog.e3rp4y.me/2014/11/07/dns-hijack-with-dnsmasq/</link>
         <guid isPermaLink="true">https://blog.e3rp4y.me/2014/11/07/dns-hijack-with-dnsmasq/</guid>
-      </item>
-    
-      <item>
-        <title>SQLAlchemy多对多关系使用方法</title>
-        <description>&lt;p&gt;SQLAlchemy是一个Python的数据库ORM框架.&lt;/p&gt;
-
-&lt;p&gt;多对多数据模型是比较常用的数据关系.&lt;/p&gt;
-
-&lt;p&gt;下面采用文章(&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;)和标签(&lt;code class=&quot;highlighter-rouge&quot;&gt;Tag&lt;/code&gt;)的关系来作为介绍范例.&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;一篇文章可以通过多个标签来描述概要信息.&lt;/li&gt;
-  &lt;li&gt;一个标签可以对应多篇文章.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;首先我们先创建两个Sqlalchemy的模型类:&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;class Page(Base):
-    __tablename__ = 'page'
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    
-class Tag(Base):
-    __tablename__ = 'tag'
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;这里创建了两个模型, 分别是&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;Tag&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;添加一个需求: 我们能够在&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;对象中直接获取关联的&lt;code class=&quot;highlighter-rouge&quot;&gt;Tag&lt;/code&gt;列表&lt;/p&gt;
-
-&lt;p&gt;那么我们就需要在&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;模型中添加:&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;class Page(Base):
-...
-    tags = relationship('Tag', secondary=association_table)
-...
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;这里就通过指定&lt;code class=&quot;highlighter-rouge&quot;&gt;relationship&lt;/code&gt;来指定&lt;code class=&quot;highlighter-rouge&quot;&gt;tags&lt;/code&gt;属性是指向&lt;code class=&quot;highlighter-rouge&quot;&gt;Tag&lt;/code&gt;对象的, 关联规则是通过&lt;code class=&quot;highlighter-rouge&quot;&gt;association_table&lt;/code&gt;的关联关系.&lt;/p&gt;
-
-&lt;p&gt;然后就是需要创建关联规则表&lt;code class=&quot;highlighter-rouge&quot;&gt;association_table&lt;/code&gt;.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;association_table = Table(
-    'association', Base.metadata,
-    Column('page_id', Integer, ForeignKey('page.id')),
-    Column('tag_id', Integer, ForeignKey('tag.id'))
-)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;这里就创建一个&lt;code class=&quot;highlighter-rouge&quot;&gt;Page-Tag&lt;/code&gt;关联表, 通过将&lt;code class=&quot;highlighter-rouge&quot;&gt;page_id&lt;/code&gt;作为&lt;code class=&quot;highlighter-rouge&quot;&gt;Page&lt;/code&gt;对象的外键. 同理&lt;code class=&quot;highlighter-rouge&quot;&gt;tag_id&lt;/code&gt;作为&lt;code class=&quot;highlighter-rouge&quot;&gt;Tag&lt;/code&gt;对象的外键.&lt;/p&gt;
-
-&lt;p&gt;至此, 我们已经完成多对多模型的创建.&lt;/p&gt;
-
-&lt;p&gt;接下来就是多对多模型的CRUD了.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;page = Page(name='Python API Page')
-api_tag = Tag(name='api')
-python_tag = Tag(name='python')
-
-# append tag to page
-page.tags.append(api_tag)
-page.tags.append(python_tag)
-
-# read tag from page
-print [tag.name for tag in page.tags]
-
-# remove tag from page
-page.tags.remove(python_tag)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;以上就是Sqlalchemy关于多对多模型操作方式~&lt;/p&gt;
-
-&lt;p&gt;下面贴上完整的代码:&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import sqlalchemy as sqla
-import sqlalchemy.orm as sqlorm
-from sqlalchemy.ext.declarative import declarative_base as sqla_declarative_base
-
-Base = sqla_declarative_base()
-engine = sqla.create_engine('sqlite:///test.db', echo=True)
-
-association_table = sqla.Table(
-    'association', Base.metadata,
-    sqla.Column('page_id', sqla.Integer, sqla.ForeignKey('page.id')),
-    sqla.Column('tag_id', sqla.Integer, sqla.ForeignKey('tag.id'))
-)
-
-class Page(Base):
-    __tablename__ = 'page'
-    id = sqla.Column(sqla.Integer, primary_key=True)
-    name = sqla.Column(sqla.String)
-    tags = sqlorm.relationship('Tag', secondary=association_table)
-
-class Tag(Base):
-    __tablename__ = 'tag'
-    id = sqla.Column(sqla.Integer, primary_key=True)
-    name = sqla.Column(sqla.String)
-    pages = sqlorm.relationship('Page', secondary=association_table)
-
-Base.metadata.bind = engine
-Base.metadata.create_all()
-
-Session = sqlorm.scoped_session(sqlorm.sessionmaker(bind=engine))
-
-def save_page():
-    sess = Session()
-    try:
-        page = Page(name='Python API Page')
-        sess.add(page)
-
-        sess.flush()
-        sess.commit()
-    finally:
-        sess.close()
-
-def add_tag():
-   sess = Session()
-   try:
-       python_tag = Tag(name='python')
-       api_tag = Tag(name='api')
-       sess.add(python_tag)
-       sess.add(api_tag)
-       page = sess.query(Page).first()
-       page.tags.append(python_tag)
-       page.tags.append(api_tag)
-
-       sess.flush()
-       sess.commit()
-   finally:
-       sess.close()
-
-def remove_tag():
-    sess = Session()
-    try:
-        page = sess.query(Page).first()
-        api_tag = sess.query(Tag).filter(Tag.name=='api').first()
-        page.tags.remove(api_tag)
-        sess.flush()
-        sess.commit()
-    finally:
-        sess.close()
-
-if __name__ == '__main__':
-    save_page()
-    add_tag()
-    remove_tag()
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-</description>
-        <pubDate>Thu, 21 Aug 2014 00:00:00 +0800</pubDate>
-        <link>https://blog.e3rp4y.me/2014/08/21/sqlalchemy-many-to-many-relationship/</link>
-        <guid isPermaLink="true">https://blog.e3rp4y.me/2014/08/21/sqlalchemy-many-to-many-relationship/</guid>
       </item>
     
   </channel>

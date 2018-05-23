@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>通过IP组播发送WIFI配置到未联网设备上 &#8211; PeerStudio</title>
+    <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Peer的博客">
+    <meta name="robots" content="all">
+    <meta name="author" content="Peer Xu">
+    
+    <meta name="keywords" content="">
+    <link rel="canonical" href="https://blog.e3rp4y.me/2018/05/23/connect-to-wifi-by-ip-multicast/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for PeerStudio" href="/feed.xml" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css?201805232315" type="text/css">
+
+    <!-- Fonts -->
+    
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+    
+
+    <!-- MathJax -->
+    
+
+    <!-- Verifications -->
+    
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="通过IP组播发送WIFI配置到未联网设备上">
+    <meta property="og:description" content="Peer的博客">
+    <meta property="og:url" content="https://blog.e3rp4y.me/2018/05/23/connect-to-wifi-by-ip-multicast/">
+    <meta property="og:site_name" content="PeerStudio">
+    
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    
+        <meta name="twitter:site" content="@PeerXu" />
+        <meta name="twitter:creator" content="@PeerXu" />
+    
+    <meta name="twitter:title" content="通过IP组播发送WIFI配置到未联网设备上" />
+    <meta name="twitter:description" content="Peer的博客" />
+    <meta name="twitter:url" content="https://blog.e3rp4y.me/2018/05/23/connect-to-wifi-by-ip-multicast/" />
+    
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+
+    
+    <script type="text/javascript">
+       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+       ga('create', 'UA-52061731-2', 'auto');
+       ga('send', 'pageview');
+    </script>
+    
+</head>
+
+<body class="site">
+  
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="https://blog.e3rp4y.me" class="site-title">PeerStudio</a>
+      <nav class="site-nav">
+        
+
+
+
+    
+    
+    
+    
+        <a href="/about/">About PeerStudio</a>
+    
+
+    
+
+    
+    
+    
+    
+        <a href="/contact/">Say Hello</a>
+    
+
+    
+
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>通过IP组播发送WIFI配置到未联网设备上</h1>
+  <span class="post-meta">May 23, 2018</span><br>
+  
+  <span class="post-meta small">
+  
+    1 minute read
+  
+  </span>
+</div>
+
+<article class="post-content">
+  <h2 id="前言">前言</h2>
+
+<p>物联网设备, 顾名思义, 是需要设备连接到网络当中去. 但是, 怎么使设备连接到网络当中去, 是一件极其复杂的事情.</p>
+
+<p>有输入设备的设备, 比较好办. 例如可以通过摄像头扫描二维码, 通过麦克风监听带配置信息的音频, 或者直接通过蓝牙发送配置信息都可以.</p>
+
+<p>但是, 以上的设备都是带有某种输入设备的, 但是很多物联网设备, 除了WIFI网卡就没有别的联网设备了.</p>
+
+<p>有人会说, 很简单啊, 设备设置成AP模式, 手机连接过去, OJBK.</p>
+
+<p>这当然也是可以的, 但是, 需要手机连接进去设备的AP啊, 这这这, 这手机就会断网啊, 你能忍? 反正我不能忍了.</p>
+
+<p>那么有没有办法, 手机已经连接WIFI的情况下, 把WIFI配置发送给设备呢?</p>
+
+<p>答案当然是肯定的, 有同事在微博中发现, 这个<a href="https://weibo.com/1829606830/GffX2osBk?type=comment#_rnd1527069968397">trick</a>.</p>
+
+<p>下面就来分析一下这个trick的原理.</p>
+
+<h2 id="ip组播ip-multicast">IP组播(IP Multicast)</h2>
+
+<p><a href="https://en.wikipedia.org/wiki/IP_multicast">IP组播</a>是TCP/IP协议中, 由IP层提供的特性. 目的是提供一对多, 多对多的基于IP网络的实时通信特性.</p>
+
+<p>IP组播有特定的地址段, 从 <code class="highlighter-rouge">224.0.0.0</code> 到 <code class="highlighter-rouge">239.255.255.255</code>.</p>
+
+<p>当然, IP组播有很多技术特性. 我们今天就使用其中的一个<a href="http://www.cloudstructured.com/network/multicast/multicast-part-ii-ip-multicast/">IP多播地址到MAC地址映射</a>来实现我们的目的.</p>
+
+<p>关于这个特性, 有个有趣的<a href="https://showipprotocols-tw.blogspot.sg/2009/05/ip-multicast-mac-address-23.html">小插曲</a>.</p>
+
+<p>我们继续看这个映射到底是怎么回事.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>                     224  .   128  .   0    .   0
+
+                  11100000 10000000 00000000 00000000    IP地址
+                            ||||||| |||||||| ||||||||
+                            VVVVVVV VVVVVVVV VVVVVVVV
+00000001 00000000 01011110 00000000 00000000 00000000    MAC地址
+
+   01   -   00   -   5E   -   00   -   00   -   00
+
+                          图1
+
+</code></pre></div></div>
+
+<p>我们先看看上面的<em>图1</em>. 箭头指向的, 就是会从IP地址映射成MAC地址的位.</p>
+
+<p>所以, 如果我们现在有一个 <code class="highlighter-rouge">224.232.55.231</code>的IP地址, 会映射成 <code class="highlighter-rouge">01:00:5E:68:37:E7</code></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>                     224  .   232  .   55   .   231
+
+                  11100000 11101000 00110111 11100111    IP地址
+                            ||||||| |||||||| ||||||||
+                            VVVVVVV VVVVVVVV VVVVVVVV
+00000001 00000000 01011110 01101000 00110111 11100111    MAC地址
+
+   01   -   00   -   5E   -   68   -   37   -   E7
+
+                          图2
+</code></pre></div></div>
+
+<p>当我们熟练掌握了这个技巧以后, 我们就有一种传输数据的手段.</p>
+
+<p>虽然只能一次传输23bits. 但是, 这也是质的飞跃啊.</p>
+
+<p>但是说了这么多, 到底这个特性有什么用啊?</p>
+
+<p>别急别急, 让我慢慢说.</p>
+
+<h2 id="加密的80211和未加密的mac地址">加密的80211和未加密的MAC地址</h2>
+
+<p>通常情况下, 我们连接的WIFI都是加密的, 那么我们连接到WIFI的设备发送的数据, 也是经过加密的. 我们可以捕获到加密的数据包, 但是无法解密.</p>
+
+<p>所以就没有办法用正常的手段发送数据给物联网设备了.</p>
+
+<p>(这不废话吗? 如果可以我还写这么一大段po文做甚?</p>
+
+<p>但是, 凡事总有但是.</p>
+
+<p>我们会发现, 捕捉到的数据包, 802.11层的MAC地址, 是以明文的形式发送的. 这就给了我们足够的想象空间了.</p>
+
+<p>我们可以采用刚刚的<em>IP多播: IP地址映射MAC地址</em>特性, 来传输消息, 就是我们需要传递的WIFI配置信息.</p>
+
+<h2 id="poc">POC</h2>
+
+<p>我们先在设备上打开一个监听程序(tcpdump).</p>
+
+<p>这里需要把网卡设置成监听模式, 因为我采用的是 <code class="highlighter-rouge">Raspberry Pi Zero W</code>, 所以需要用<a href="https://github.com/seemoo-lab/nexmon">nexmon</a>.</p>
+
+<p>暂时我们先假设读者已经知道怎么启用监听模式.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Pi Zero W Terminal
+
+$ sudo tcpdump -i mon0 ether dst 01:00:5E:68:37:E7
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">#</span> <span class="n">Sender</span> <span class="n">Terminal</span>
+
+<span class="p">$</span> <span class="n">cat</span> <span class="n">sender</span><span class="p">.</span><span class="n">go</span>
+<span class="k">package</span> <span class="n">main</span>
+
+<span class="n">import</span> <span class="p">(</span>
+	<span class="s2">"net"</span>
+<span class="p">)</span>
+
+<span class="n">func</span> <span class="n">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="n">addr</span><span class="p">,</span> <span class="n">_</span> <span class="p">:=</span> <span class="n">net</span><span class="p">.</span><span class="n">ResolveUDPAddr</span><span class="p">(</span><span class="s2">"udp"</span><span class="p">,</span> <span class="s2">"224.232.55.231:240"</span><span class="p">)</span>
+	<span class="n">cli</span><span class="p">,</span> <span class="n">_</span> <span class="p">:=</span> <span class="n">net</span><span class="p">.</span><span class="n">DialUDP</span><span class="p">(</span><span class="s2">"udp"</span><span class="p">,</span> <span class="n">nil</span><span class="p">,</span> <span class="n">addr</span><span class="p">)</span>
+	<span class="n">cli</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="n">nil</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="p">$</span> <span class="n">go</span> <span class="nf">run</span> <span class="n">sender</span><span class="p">.</span><span class="n">go</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Pi Zero W Terminal
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on mon0, link-type IEEE802_11_RADIO (802.11 plus radiotap header), capture size 262144 bytes
+15:12:58.633212 44578627us tsft 2427 MHz 0dBm signal Data IV:5e9e Pad 20 KeyID 0
+15:12:58.703203 44652100us tsft 2427 MHz -54dBm signal Data IV:d7b1 Pad 20 KeyID 1
+
+2 packets captured
+3 packets received by filter
+0 packets dropped by kernel
+</code></pre></div></div>
+
+<h2 id="总结">总结</h2>
+
+<p>剩下的事情, 就是如何把WIFI配置塞进去那23bits的问题了.</p>
+
+<p>那么这个问题, 我们下集再说~</p>
+
+<p>enjoy it~</p>
+
+</article>
+
+
+
+
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'peerstudioblog';
+    var disqus_identifier = '/2018/05/23/connect-to-wifi-by-ip-multicast';
+    var disqus_title      = "通过IP组播发送WIFI配置到未联网设备上";
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">GitHub</a>.
+    </small>
+  </div>
+</footer>
+
+
+</body>
+</html>
