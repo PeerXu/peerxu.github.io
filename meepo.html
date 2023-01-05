@@ -8,7 +8,7 @@ license that can be found in the LICENSE file.
 
 <head>
   <meta charset="utf-8">
-  <title>Go wasm</title>
+  <title>Meepo Webassembly Demo</title>
   <style type="text/css">
    span {
        word-break: norma;
@@ -19,16 +19,8 @@ license that can be found in the LICENSE file.
        overflow: hidden;
    }
   </style>
-</head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-YDCPVPYHX1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'G-YDCPVPYHX1');
-</script>
+</head>
 
 <body>
 	<!--
@@ -68,16 +60,16 @@ license that can be found in the LICENSE file.
   </script>
 	<!-- <button onClick="run();" id="runButton" disabled>Run</button> -->
 
-  <span>TrackerdAddr:<input id="trackerdAddr" value="" /></span>
-  <span>TrackerdURL:<input id="trackerdURL" value="" /></span>
+  <span>trackerdAddr:<input id="trackerdAddr" value="" /></span>
+  <span>trackerdURL:<input id="trackerdURL" value="" /></span>
   <span><button onClick="start();" id="startButton" disabled>start</button></span>
   <span id="id"></span>
-  <span>Target:<input id="target" /></span>
-  <span>Mode:<input id="mode" /></span>
-  <span>Method:<input id="method" /></span>
-  <span>URL:<input id="url" /></span>
-  <span>Headers:<input id="headers" /></span>
-  <span>Body:<input id="body" /></span>
+  <span>target:<input id="target" /></span>
+  <span>mode:<input id="mode" /></span>
+  <span>method:<input id="method" /></span>
+  <span>url:<input id="url" /></span>
+  <span>headers:<input id="headers" /></span>
+  <span>body:<input id="body" /></span>
   <span><button onClick="whoami();" class="enableAfterRunning" disabled>whoami</button><button onClick="newTransport();" class="enableAfterRunning" disabled>newTransport</button><button onClick="closeTransport();" class="enableAfterRunning" disabled>closeTransport</button><button onClick="listTransports();" class="enableAfterRunning" disabled>listTransports</button><button onClick="ping();" class="enableAfterRunning" disabled>ping</button><button onClick="doRequest();" class="enableAfterRunning" disabled>doRequest</button></span>
   <div>
       <span>error:</span>
@@ -110,6 +102,26 @@ license that can be found in the LICENSE file.
    for (const id in params) {
        bindInputValue(id, params[id])
    }
+  </script>
+
+  <script>
+   var _hmt = _hmt || [];
+   (function() {
+       var hm = document.createElement("script");
+       hm.src = "https://hm.baidu.com/hm.js?3812b4bcf9eb830c37ce4abd51a8b1ce";
+       var s = document.getElementsByTagName("script")[0]; 
+       s.parentNode.insertBefore(hm, s);
+   })();
+  </script>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDCPVPYHX1"></script>
+  <script>
+	 window.dataLayer = window.dataLayer || [];
+	 function gtag(){dataLayer.push(arguments);}
+	 gtag('js', new Date());
+
+	 gtag('config', 'G-YDCPVPYHX1');
   </script>
 </body>
 
