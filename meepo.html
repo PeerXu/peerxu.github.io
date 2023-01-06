@@ -52,13 +52,7 @@ license that can be found in the LICENSE file.
 		   console.error(err);
    });
 
-   /* async function run() {
-		  console.clear();
-		  await go.run(inst);
-		  inst = await WebAssembly.instantiate(mod, go.importObject); // reset instance
-	    } */
   </script>
-	<!-- <button onClick="run();" id="runButton" disabled>Run</button> -->
 
   <span>trackerdAddr:<input id="trackerdAddr" value="" /></span>
   <span>trackerdURL:<input id="trackerdURL" value="" /></span>
@@ -81,7 +75,7 @@ license that can be found in the LICENSE file.
   </div>
 
 
-	<script>
+  <script>
    let sp = new URLSearchParams(document.location.search)
    let bindInputValue = (id, valOrFn) => {
        if (typeof(valOrFn) !== "function") {
